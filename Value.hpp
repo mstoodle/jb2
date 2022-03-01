@@ -25,42 +25,38 @@
 #include <stdint.h>
 #include <vector>
 #include <iostream>
-#include "Object.hpp"
+#include "IDs.hpp"
 
-namespace OMR
-{
-
-namespace JitBuilder
-{
+namespace OMR {
+namespace JitBuilder {
 
 class Builder;
 class BuilderBase;
+class Extension;
 class OperationCloner;
 class Type;
 
-class Value : public Object
+class Value
    {
    friend class Builder;
    friend class BuilderBase;
+   friend class Extension;
    friend class OperationCloner;
 
 public:
-   uint64_t id() const           { return _id; }
-   Type * type() const           { return _type; }
+   ValueID id() const            { return _id; }
+   const Builder *parent() const { return _parent; }
+   const Type * type() const     { return _type; }
 
    virtual size_t size() const   { return sizeof(Value); }
 
-   static uint64_t maxID()       { return globalIndex; }
-
 protected:
-   static Value * create(Builder * parent, Type * type);
-   Value(Builder * parent, Type * type);
+   static Value * create(const Builder * parent, const Type * type);
+   Value(const Builder * parent, const Type * type);
 
-   int64_t   _id;
-   Builder * _parent;
-   Type    * _type;
-
-   static int64_t globalIndex;
+   ValueID   _id;
+   const Builder * _parent;
+   const Type    * _type;
    };
 
 } // namespace JitBuilder

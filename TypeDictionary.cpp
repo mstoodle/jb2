@@ -19,133 +19,107 @@
  * SPDX-License-Identifier: EPL-2.0 OR Apache-2.0 OR GPL-2.0 WITH Classpath-exception-2.0 OR LicenseRef-GPL-2.0 WITH Assembly-exception
  *******************************************************************************/
 
+#include <stdio.h>
 #include <string>
-#include "DynamicOperation.hpp"
-#include "DynamicType.hpp"
+#include "Compiler.hpp"
 #include "Operation.hpp"
+#include "TextWriter.hpp"
 #include "Type.hpp"
-#include "TypeGraph.hpp"
 #include "TypeDictionary.hpp"
 #include "Value.hpp"
 
-using namespace OMR::JitBuilder;
+namespace OMR {
+namespace JitBuilder {
 
-int64_t OMR::JitBuilder::TypeDictionary::globalIndex = 0;
 
-// Type * OMR::JitBuilder::TypeDictionary::NoType  = Type::NoType;
-// Type * OMR::JitBuilder::TypeDictionary::Int8    = Type::Int8;
-// Type * OMR::JitBuilder::TypeDictionary::Int16   = Type::Int16;
-// Type * OMR::JitBuilder::TypeDictionary::Int32   = Type::Int32;
-// Type * OMR::JitBuilder::TypeDictionary::Int64   = Type::Int64;
-// Type * OMR::JitBuilder::TypeDictionary::Float   = Type::Float;
-// Type * OMR::JitBuilder::TypeDictionary::Double  = Type::Double;
-// Type * OMR::JitBuilder::TypeDictionary::Address = Type::Address;
+TypeDictionary::TypeDictionary(Compiler *compiler)
+    : _id(compiler->getTypeDictionaryID())
+    , _compiler(compiler)
+    , _name("")
+    , _nextTypeID(0)
+    , _linkedDictionary(NULL) {
+}
 
-// Should really be either Int64 or Int32 based on Config
-// Type * OMR::JitBuilder::TypeDictionary::Word = OMR::JitBuilder::TypeDictionary::Int64;
-
-//
-// User types
-// BEGIN {
-
-// } END
-// User types
-// 
-
-TypeDictionary *TypeDictionary::globalDict = NULL;
-
-TypeDictionary *
-TypeDictionary::global()
-   {
-   if (globalDict == NULL)
-      globalDict = new TypeDictionary("GlobalTD");
-
-   return globalDict;
-   }
-
-TypeDictionary::TypeDictionary()
-   : _id(globalIndex++)
-   , _name("")
-   , _maxTypeID(1)
-   , _graph(new TypeGraph(this))
-   , _linkedDictionary(NULL)
-   {
-   createPrimitiveTypes();
-   initializeGraph();
-   }
-
-TypeDictionary::TypeDictionary(std::string name)
-   : _id(globalIndex++)
-   , _name(name)
-   , _maxTypeID(1)
-   , _graph(new TypeGraph(this))
-   , _linkedDictionary(NULL)
-   {
-   createPrimitiveTypes();
-   initializeGraph();
-   }
-
-TypeDictionary::TypeDictionary(TypeGraph * graph)
-   : _id(globalIndex++)
-   , _name("")
-   , _maxTypeID(1)
-   , _graph(graph)
-   , _linkedDictionary(NULL)
-   {
-   createPrimitiveTypes();
-   initializeGraph();
-   }
-
-TypeDictionary::TypeDictionary(std::string name, TypeGraph * graph)
-   : _id(globalIndex++)
-   , _name("")
-   , _maxTypeID(1)
-   , _graph(graph)
-   , _linkedDictionary(NULL)
-   {
-   createPrimitiveTypes();
-   initializeGraph();
-   }
+TypeDictionary::TypeDictionary(Compiler *compiler, std::string name)
+    : _id(compiler->getTypeDictionaryID())
+    , _compiler(compiler)
+    , _name(name)
+    , _nextTypeID(0)
+    , _linkedDictionary(NULL) {
+}
 
 // Only accessible to subclasses
-TypeDictionary::TypeDictionary(std::string name, TypeDictionary * linkedTypes)
-   : _id(globalIndex++)
-   , _name(name)
-   , _maxTypeID(linkedTypes->MaxTypeID())
-   , _graph(new TypeGraph(this, linkedTypes->_graph))
-   , _linkedDictionary(linkedTypes)
-   {
-   for (TypeIterator typeIt = linkedTypes->TypesBegin(); typeIt != linkedTypes->TypesEnd(); typeIt++)
-      {
-      Type *type = *typeIt;
-      addType(type);
-      }
-   _maxTypeID = linkedTypes->_maxTypeID;
-   NoType = linkedTypes->NoType;
-   Int8 = linkedTypes->Int8;
-   Int16 = linkedTypes->Int16;
-   Int32 = linkedTypes->Int32;
-   Int64 = linkedTypes->Int64;
-   Float = linkedTypes->Float;
-   Double = linkedTypes->Double;
-   Address = linkedTypes->Address;
-   Word = linkedTypes->Word;
+TypeDictionary::TypeDictionary(Compiler *compiler, std::string name, TypeDictionary * linkedDict)
+    : _id(compiler->getTypeDictionaryID())
+    , _compiler(compiler)
+    , _name(name)
+    , _nextTypeID(linkedDict->_nextTypeID)
+    , _linkedDictionary(linkedDict) {
+    for (TypeIterator typeIt = linkedDict->TypesBegin(); typeIt != linkedDict->TypesEnd(); typeIt++)
+        {
+        Type *type = *typeIt;
+        internalRegisterType(type);
+        }
+    _nextTypeID = linkedDict->_nextTypeID;
+}
 
-   //
-   // User type copying
-   // BEGIN {
+TypeDictionary::~TypeDictionary() {
+    for (auto it = _ownedTypes.begin(); it != _ownedTypes.end(); it++) {
+        Type *type = *it;
+        delete type;
+    }
+}
 
-   // } END
-   // User type copying
-   //
+Type *
+TypeDictionary::LookupType(TypeID id) {
+    for (auto it = TypesBegin(); it != TypesEnd(); it++) {
+        Type *type = *it;
+        if (type->id() == id)
+            return type;
+    }
 
-   _pointerTypeFromBaseType = linkedTypes->_pointerTypeFromBaseType;
-   _structTypeFromName = linkedTypes->_structTypeFromName;
-   _functionTypeFromName = linkedTypes->_functionTypeFromName;
+    return NULL;
+}
 
-   // TODO: copy entire linked type graph?
-   //initializeGraph();
+void
+TypeDictionary::RemoveType(const Type *type) {
+    // brutal performance; should really collect these and do in one pass
+    for (auto it = _types.begin(); it != _types.end(); ) {
+        if (*it == type)
+            it = _types.erase(it);
+        else
+            ++it;
    }
+}
+
+void
+TypeDictionary::write(TextWriter &w) {
+    w.indent() << "[ TypeDictionary " << this << " \"" << this->name() << "\"" << w.endl();
+    w.indentIn();
+    if (this->hasLinkedDictionary())
+        w.indent() << "[ linkedDictionary " << this->linkedDictionary() << " ]" << w.endl();
+    for (TypeIterator typeIt = this->TypesBegin();typeIt != this->TypesEnd();typeIt++) {
+        Type *type = *typeIt;
+        type->writeType(w);
+    }
+    w.indentOut();
+    w.indent() << "]" << w.endl();
+}
+
+void
+TypeDictionary::internalRegisterType(Type *type) {
+    _types.push_back(type);
+}
+
+void
+TypeDictionary::registerType(Type *type) {
+    internalRegisterType(type);
+    _ownedTypes.push_back(type);
+}
+
+#if 0
+
+// Move below to BaseExtension
 
 void
 TypeDictionary::createPrimitiveTypes()
@@ -186,122 +160,6 @@ TypeDictionary::createPrimitiveTypes()
 
    }
 
-void
-TypeDictionary::initializeGraph()
-   {
-   _graph->registerType(NoType);
-   _graph->registerType(Int8);
-   _graph->registerType(Int16);
-   _graph->registerType(Int32);
-   _graph->registerType(Int64);
-   _graph->registerType(Float);
-   _graph->registerType(Double);
-   _graph->registerType(Address);
-
-   //
-   // User initialization
-   // BEGIN {
-
-   // } END
-   // User initialization
-   // 
-
-   Add::initializeTypeProductions(this, _graph);
-   Sub::initializeTypeProductions(this, _graph);
-   Mul::initializeTypeProductions(this, _graph);
-
-   ForLoop::initializeTypeProductions(this, _graph);
-   IfCmpGreaterOrEqual::initializeTypeProductions(this, _graph);
-   IfCmpGreaterThan::initializeTypeProductions(this, _graph);
-   IfCmpLessOrEqual::initializeTypeProductions(this, _graph);
-   IfCmpLessThan::initializeTypeProductions(this, _graph);
-   IfThenElse::initializeTypeProductions(this, _graph);
-   Return::initializeTypeProductions(this, _graph);
-   Switch::initializeTypeProductions(this, _graph);
-   }
-
-void
-OMR::JitBuilder::TypeDictionary::registerReturnType(Type *type)
-   {
-   _graph->registerValidOperation(type, aReturn, type);
-   }
-
-void
-OMR::JitBuilder::TypeDictionary::registerPointerType(PointerType * pointerType)
-   {
-   _graph->registerType(pointerType);
-
-   Type * baseType = pointerType->BaseType();
-   _graph->registerValidOperation(pointerType, aAdd, pointerType, Word);
-   _graph->registerValidOperation(Word, aSub, pointerType, pointerType);
-
-   _graph->registerValidOperation(pointerType, aIndexAt, pointerType, Word);
-   if (Word != Int32)
-      _graph->registerValidOperation(pointerType, aIndexAt, pointerType, Int32);
-
-   _graph->registerValidOperation(baseType, aLoadAt, pointerType);
-   _graph->registerValidOperation(NoType, aStoreAt, pointerType, baseType);
-   }
-
-void
-OMR::JitBuilder::TypeDictionary::registerDynamicType(DynamicType * dynamicType)
-   {
-   addType(dynamicType);
-   _graph->registerType(dynamicType);
-   dynamicType->initializeTypeProductions(this, _graph);
-   }
-
-void
-OMR::JitBuilder::TypeDictionary::registerDynamicOperation(OperationBuilder * operationBuilder)
-   {
-   operationBuilder->initializeTypeProductions(this, _graph);
-   }
-
-Type *
-OMR::JitBuilder::TypeDictionary::producedType(Action a, Value *v)
-   {
-   return _graph->producedType(a, v->type());
-   }
-
-Type *
-OMR::JitBuilder::TypeDictionary::producedType(Action a, Value *left, Value *right)
-   {
-   return _graph->producedType(a, left->type(), right->type());
-   }
-
-Type *
-OMR::JitBuilder::TypeDictionary::producedType(Action a, Value *one, Value *two, Value *three)
-   {
-   return _graph->producedType(a, one->type(), two->type(), three->type());
-   }
-
-Type *
-OMR::JitBuilder::TypeDictionary::producedType(Action a, FieldType *fieldType, Value *structBase, Value *value)
-   {
-   if (value)
-      return _graph->producedType(a, fieldType, structBase->type(), value->type());
-   else
-      return _graph->producedType(a, fieldType, structBase->type());
-   }
-
-Type *
-OMR::JitBuilder::TypeDictionary::producedType(FunctionType *type, int32_t numArgs, va_list args)
-   {
-   Type *argTypes[numArgs];
-   for (int32_t a=0;a < numArgs;a++)
-      argTypes[a] = (va_arg(args, Value *))->type();
-   return _graph->producedType(type, numArgs, argTypes);
-   }
-
-Type *
-OMR::JitBuilder::TypeDictionary::producedType(FunctionType *type, int32_t numArgs, Value **args)
-   {
-   Type *argTypes[numArgs];
-   for (int32_t a=0;a < numArgs;a++)
-      argTypes[a] = args[a]->type();
-   return _graph->producedType(type, numArgs, argTypes);
-   }
-
 PointerType *
 TypeDictionary::PointerTo(Type * baseType)
    {
@@ -319,32 +177,6 @@ TypeDictionary::PointerTo(Type * baseType)
    _pointerTypeFromBaseType[baseType] = newType;
    registerPointerType(newType);
    return newType;
-   }
-
-Type *
-TypeDictionary::LookupType(uint64_t id)
-   {
-   for (auto it = TypesBegin(); it != TypesEnd(); it++)
-      {
-      Type *type = *it;
-      if (type->id() == id)
-         return type;
-      }
-
-   return NULL;
-   }
-
-void
-TypeDictionary::forgetType(Type *type)
-   {
-   // brutal performance; should really collect these and do in one pass
-   for (auto it = _types.begin(); it != _types.end(); )
-      {
-      if (*it == type)
-         it = _types.erase(it);
-      else
-         ++it;
-      }
    }
 
 void
@@ -430,7 +262,7 @@ TypeDictionary::DefineUnion(std::string unionName)
    }
 
 FieldType *
-TypeDictionary::DefineField(StructType *structType, LiteralValue *fieldName, Type * fType, size_t offset)
+TypeDictionary::DefineField(StructType *structType, Literal *fieldName, Type * fType, size_t offset)
    {
    assert(structType);
    if (structType->closed())
@@ -492,3 +324,7 @@ TypeDictionary::DefineFunctionType(std::string name,
    _graph->registerFunctionType(newType);
    return newType;
    }
+#endif
+
+} // namespace JitBuilder
+} // namespace OMR

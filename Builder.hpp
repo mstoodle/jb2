@@ -22,42 +22,206 @@
 #ifndef BUILDER_INCL
 #define BUILDER_INCL
 
-#include "BuilderBase.hpp"
+#include <cassert>
+#include <stdint.h>
+#include <string>
+#include <vector>
+#include "IDs.hpp"
+#include "Iterator.hpp"
 
-namespace OMR
-{
+namespace OMR {
+namespace JitBuilder { 
 
-namespace JitBuilder
-{
+class Compilation;
+class Context;
+class FunctionBuilder;
+class Location;
+class Operation;
+class OperationBuilder;
+class OperationCloner;
+class Type;
+class Value;
+class Transformer;
+class TypeDictionary;
 
-class Builder : public BuilderBase
-   {
-   public:
-   Builder * OrphanBuilder();
+typedef std::vector<Operation *> OperationVector;
+typedef OperationVector::iterator OperationIterator;
 
-   // new public API
-   // BEGIN {
-   //
+enum MustMayCant {
+    Must=0,
+    May=1,
+    Cant=2
+};
 
-   //
-   // } END
-   // new public API
+class Builder
+    {
+    friend class Extension;
+    friend class OperationBuilder;
+    friend class Transformer;
 
-   protected:
-   Builder(Builder * parent, FunctionBuilder * fb, TypeDictionary *types);
-   Builder(Builder * parent, TypeDictionary *types);
+public:
+    virtual ~Builder();
 
-   // new protected API
-   // BEGIN {
-   //
+    Compilation *comp() const { return _comp; }
 
-   //
-   // } END
-   // new protected API
-   };
+    static Builder * create(Builder *parent, Context *context=NULL, std::string name="");
+    static Builder * create(Compilation *comp, Context *context=NULL, std::string name="");
+
+    #if 0
+    Operation * appendClone(Operation *op);
+    Operation * appendClone(Operation *op, OperationCloner *cloner);
+
+    Operation * Append(OperationBuilder *opBuilder);
+    Value * Append(OperationBuilder *opBuilder, Literal *l);
+    Value * Append(OperationBuilder *opBuilder, Value *v);
+    Value * Append(OperationBuilder *opBuilder, Value *left, Value *right);
+
+    Value * ConstInt8(int8_t v);
+    Value * ConstInt16(int16_t v);
+    Value * ConstInt32(int32_t v);
+    Value * ConstInt64(int64_t v);
+    Value * ConstFloat(float v);
+    Value * ConstDouble(double v);
+    Value * ConstAddress(void *v);
+
+    Value * CoercePointer(Type * t, Value * v);
+
+    Value * Add(Value * left, Value * right);
+    Value * Sub(Value * left, Value * right);
+    Value * Mul(Value * left, Value * right);
+
+    Value * IndexAt(Type * type, Value * base, Value * index);
+    Value * Load(std::string name);
+    Value * Load(Symbol *local);
+    Value * LoadAt(Type * type, Value * address);
+    Value * LoadField(std::string structName, std::string fieldName, Value * structBase);
+    Value * LoadField(FieldType *fieldType, Value * structBase);
+    Value * LoadIndirect(std::string structName, std::string fieldName, Value * pStructBase);
+    Value * LoadIndirect(FieldType *fieldType, Value * pStructBase);
+    void Store(std::string name, Value * value);
+    void Store(Symbol * local, Value * value);
+    void StoreAt(Value * address, Value * value);
+    void StoreField(std::string structName, std::string fieldName, Value * structBase, Value *value);
+    void StoreField(FieldType *fieldType, Value * structBase, Value *value);
+    void StoreIndirect(std::string structName, std::string fieldName, Value * pStructBase, Value *value);
+    void StoreIndirect(FieldType *fieldType, Value * pStructBase, Value *value);
+
+    void AppendBuilder(Builder * b);
+    Value * Call(Value *function, int32_t numArgs, ...);
+    Value * Call(Value *function, int32_t numArgs, Value **args);
+    void Goto(Builder * b);
+    void IfCmpGreaterThan(Builder * gtBuilder, Value * left, Value * right);
+    void IfCmpLessThan(Builder * ltBuilder, Value * left, Value * right);
+    void IfCmpGreaterOrEqual(Builder * goeBuilder, Value * left, Value * right);
+    void IfCmpLessOrEqual(Builder * loeBuilder, Value * left, Value * right);
+    void IfThenElse(Builder * thenB, Value * cond);
+    void IfThenElse(Builder * thenB, Builder * elseB, Value * cond);
+    void ForLoopUp(std::string loopVar, Builder * body, Value * initial, Value * end, Value * bump);
+    void ForLoopUp(LocalSymbol *loopSym, Builder * body, Value * initial, Value * end, Value * bump);
+    void ForLoop(bool countsUp, std::string loopVar, Builder * body, Builder * loopContinue, Builder * loopBreak, Value * initial, Value * end, Value * bump);
+    void ForLoop(bool countsUp, LocalSymbol *loopSym, Builder * body, Builder * loopContinue, Builder * loopBreak, Value * initial, Value * end, Value * bump);
+    void Switch(Value * selector, Builder * defaultBuilder, int numCases, Case ** cases);
+    void Return();
+    void Return(Value *v);
+
+    Value * CreateLocalArray(int32_t numElements, Type *elementType);
+    Value * CreateLocalStruct(Type *elementType);
+    #endif
+
+    Location * SourceLocation();
+    Location * SourceLocation(std::string lineNumber);
+    Location * SourceLocation(std::string lineNumber, int32_t bcIndex);
+
+#if 0
+    Type * NoType;
+    Type * Int8;
+    Type * Int16;
+    Type * Int32;
+    Type * Int64;
+    Type * Float;
+    Type * Double;
+    Type * Address;
+#endif
+
+    int64_t id() const                                  { return _id; }
+    std::string name() const                            { return _name; }
+    virtual size_t size() const                         { return sizeof(Builder); }
+
+    TypeDictionary * dict() const;
+    Builder * parent() const                            { return _parent; }
+
+    Context * context();
+
+    int32_t numChildren() const                         { return _children.size(); }
+    BuilderIterator ChildrenBegin()                     { return BuilderIterator(_children); }
+    BuilderIterator ChildrenEnd()                       { return BuilderIterator(); }
+
+    int32_t numOperations() const                       { return _operations.size(); }
+    OperationVector & operations()                      { return _operations; }
+    OperationIterator OperationsBegin()                 { return _operations.begin(); }
+    OperationIterator OperationsEnd()                   { return _operations.end(); }
+
+    MustMayCant boundness() const                       { return _boundness; }
+    Builder * setBoundness(MustMayCant v);
+    void checkBoundness(bool v) const;
+
+    bool isBound() const                                { return _isBound; }
+    Builder * setBound(bool v, Operation * boundToOp=NULL);
+    Builder * setBound(Operation * boundToOp);
+    Operation * boundToOperation()                      { assert(_isBound); return _boundToOperation; }
+
+    bool isTarget() const                               { return _isTarget; }
+    Builder * setTarget(bool v=true);
+
+    bool controlReachesEnd() const                      { return _controlReachesEnd; }
+
+    Location *location() const {
+        return _currentLocation;
+    }
+    void setLocation(Location * loc) {
+        _currentLocation = loc;
+    }
+
+    protected:
+    Builder(Compilation *comp, Context *context=NULL, std::string name="");
+    Builder(Builder * parent, Context *context=NULL, std::string name="");
+
+#if 0
+    void creationError(Action a, std::string msg);
+    void creationError(Action a, std::string sName, std::string s);
+    void creationError(Action a, std::string vName, Value * v);
+    void creationError(Action a, std::string tName, Type * t, std::string vName, Value * v);
+    void creationError(Action a, std::string t1Name, Type * t1, std::string t2Name, Type * t2);
+    void creationError(Action a, std::string lName, Value * left, std::string rName, Value * right);
+    void creationError(Action a, std::string oneName, Value * one, std::string twoName, Value * two, std::string threeName, Value * three);
+    void creationError(Action a, std::string tName, Type * t, std::string firstName, Value * first, std::string secondName, Value * second);
+    void creationError(Action a, std::string sName, std::string sValue, std::string fName, std::string fValue, std::string bName, Value *bValue);
+    void creationError(Action a, std::string sName, std::string sValue, std::string fName, std::string fValue, std::string bName, Value *bValue, std::string vName, Value *vValue);
+    void creationError(Action a, std::string fName, Value *function, int32_t numArgs, va_list args);
+    void creationError(Action a, std::string fName, Value *function, int32_t numArgs, Value **args);
+#endif
+
+    void setParent(Builder *parent);
+    void addChild(Builder *child);
+    Builder * add(Operation * op);
+
+    BuilderID              _id;
+    Compilation          * _comp;
+    std::string            _name;
+    Builder              * _parent;
+    std::vector<Builder *> _children;
+    Context              * _context;
+    Builder              * _successor;
+    OperationVector        _operations;
+    Location             * _currentLocation;
+    Operation            * _boundToOperation;
+    bool                   _isTarget;
+    bool                   _isBound;
+    bool                   _controlReachesEnd;
+    MustMayCant            _boundness;
+    };
 
 } // namespace JitBuilder
-
 } // namespace OMR
 
 #endif // defined(BUILDER_INCL)

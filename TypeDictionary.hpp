@@ -24,154 +24,60 @@
 
 
 #include <stdint.h>
-#include <map>
 #include <vector>
-#include "Action.hpp"
+#include "IDs.hpp"
 #include "Iterator.hpp"
-#include "Operation.hpp"
-#include "Type.hpp"
 
-namespace OMR
-{
+namespace OMR {
+namespace JitBuilder {
 
-namespace JitBuilder
-{
-
+class Compiler;
 class DebugDictionary;
 class DynamicType;
+class Extension;
 class OperationBuilder;
-class TypeGraph;
 
-class TypeDictionary
-   {
-   friend class DebugDictionary;
-   friend class DynamicType;
-   friend class OperationBuilder;
+class TypeDictionary {
+    friend class DebugDictionary;
+    friend class DynamicType;
+    friend class Extension;
+    friend class OperationBuilder;
 
 public:
-   TypeDictionary();
-   TypeDictionary(std::string name);
-   TypeDictionary(TypeGraph * graph);
-   TypeDictionary(std::string name, TypeGraph * graph);
+    TypeDictionary(Compiler *compiler);
+    TypeDictionary(Compiler *compiler, std::string name);
+    TypeDictionary(Compiler *compiler, std::string name, TypeDictionary *linkedDict);
+    virtual ~TypeDictionary();
 
-   static TypeDictionary *global();
+    TypeIterator TypesBegin() const { return TypeIterator(_types); }
+    TypeIterator TypesEnd() const { return TypeIterator(); }
 
-   Type * NoType;
-   Type * Int8;
-   Type * Int16;
-   Type * Int32;
-   Type * Int64;
-   Type * Float;
-   Type * Double;
-   Type * Address;
-   Type * Word;
+    Type *LookupType(uint64_t id);
+    void RemoveType(const Type *type);
+    TypeID getTypeID() { return _nextTypeID++; }
+    TypeID numTypes() const { return _nextTypeID; }
 
-   // new types
-   // BEGIN {
-   //
+    TypeDictionaryID id() const { return _id; }
+    std::string name() const { return _name; }
+    bool hasLinkedDictionary() const { return _linkedDictionary != NULL; }
+    TypeDictionary *linkedDictionary() { return _linkedDictionary; }
 
-   //
-   // } END
-   // new public types
-
-   int64_t NewTypeID() { return _maxTypeID++; }
-   int64_t MaxTypeID() const { return _maxTypeID; }
-
-   PointerType * PointerTo(Type * baseType);
-   StructType * DefineStruct(std::string structName, size_t size);
-   UnionType * DefineUnion(std::string unionName);
-   FieldType * DefineField(std::string structName, std::string fieldName, Type * fieldType, size_t offset)
-      { // deprecated
-      return DefineField(LookupStruct(structName), LiteralValue::create(this, fieldName), fieldType, offset);
-      }
-   FieldType * DefineField(StructType *structType, std::string fieldName, Type * fieldType, size_t offset)
-      {
-      return DefineField(structType, LiteralValue::create(this, fieldName), fieldType, offset);
-      }
-   FieldType * DefineField(StructType *structType, LiteralValue *fieldName, Type * fieldType, size_t offset);
-   void CloseStruct(std::string structName)
-      { // deprecated
-      CloseStruct(LookupStruct(structName));
-      }
-   void CloseStruct(Type *structType);
-   void CloseUnion(std::string unionName)
-      { // deprecated
-      CloseUnion(static_cast<UnionType *>(LookupStruct(unionName)));
-      }
-   void CloseUnion(Type *unionType);
-   FunctionType *DefineFunctionType(std::string name, Type *returnType, int32_t numParms, Type **parmTypes);
-
-   TypeIterator TypesBegin() const
-      {
-      return TypeIterator(_types);
-      }
-   TypeIterator TypesEnd() const   { return TypeIterator(); }
-
-   StructType *LookupStruct(std::string name);
-   Type *LookupType(uint64_t id);
-   void RemoveType(Type *type);
-
-   int64_t id() const       { return _id; }
-   std::string name() const { return _name; }
-   bool hasLinkedDictionary() const { return _linkedDictionary != NULL; }
-   TypeDictionary *linkedDictionary() { return _linkedDictionary; }
-
-   void registerReturnType(Type *type);
-
-   // get the Type produced by Action a on Value v
-   Type * producedType(Action a, Value *v);
-
-   // get the Type produced by Action a on Values left and right
-   Type * producedType(Action a, Value *left, Value *right);
-
-   // get the Type produced by Action a on Values one, two, and three
-   Type * producedType(Action a, Value *one, Value *two, Value *three);
-
-   // get the Type produced by Action a with struct/union and field and struct base pointer value and (optionally) value
-   Type * producedType(Action a, FieldType *fieldType, Value *structBase, Value *value=NULL);
-
-   // get the Type produced for a set of argument types passed to a FunctionType
-   Type * producedType(FunctionType *type, int32_t numArgs, va_list args);
-   Type * producedType(FunctionType *type, int32_t numArgs, Value **args);
-
-   // new public API
-   // BEGIN {
-   //
-
-   //
-   // } END
-   // new public API
+    void write(TextWriter &w);
 
 protected:
-   TypeDictionary(std::string name, TypeDictionary *linkedTypes);
+    void registerType(Type *type);
+    void internalRegisterType(Type *type);
 
-   void createPrimitiveTypes();
-   void addType(Type *type)
-      {
-      _types.push_back(type);
-      }
-   void initializeGraph();
-   void registerPointerType(PointerType * pointerType);
-   void forgetType(Type *type);
-   void registerDynamicOperation(OperationBuilder * dynamicOperationBuilder);
-   void registerDynamicType(DynamicType * dynamicType);
-
-   int64_t                              _id;
-   std::string                          _name;
-   std::vector<Type *>                  _types;
-   int64_t                              _maxTypeID;
-   std::map<Type *,PointerType*>        _pointerTypeFromBaseType;
-   std::map<std::string,StructType *>   _structTypeFromName;
-   std::map<std::string,FunctionType *> _functionTypeFromName;
-   TypeGraph                          * _graph;
-   TypeDictionary                     * _linkedDictionary;
-
-   static int64_t globalIndex;
-   static TypeDictionary *globalDict;
-   };
+    TypeDictionaryID _id;
+    Compiler * _compiler;
+    std::string _name;
+    std::vector<Type *> _types;
+    std::vector<Type *> _ownedTypes;
+    TypeID _nextTypeID;
+    TypeDictionary * _linkedDictionary;
+    };
 
 } // namespace JitBuilder
-
 } // namespace OMR
 
 #endif // defined(TYPEDICTIONARY_INCL)

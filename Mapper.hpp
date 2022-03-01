@@ -133,8 +133,8 @@ class Mapper
 class Builder;
 typedef Mapper<Builder> BuilderMapper;
 
-class LiteralValue;
-typedef Mapper<LiteralValue> LiteralMapper;
+class Literal;
+typedef Mapper<Literal> LiteralMapper;
 
 class Symbol;
 typedef Mapper<Symbol> SymbolMapper;

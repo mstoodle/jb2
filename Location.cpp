@@ -19,35 +19,27 @@
  * SPDX-License-Identifier: EPL-2.0 OR Apache-2.0 OR GPL-2.0 WITH Classpath-exception-2.0 OR LicenseRef-GPL-2.0 WITH Assembly-exception
  *******************************************************************************/
 
-#include "FunctionBuilder.hpp"
+#include "Compilation.hpp"
 #include "Location.hpp"
 
-int64_t OMR::JitBuilder::Location::globalIndex = 0;
+namespace OMR {
+namespace JitBuilder {
 
-OMR::JitBuilder::Location::Location(FunctionBuilder * fb)
-   : Object(fb)
-   , _id(globalIndex++)
-   , _fb(fb)
-   , _bcIndex(fb->incrementLocations())
-   , _fileName(fb->fileName())
-   , _lineNumber(fb->lineNumber())
-   { }
-
-OMR::JitBuilder::Location::Location(FunctionBuilder * fb, std::string lineNumber)
-   : Object(fb)
-   , _id(globalIndex++)
-   , _fb(fb)
-   , _bcIndex(fb->incrementLocations())
-   , _fileName(fb->fileName())
+OMR::JitBuilder::Location::Location(Compilation *comp, std::string fileName, std::string lineNumber)
+   : _id(comp->getLocationID())
+   , _comp(comp)
+   , _fileName(fileName)
    , _lineNumber(lineNumber)
-   { }
+   , _bcIndex(_id-1) { // LocationIDs start at 1
+   }
 
-OMR::JitBuilder::Location::Location(FunctionBuilder * fb, std::string lineNumber, int32_t bcIndex)
-   : Object(fb)
-   , _id(globalIndex++)
-   , _fb(fb)
-   , _bcIndex(bcIndex)
-   , _fileName(fb->fileName())
+OMR::JitBuilder::Location::Location(Compilation *comp, std::string fileName, std::string lineNumber, int32_t bcIndex)
+   : _id(comp->getLocationID())
+   , _comp(comp)
+   , _fileName(fileName)
    , _lineNumber(lineNumber)
-   { }
+   , _bcIndex(bcIndex) {
+   }
 
+} // namespace JitBuilder
+} // namespace OMR

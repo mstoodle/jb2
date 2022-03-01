@@ -22,16 +22,14 @@
 #ifndef OPERATION_INCL
 #define OPERATION_INCL
 
-#include <stdarg.h>
+#include <cassert>
 #include <stdint.h>
 #include <string>
 #include <vector>
-#include "Action.hpp"
-#include "Case.hpp"
+#include "CreateLoc.hpp"
+#include "IDs.hpp"
 #include "Iterator.hpp"
-#include "LiteralValue.hpp"
-#include "OperationBase.hpp"
-#include "TypeReplacer.hpp"
+#include "Mapper.hpp"
 
 namespace OMR
 {
@@ -40,32 +38,122 @@ namespace JitBuilder
 {
 
 class Builder;
-class Case;
+class Extension;
+class JB1MethodBuilder;
+class Literal;
 class Location;
+class Operation;
 class OperationCloner;
+class OperationReplacer;
+class TextWriter;
 class Type;
 class TypeDictionary;
-class TypeGraph;
 class Value;
 
 // Operation defines an interface to all kinds of operations, it cannot itself be instantiated
 // Operation classes corresponding to specific Actions (which can be instantiated) follow
 
-class Operation : public OperationBase
-   {
-   public:
-   virtual size_t size() const { return sizeof(Operation); }
+class Operation {
+    friend class Builder;
+    friend class BuilderBase;
+    friend class Extension;
+    friend class Transformer;
 
-   // define any new public API here
+    public:
+    OperationID id() const                              { return _id; }
+    ActionID action() const                             { return _action; }
+    Builder * parent() const                            { return _parent; }
+    Location * location() const                         { return _location; }
+
+    virtual bool isDynamic() const                      { return false; }
+
+    virtual LiteralIterator LiteralsBegin()             { return LiteralIterator(); }
+            LiteralIterator &LiteralsEnd()              { return literalEndIterator; }
+    virtual int32_t numLiterals() const                 { return 0; }
+    virtual Literal * literal(int i=0) const            { assert(0); return 0; }
+
+    virtual SymbolIterator SymbolsBegin()               { return SymbolIterator(); }
+            SymbolIterator &SymbolsEnd()                { return symbolEndIterator; }
+    virtual int32_t numSymbols() const                  { return 0; }
+    virtual Symbol *symbol(int i=0) const               { assert(0); return 0; }
+
+    virtual ValueIterator OperandsBegin()               { return ValueIterator(); }
+            ValueIterator &OperandsEnd()                { return valueEndIterator; }
+    virtual int32_t numOperands() const                 { return 0; }
+    virtual Value * operand(int i=0) const              { return NULL; }
+
+    virtual ValueIterator ResultsBegin()                { return ValueIterator(); }
+            ValueIterator &ResultsEnd()                 { return valueEndIterator; }
+    virtual int32_t numResults() const                  { return 0; }
+    virtual Value * result(int i=0) const               { return NULL; }
+ 
+    virtual SymbolIterator ReadSymbolsBegin()           { return SymbolIterator(); }
+            SymbolIterator ReadSymbolsEnd()             { return symbolEndIterator; }
+    virtual int32_t numReadSymbols() const              { return 0; }
+    virtual Symbol * readSymbol(int i=0) const          { return NULL; }
+
+    virtual SymbolIterator WrittenSymbolsBegin()        { return SymbolIterator(); }
+            SymbolIterator WrittenSymbolsEnd()          { return symbolEndIterator; }
+    virtual int32_t numWrittenSymbols() const           { return 0; }
+    virtual Symbol * writtenSymbol(int i=0) const       { return NULL; }
+
+    virtual BuilderIterator BuildersBegin()             { return BuilderIterator(); }
+            BuilderIterator &BuildersEnd()              { return builderEndIterator; }
+    virtual int32_t numBuilders() const                 { return 0; }
+    virtual Builder *builder(int i=0) const             { return NULL; }
+
+#if 0
+    virtual CaseIterator CasesBegin()                   { return CaseIterator(); }
+    virtual CaseIterator CasesEnd()                     { return caseEndIterator; }
+    virtual int32_t numCases() const                    { return 0; }
+    virtual Case * getCase(int i=0) const               { return NULL; }
+#endif
+
+    virtual TypeIterator TypesBegin()                   { return TypeIterator(); }
+            TypeIterator &TypesEnd()                    { return typeEndIterator; }
+    virtual int32_t numTypes() const                    { return 0; }
+    virtual Type * type(int i=0) const                  { return NULL; }
+
+    // deprecated
+    //virtual Operation * clone(LOCATION, Builder *b, Value **results) const = 0;
+    //virtual Operation * clone(LOCATION, Builder *b, Value **results, Value **operands, Builder **builders) const = 0;
+    //virtual void cloneTo(LOCATION, Builder *b, ValueMapper **resultMappers, ValueMapper **operandMappers, TypeMapper **typeMappers, LiteralMapper **literalMappers, SymbolMapper **symbolMappers, BuilderMapper **builderMappers) const = 0;
+
+    // the new clone API
+    virtual Operation * clone(LOCATION, Builder *b, OperationCloner *cloner) const = 0;
+
+    virtual bool hasExpander() const                       { return false; }
+    virtual bool expand(OperationReplacer *replacer) const { return false; }
+
+    void writeFull(TextWriter & w) const;
+
+    virtual void write(TextWriter & w) const { }
+
+    virtual void jbgen(JB1MethodBuilder *j1mb) const { }
 
 protected:
-   Operation(Action a, Builder * parent);
+    Operation(LOCATION, ActionID a, Extension *ext, Builder * parent);
 
-   // define any new constructors here
+    Operation * setParent(Builder * newParent);
+    Operation * setLocation(Location *location);
 
-   // define any new protected API here
+    static void addToBuilder(Extension *ext, Builder *b, Operation *op);
 
-   };
+    OperationID    _id;
+    Extension    * _ext;
+    Builder      * _parent;
+    ActionID       _action;
+    Location     * _location;
+    CreateLocation _creationLocation;
+
+    static BuilderIterator builderEndIterator;
+    static CaseIterator caseEndIterator;
+    static LiteralIterator literalEndIterator;
+    static SymbolIterator symbolEndIterator;
+    static TypeIterator typeEndIterator;
+    static ValueIterator valueEndIterator;
+    };
+
 
 // Following are "structural" classes that are used to hold results(R), literals(L),
 // operand values (V), struct/field names (F), and builders (B) for different kinds
@@ -86,8 +174,8 @@ class OperationR1 : public Operation
       }
 
    protected:
-   OperationR1(Action a, Builder * parent, Value * result)
-      : Operation(a, parent)
+   OperationR1(LOCATION, ActionID a, Extension *ext, Builder * parent, Value * result)
+      : Operation(PASSLOC, a, ext, parent)
       , _result(result)
       { }
 
@@ -98,7 +186,7 @@ class OperationR1L1 : public OperationR1
    {
    public:
    virtual int32_t numLiterals() const { return 1; }
-   virtual LiteralValue *literal(int i=0) const
+   virtual Literal *literal(int i=0) const
       {
       if (i == 0) return _v;
       return NULL;
@@ -106,12 +194,12 @@ class OperationR1L1 : public OperationR1
    virtual LiteralIterator LiteralsBegin()       { return LiteralIterator(_v); }
 
    protected:
-   OperationR1L1(Action a, Builder * parent, Value * result, LiteralValue *value)
-      : OperationR1(a, parent, result)
+   OperationR1L1(LOCATION, ActionID a, Extension *ext, Builder * parent, Value * result, Literal *value)
+      : OperationR1(PASSLOC, a, ext, parent, result)
       , _v(value)
       { }
 
-   LiteralValue *_v;
+   Literal *_v;
    };
 
 class OperationR1L1T1 : public OperationR1L1
@@ -127,8 +215,8 @@ class OperationR1L1T1 : public OperationR1L1
    virtual TypeIterator TypesBegin() { return TypeIterator(_elementType); }
 
    protected:
-   OperationR1L1T1(Action a, Builder * parent, Value * result, LiteralValue *numElements, Type *elementType)
-      : OperationR1L1(a, parent, result, numElements)
+   OperationR1L1T1(LOCATION, ActionID a, Extension *ext, Builder * parent, Value * result, Literal *numElements, Type *elementType)
+      : OperationR1L1(PASSLOC, a, ext, parent, result, numElements)
       , _elementType(elementType)
       { }
 
@@ -147,8 +235,8 @@ class OperationR1S1 : public OperationR1
    virtual SymbolIterator SymbolsBegin() { return SymbolIterator(_symbol); }
 
    protected:
-   OperationR1S1(Action a, Builder * parent, Value * result, Symbol *symbol)
-      : OperationR1(a, parent, result)
+   OperationR1S1(LOCATION, ActionID a, Extension *ext, Builder * parent, Value * result, Symbol *symbol)
+      : OperationR1(PASSLOC, a, ext, parent, result)
       , _symbol(symbol)
       { }
 
@@ -169,8 +257,8 @@ class OperationR0V1 : public Operation
    virtual ValueIterator OperandsBegin()       { return ValueIterator(_value); }
 
    protected:
-   OperationR0V1(Action a, Builder * parent, Value * value)
-      : Operation(a, parent)
+   OperationR0V1(LOCATION, ActionID a, Extension *ext, Builder * parent, Value * value)
+      : Operation(PASSLOC, a, ext, parent)
       , _value(value)
       { }
 
@@ -191,8 +279,8 @@ class OperationR1V1 : public OperationR1
    virtual ValueIterator OperandsBegin()       { return ValueIterator(_value); }
 
    protected:
-   OperationR1V1(Action a, Builder * parent, Value * result, Value * value)
-      : OperationR1(a, parent, result)
+   OperationR1V1(LOCATION, ActionID a, Extension *ext, Builder * parent, Value * result, Value * value)
+      : OperationR1(PASSLOC, a, ext, parent, result)
       , _value(value)
       { }
 
@@ -213,8 +301,8 @@ class OperationR1V1T1 : public OperationR1V1
    virtual TypeIterator TypesBegin()       { return TypeIterator(_type); }
 
    protected:
-   OperationR1V1T1(Action a, Builder * parent, Value * result, Type * t, Value * v)
-      : OperationR1V1(a, parent, result, v)
+   OperationR1V1T1(LOCATION, ActionID a, Extension *ext, Builder * parent, Value * result, Type * t, Value * v)
+      : OperationR1V1(PASSLOC, a, ext, parent, result, v)
       , _type(t)
       { }
 
@@ -238,8 +326,8 @@ class OperationR0V2 : public Operation
    virtual ValueIterator OperandsBegin()       { return ValueIterator(_left, _right); }
 
    protected:
-   OperationR0V2(Action a, Builder * parent, Value * left, Value * right)
-      : Operation(a, parent)
+   OperationR0V2(LOCATION, ActionID a, Extension *ext, Builder * parent, Value * left, Value * right)
+      : Operation(PASSLOC, a, ext, parent)
       , _left(left)
       , _right(right)
       { }
@@ -265,8 +353,8 @@ class OperationR1V2 : public OperationR1
    virtual ValueIterator OperandsBegin()       { return ValueIterator(_left, _right); }
 
    protected:
-   OperationR1V2(Action a, Builder * parent, Value * result, Value * left, Value * right)
-      : OperationR1(a, parent, result)
+   OperationR1V2(LOCATION, ActionID a, Extension *ext, Builder * parent, Value * result, Value * left, Value * right)
+      : OperationR1(PASSLOC, a, ext, parent, result)
       , _left(left)
       , _right(right)
       { }
@@ -300,8 +388,8 @@ class OperationR1V2T1 : public OperationR1V2
 
 
    protected:
-   OperationR1V2T1(Action a, Builder * parent, Value * result, Type * t, Value * addr, Value * v)
-      : OperationR1V2(a, parent, result, addr, v)
+   OperationR1V2T1(LOCATION, ActionID a, Extension *ext, Builder * parent, Value * result, Type * t, Value * addr, Value * v)
+      : OperationR1V2(PASSLOC, a, ext, parent, result, addr, v)
       , _type(t)
       { }
 
@@ -321,8 +409,8 @@ class OperationR1T1 : public OperationR1
    virtual TypeIterator TypesBegin()       { return TypeIterator(_type); }
 
    protected:
-   OperationR1T1(Action a, Builder * parent, Value * result, Type * t)
-      : OperationR1(a, parent, result)
+   OperationR1T1(LOCATION, ActionID a, Extension *ext, Builder * parent, Value * result, Type * t)
+      : OperationR1(PASSLOC, a, ext, parent, result)
       , _type(t)
       { }
 
@@ -351,8 +439,8 @@ class OperationR0S1V1 : public Operation
    virtual ValueIterator OperandsBegin() { return ValueIterator(_value); }
 
    protected:
-   OperationR0S1V1(Action a, Builder * parent, Symbol *symbol, Value * value)
-      : Operation(a, parent)
+   OperationR0S1V1(LOCATION, ActionID a, Extension *ext, Builder * parent, Symbol *symbol, Value * value)
+      : Operation(PASSLOC, a, ext, parent)
       , _symbol(symbol)
       , _value(value)
       { }
@@ -375,8 +463,8 @@ class OperationR0T1 : public Operation
    virtual TypeIterator TypesBegin()       { return TypeIterator(_type); }
 
    protected:
-   OperationR0T1(Action a, Builder *parent, Type *type)
-      : Operation(a, parent)
+   OperationR0T1(LOCATION, ActionID a, Extension *ext, Builder *parent, Type *type)
+      : Operation(PASSLOC, a, ext, parent)
       , _type(type)
       { }
 
@@ -390,20 +478,20 @@ class OperationR0V2T1 : public OperationR0T1
    virtual int32_t numOperands() const   { return 2; }
    virtual Value * operand(int i=0) const
       {
-      if (i == 0) return _structBase;
+      if (i == 0) return _base;
       if (i == 1) return _value;
       return NULL;
       }
-   virtual ValueIterator OperandsBegin()       { return ValueIterator(_structBase, _value); }
+   virtual ValueIterator OperandsBegin()       { return ValueIterator(_base, _value); }
 
    protected:
-   OperationR0V2T1(Action a, Builder *parent, FieldType *fieldType, Value * structBase, Value * value)
-      : OperationR0T1(a, parent, fieldType)
-      , _structBase(structBase)
+   OperationR0V2T1(LOCATION, ActionID a, Extension *ext, Builder *parent, Type *type, Value * base, Value * value)
+      : OperationR0T1(PASSLOC, a, ext, parent, type)
+      , _base(base)
       , _value(value)
       { }
 
-   Value *_structBase;
+   Value *_base;
    Value *_value;
    };
 
@@ -421,8 +509,8 @@ class OperationB1 : public Operation
    virtual BuilderIterator BuildersBegin()       { return BuilderIterator(_builder); }
 
    protected:
-   OperationB1(Action a, Builder * parent, Builder * b)
-      : Operation(a, parent)
+   OperationB1(LOCATION, ActionID a, Extension *ext, Builder * parent, Builder * b)
+      : Operation(PASSLOC, a, ext, parent)
       , _builder(b)
       { }
 
@@ -442,8 +530,8 @@ class OperationR0V2B1 : public OperationR0V2
    virtual BuilderIterator BuildersBegin()       { return BuilderIterator(_builder); }
 
    protected:
-   OperationR0V2B1(Action a, Builder * parent, Builder * b, Value * left, Value * right)
-      : OperationR0V2(a, parent, left, right)
+   OperationR0V2B1(LOCATION, ActionID a, Extension *ext, Builder * parent, Builder * b, Value * left, Value * right)
+      : OperationR0V2(PASSLOC, a, ext, parent, left, right)
       , _builder(b)
       { }
 
@@ -463,195 +551,20 @@ class OperationR0V1B1 : public OperationR0V1
    virtual BuilderIterator BuildersBegin()       { return BuilderIterator(_builder); }
 
    protected:
-   OperationR0V1B1(Action a, Builder * parent, Builder * b, Value * value)
-      : OperationR0V1(a, parent, value)
+   OperationR0V1B1(LOCATION, ActionID a, Extension *ext, Builder * parent, Builder * b, Value * value)
+      : OperationR0V1(PASSLOC, a, ext, parent, value)
       , _builder(b)
       { }
 
    Builder * _builder;
    };
 
-
+#if 0
 
 //
 // classes for specific operations that can be directly instantiated
 // These classes are manipulated primarily by Builder
 //
-
-class ConstInt8 : public OperationR1L1
-   {
-   public:
-   virtual size_t size() const { return sizeof(ConstInt8); }
-   static ConstInt8 * create(Builder * parent, Value * result, int8_t value)
-      { return new ConstInt8(parent, result, value); }
-
-   virtual Operation * clone(Builder *b, Value **results) const
-      {
-      assert(results);
-      return create(b, results[0], literal()->getInt8());
-      }
-   virtual Operation * clone(Builder *b, Value **results, Value **operands, Builder **builders) const
-      {
-      assert(results && NULL == operands && NULL == builders);
-      return create(b, results[0], literal()->getInt8());
-      }
-   virtual void cloneTo(Builder *b, ValueMapper **resultMappers, ValueMapper **operandMappers, TypeMapper **typeMappers, LiteralMapper **literalMapppers, SymbolMapper **symbolMappers, BuilderMapper **builderMappers) const;
-
-   virtual Operation * clone(Builder *b, OperationCloner *cloner) const;
-
-   protected:
-   ConstInt8(Builder * parent, Value * result, int8_t value);
-   };
-
-class ConstInt16 : public OperationR1L1
-   {
-   public:
-   virtual size_t size() const { return sizeof(ConstInt16); }
-   static ConstInt16 * create(Builder * parent, Value * result, int16_t value)
-      { return new ConstInt16(parent, result, value); }
-
-   virtual Operation * clone(Builder *b, Value **results) const
-      {
-      assert(results);
-      return create(b, results[0], literal()->getInt16());
-      }
-   virtual Operation * clone(Builder *b, Value **results, Value **operands, Builder **builders) const
-      {
-      assert(results && NULL == operands && NULL == builders);
-      return create(b, results[0], literal()->getInt16());
-      }
-   virtual void cloneTo(Builder *b, ValueMapper **resultMappers, ValueMapper **operandMappers, TypeMapper **typeMappers, LiteralMapper **literalMapppers, SymbolMapper **symbolMappers, BuilderMapper **builderMappers) const;
-
-   virtual Operation * clone(Builder *b, OperationCloner *cloner) const;
-
-   protected:
-   ConstInt16(Builder * parent, Value * result, int16_t value);
-   };
-
-class ConstInt32 : public OperationR1L1
-   {
-   public:
-   virtual size_t size() const { return sizeof(ConstInt32); }
-   static ConstInt32 * create(Builder * parent, Value * result, int32_t value)
-      { return new ConstInt32(parent, result, value); }
-
-   virtual Operation * clone(Builder *b, Value **results) const
-      {
-      assert(results);
-      return create(b, results[0], literal()->getInt32());
-      }
-   virtual Operation * clone(Builder *b, Value **results, Value **operands, Builder **builders) const
-      {
-      assert(results && NULL == operands && NULL == builders);
-      return create(b, results[0], literal()->getInt32());
-      }
-   virtual void cloneTo(Builder *b, ValueMapper **resultMappers, ValueMapper **operandMappers, TypeMapper **typeMappers, LiteralMapper **literalMapppers, SymbolMapper **symbolMappers, BuilderMapper **builderMappers) const;
-
-   virtual Operation * clone(Builder *b, OperationCloner *cloner) const;
-
-   protected:
-   ConstInt32(Builder * parent, Value * result, int32_t value);
-   };
-
-class ConstInt64 : public OperationR1L1
-   {
-   public:
-   virtual size_t size() const { return sizeof(ConstInt64); }
-   static ConstInt64 * create(Builder * parent, Value * result, int64_t value)
-      { return new ConstInt64(parent, result, value); }
-
-   virtual Operation * clone(Builder *b, Value **results) const
-      {
-      assert(results);
-      return create(b, results[0], literal()->getInt64());
-      }
-   virtual Operation * clone(Builder *b, Value **results, Value **operands, Builder **builders) const
-      {
-      assert(results && NULL == operands && NULL == builders);
-      return create(b, results[0], literal()->getInt64());
-      }
-   virtual void cloneTo(Builder *b, ValueMapper **resultMappers, ValueMapper **operandMappers, TypeMapper **typeMappers, LiteralMapper **literalMapppers, SymbolMapper **symbolMappers, BuilderMapper **builderMappers) const;
-
-   virtual Operation * clone(Builder *b, OperationCloner *cloner) const;
-
-   protected:
-   ConstInt64(Builder * parent, Value * result, int64_t value);
-   };
-
-class ConstFloat : public OperationR1L1
-   {
-   public:
-   virtual size_t size() const { return sizeof(ConstFloat); }
-   static ConstFloat * create(Builder * parent, Value * result, float value)
-      { return new ConstFloat(parent, result, value); }
-
-   virtual Operation * clone(Builder *b, Value **results) const
-      {
-      assert(results);
-      return create(b, results[0], literal()->getFloat());
-      }
-   virtual Operation * clone(Builder *b, Value **results, Value **operands, Builder **builders) const
-      {
-      assert(results && NULL == operands && NULL == builders);
-      return create(b, results[0], literal()->getFloat());
-      }
-   virtual void cloneTo(Builder *b, ValueMapper **resultMappers, ValueMapper **operandMappers, TypeMapper **typeMappers, LiteralMapper **literalMapppers, SymbolMapper **symbolMappers, BuilderMapper **builderMappers) const;
-
-   virtual Operation * clone(Builder *b, OperationCloner *cloner) const;
-
-   protected:
-   ConstFloat(Builder * parent, Value * result, float value);
-   };
-
-class ConstDouble : public OperationR1L1
-   {
-   public:
-   virtual size_t size() const { return sizeof(ConstDouble); }
-   static ConstDouble * create(Builder * parent, Value * result, double value)
-      { return new ConstDouble(parent, result, value); }
-
-   virtual Operation * clone(Builder *b, Value **results) const
-      {
-      assert(results);
-      return create(b, results[0], literal()->getDouble());
-      }
-   virtual Operation * clone(Builder *b, Value **results, Value **operands, Builder **builders) const
-      {
-      assert(results && NULL == operands && NULL == builders);
-      return create(b, results[0], literal()->getDouble());
-      }
-   virtual void cloneTo(Builder *b, ValueMapper **resultMappers, ValueMapper **operandMappers, TypeMapper **typeMappers, LiteralMapper **literalMapppers, SymbolMapper **symbolMappers, BuilderMapper **builderMappers) const;
-
-   virtual Operation * clone(Builder *b, OperationCloner *cloner) const;
-
-   protected:
-   ConstDouble(Builder * parent, Value * result, double value);
-   };
-
-class ConstAddress : public OperationR1L1
-   {
-   public:
-   virtual size_t size() const { return sizeof(ConstAddress); }
-   static ConstAddress * create(Builder * parent, Value * result, void * value)
-      { return new ConstAddress(parent, result, value); }
-
-   virtual Operation * clone(Builder *b, Value **results) const
-      {
-      assert(results);
-      return create(b, results[0], literal()->getAddress());
-      }
-   virtual Operation * clone(Builder *b, Value **results, Value **operands, Builder **builders) const
-      {
-      assert(results && NULL == operands && NULL == builders);
-      return create(b, results[0], literal()->getAddress());
-      }
-   virtual void cloneTo(Builder *b, ValueMapper **resultMappers, ValueMapper **operandMappers, TypeMapper **typeMappers, LiteralMapper **literalMapppers, SymbolMapper **symbolMappers, BuilderMapper **builderMappers) const;
-
-   virtual Operation * clone(Builder *b, OperationCloner *cloner) const;
-
-   protected:
-   ConstAddress(Builder * parent, Value * result, void * value);
-   };
 
 class CoercePointer : public OperationR1V1T1
    {
@@ -1183,7 +1096,7 @@ class ForLoop : public Operation
    virtual Value * getBump() const                     { return _bump; }
 
    virtual int32_t numLiterals() const                 { return 1; }
-   virtual LiteralValue *literal(int i=0) const
+   virtual Literal *literal(int i=0) const
       {
       if (i == 0) return _countsUp;
       return NULL;
@@ -1253,7 +1166,7 @@ class ForLoop : public Operation
            Builder * loopBody,
            Value * initial, Value * end, Value * bump);
 
-   LiteralValue *_countsUp;
+   Literal *_countsUp;
    LocalSymbol *_loopSym;
 
    Builder * _loopBody;
@@ -1562,14 +1475,7 @@ class CreateLocalStruct : public OperationR1T1
    protected:
    CreateLocalStruct(Builder * parent, Value * result, Type * structType);
    };
-
-// Add any new operation classes here
-// BEGIN {
-//
-
-//
-// } END
-// Add any new operation classes here
+#endif
 
 } // namespace JitBuilder
 

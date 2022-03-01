@@ -19,84 +19,105 @@
  * SPDX-License-Identifier: EPL-2.0 OR Apache-2.0 OR GPL-2.0 WITH Classpath-exception-2.0 OR LicenseRef-GPL-2.0 WITH Assembly-exception
  *******************************************************************************/
 
-#include "Visitor.hpp"
 #include "Builder.hpp"
-#include "FunctionBuilder.hpp"
+#include "Compilation.hpp"
+#include "Operation.hpp"
 #include "TextWriter.hpp"
+#include "Visitor.hpp"
+
+
+namespace OMR {
+namespace JitBuilder {
+
+Visitor::Visitor(Compiler *compiler, std::string name, bool visitAppendedBuilders)
+    : Pass(compiler, name)
+    , _comp(NULL)
+    , _aborted(false)
+    , _visitAppendedBuilders(visitAppendedBuilders) {
+}
 
 void
-OMR::JitBuilder::Visitor::start()
-   {
-   visitBegin();
+Visitor::start(Compilation *comp) {
+    _comp = comp;
+    _aborted = false;
 
-   BuilderWorklist worklist;
-   std::vector<bool> visited(Builder::maxIndex());
+    visitBegin();
 
-   visitFunctionBuilderPreOps(_fb);
-   visitOperations(_fb, worklist);
-   visitFunctionBuilderPostOps(_fb);
+    {
+        BuilderWorklist worklist;
+        std::vector<bool> visited(_comp->maxBuilderID());
+        _comp->addInitialBuildersToWorklist(worklist);
 
-   while(!worklist.empty())
-      {
-      Builder *b = worklist.back();
-      visitBuilder(b, visited, worklist);
-      worklist.pop_back();
-      }
-   visitEnd();
-   }
+        visitPreCompilation(_comp);
 
-void
-OMR::JitBuilder::Visitor::start(Builder * b)
-   {
-   BuilderWorklist worklist;
-   std::vector<bool> visited(Builder::maxIndex());
-   visitBuilder(b, visited, worklist);
-   }
+        while(!worklist.empty()) {
+            if (_aborted)
+                break;
+            Builder *b = worklist.back();
+            visitBuilder(b, visited, worklist);
+            worklist.pop_back();
+        }
+    }
 
-void
-OMR::JitBuilder::Visitor::start(Operation * op)
-   {
-   visitOperation(op);
-   }
+    visitPostCompilation(_comp);
+
+    visitEnd();
+
+    _aborted = false;
+    _comp = NULL;
+}
 
 void
-OMR::JitBuilder::Visitor::visitBuilder(Builder *b, std::vector<bool> & visited, BuilderWorklist & worklist)
-   {
-   int64_t id = b->id();
-   if (visited[id])
-      return;
-
-   visited[id] = true;
-
-   visitBuilderPreOps(b);
-   visitOperations(b, worklist);
-   visitBuilderPostOps(b);
-   }
+Visitor::abort() {
+    _aborted = true;
+}
 
 void
-OMR::JitBuilder::Visitor::visitOperations(Builder *b, BuilderWorklist & worklist)
-   {
-   for (OperationIterator opIt = b->OperationsBegin(); opIt != b->OperationsEnd(); opIt++)
-      {
-      Operation * op = *opIt;
-      visitOperation(op);
-
-      for (BuilderIterator bIt = op->BuildersBegin(); bIt != op->BuildersEnd(); bIt++)
-         {
-         Builder * inner_b = *bIt;
-         if (inner_b)
-            worklist.push_front(inner_b);
-         }
-      }
-   }
+Visitor::start(Builder * b) {
+    BuilderWorklist worklist;
+    std::vector<bool> visited(_comp->maxBuilderID());
+    visitBuilder(b, visited, worklist);
+}
 
 void
-OMR::JitBuilder::Visitor::trace(std::string msg)
-   {
-   TextWriter *log = _fb->logger();
-   if (log)
-      {
-      log->indent() << msg << log->endl();
-      }
-   }
+Visitor::start(Operation * op) {
+    visitOperation(op);
+}
 
+void
+Visitor::visitBuilder(Builder *b, std::vector<bool> & visited, BuilderWorklist & worklist) {
+    int64_t id = b->id();
+    if (visited[id])
+        return;
+
+    visited[id] = true;
+
+    visitBuilderPreOps(b);
+    visitOperations(b, worklist);
+    visitBuilderPostOps(b);
+}
+
+void
+Visitor::visitOperations(Builder *b, BuilderWorklist & worklist) {
+    for (OperationIterator opIt = b->OperationsBegin(); opIt != b->OperationsEnd(); opIt++) {
+        Operation * op = *opIt;
+        visitOperation(op);
+
+        for (BuilderIterator bIt = op->BuildersBegin(); bIt != op->BuildersEnd(); bIt++) {
+            Builder * inner_b = *bIt;
+            if (inner_b)
+                worklist.push_front(inner_b);
+        }
+    }
+}
+
+void
+Visitor::trace(std::string msg) {
+    TextWriter *log = _comp->logger();
+    if (log) {
+        log->indent() << msg << log->endl();
+    }
+}
+
+}
+}

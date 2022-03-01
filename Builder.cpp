@@ -22,67 +22,68 @@
 #include <string>
 #include <vector>
 #include "Builder.hpp"
-#include "FunctionBuilder.hpp"
-#include "TypeDictionary.hpp"
+#include "Compilation.hpp"
+#include "Context.hpp"
+#include "Location.hpp"
+#include "Operation.hpp"
 #include "Value.hpp"
 
 using namespace OMR::JitBuilder;
 
-Builder::Builder(Builder * parent, FunctionBuilder * fb, TypeDictionary *types)
-   : BuilderBase(parent, fb, types)
+Builder::Builder(Compilation * comp, Context *context, std::string name)
+    : _id(comp->getBuilderID())
+    , _comp(comp)
+    , _name(name)
+    , _parent(NULL)
+    , _context(context)
+    , _successor(NULL)
+    , _currentLocation(new Location(comp, "", "", 0))
+    , _boundToOperation(NULL)
+    , _isTarget(false)
+    , _isBound(false)
+    , _controlReachesEnd(true)
+    , _boundness(May) {
+}
 
-   // New initialization (must be duplicated for all constructors)
-   // BEGIN {
-   //
+Builder::Builder(Builder *parent, Context *context, std::string name)
+    : _id(parent->_comp->getBuilderID())
+    , _comp(parent->_comp)
+    , _name(name)
+    , _parent(parent)
+    , _context(context)
+    , _successor(NULL)
+    , _currentLocation(parent->location())
+    , _boundToOperation(NULL)
+    , _isTarget(false)
+    , _isBound(false)
+    , _controlReachesEnd(true)
+    , _boundness(May) {
+    parent->addChild(this);
+}
 
-   //
-   // } END
-   // New initialization
-
-   {
-   // New constructor (must be duplicated for all constructors)
-   // BEGIN {
-   //
-
-   //
-   // } END
-   // New constructor code
-   }
-
-Builder::Builder(Builder * parent, TypeDictionary *types)
-   : BuilderBase(parent, types)
-
-   // New initialization (must be duplicated for all constructors)
-   // BEGIN {
-   //
-
-   //
-   // } END
-   // New initialization
-
-   {
-   // New constructor (must be duplicated for all constructors)
-   // BEGIN {
-   //
-
-   //
-   // } END
-   // New constructor code
-   }
+Builder::~Builder() {
+    for (auto it = OperationsBegin(); it != OperationsEnd(); it++) {
+        Operation *op = *it;
+        delete op;
+    }
+}
+Builder *
+Builder::create(Builder *parent, Context *context, std::string name) {
+    return new Builder(parent, context, name);
+}
 
 Builder *
-Builder::OrphanBuilder()
-   {
-   Builder * orphan = new Builder(_fb, _fb->dict());
-   _fb->registerObject(orphan);
-   orphan->setLocation(location());
-   return orphan;
-   }
+Builder::create(Compilation *comp, Context *context, std::string name) {
+    return new Builder(comp, context, name);
+}
 
-// Add new Builder class code below
-// BEGIN {
-//
+void
+Builder::addChild(Builder *child) {
+    
+}
 
-//
-// } END
-// Add new Builder class code below
+Builder *
+Builder::add(Operation *op) {
+    _operations.push_back(op);
+    return this;
+}

@@ -20,6 +20,16 @@
  *******************************************************************************/
 
 #include "Symbol.hpp"
+#include "TextWriter.hpp"
 
 
-int64_t OMR::JitBuilder::Symbol::globalIndex = 0;
+namespace OMR {
+namespace JitBuilder {
+
+void
+Symbol::write(TextWriter &w) const {
+    w << "[ " << this << " \"" << this->name() << "\" ]" << w.endl();
+}
+
+} // namespace JitBuilder
+} // namespace OMR

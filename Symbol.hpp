@@ -24,140 +24,44 @@
 
 #include <string>
 #include <vector>
-#include "Type.hpp"
 
-namespace OMR
-{
+namespace OMR {
+namespace JitBuilder {
 
-namespace JitBuilder
-{
+class TextWriter;
+class Type;
 
-class Symbol
-   {
-   public:
-   static Symbol *create(std::string name, Type * type) { return new Symbol(name, type); }
+class Symbol {
+public:
+    static Symbol *create(std::string name, const Type * type) { return new Symbol(name, type); }
 
-   std::string name() const { return _name; }
-   Type * type() const      { return _type; }
-   uint64_t id()   const    { return _id; }
+    std::string name() const { return _name; }
+    const Type * type() const { return _type; }
+    uint64_t id() const { return _id; }
 
-   virtual bool isLocal() const     { return false; }
-   virtual bool isParameter() const { return false; }
-   virtual bool isField() const     { return false; }
-   virtual bool isFunction() const  { return false; }
+    virtual bool isLocal() const     { return false; }
+    virtual bool isParameter() const { return false; }
+    virtual bool isField() const     { return false; }
+    virtual bool isFunction() const  { return false; }
 
-   static uint64_t maxID() { return globalIndex; }
+    virtual void write(TextWriter & w) const;
 
-   protected:
-   Symbol(std::string name, Type * type)
-      : _name(name)
-      , _type(type)
-      , _id(globalIndex++)
-      { }
-   std::string _name;
-   Type      * _type;
-   uint64_t    _id;
+    //static uint64_t maxID() { return globalIndex; }
 
-   static int64_t globalIndex;
-   };
+protected:
+    Symbol(std::string name, const Type * type)
+        : _name(name)
+        , _type(type) {
+//      , _id(globalIndex++)
+    }
+    std::string _name;
+    const Type * _type;
+    uint64_t _id;
 
-class LocalSymbol : public Symbol
-   {
-   public:
-   static LocalSymbol *create(std::string name, Type * type) { return new LocalSymbol(name, type); }
-
-   virtual bool isLocal() const { return true; }
-
-   protected:
-   LocalSymbol(std::string name, Type * type)
-      : Symbol(name, type)
-      { }
-   };
-
-class ParameterSymbol : public LocalSymbol
-   {
-   public:
-   static ParameterSymbol *create(std::string name, Type * type, int index) { return new ParameterSymbol(name, type, index); }
-
-   int index() const { return _index; }
-
-   virtual bool isParameter() const { return true; }
-
-   protected:
-   ParameterSymbol(std::string name, Type * type, int index)
-      : LocalSymbol(name, type)
-      , _index(index)
-      { }
-
-   int _index;
-   };
-
-class FunctionSymbol : public Symbol
-   {
-   public:
-   static FunctionSymbol *create(FunctionType *type, std::string name, std::string fileName, std::string lineNumber, void *entryPoint)
-      {
-      return new FunctionSymbol(type, name, fileName, lineNumber, entryPoint);
-      }
-
-   FunctionType *functionType() const { return static_cast<FunctionType *>(_type); }
-   std::string fileName() const       { return _fileName; }
-   std::string lineNumber() const     { return _lineNumber; }
-   void *entryPoint() const           { return _entryPoint; }
-
-   virtual bool isFunction() const { return true; }
-
-   protected:
-   FunctionSymbol(FunctionType *type, std::string name, std::string fileName, std::string lineNumber, void *entryPoint)
-      : Symbol(name, type)
-      , _fileName(fileName)
-      , _lineNumber(lineNumber)
-      , _entryPoint(entryPoint)
-      { }
-
-   std::string _fileName;
-   std::string _lineNumber;
-   void *_entryPoint;
-   };
-
-class FieldSymbol : public Symbol
-   {
-   public:
-   static FieldSymbol *create(std::string name, StructType *structType, FieldType *fieldType)
-      {
-      return new FieldSymbol(name, structType, fieldType);
-      }
-
-   StructType *structType() const { return _structType; }
-   FieldType *fieldType() const   { return _fieldType; }
-
-   virtual bool isLocal() const   { return false; }
-   virtual bool isField() const   { return false; }
-
-   protected:
-   FieldSymbol(std::string name, StructType *structType, FieldType *fieldType)
-      : Symbol(name, fieldType->type())
-      , _structType(structType)
-      , _fieldType(fieldType)
-      { }
-   StructType *_structType;
-   FieldType *_fieldType;
-   };
-   
-
-typedef std::vector<Symbol *>                    SymbolVector;
-
-typedef std::vector<LocalSymbol *>               LocalSymbolVector;
-typedef std::vector<LocalSymbol *>::iterator     LocalSymbolIterator;
-
-typedef std::vector<ParameterSymbol *>           ParameterSymbolVector;
-typedef std::vector<ParameterSymbol *>::iterator ParameterSymbolIterator;
-
-typedef std::vector<FunctionSymbol *>            FunctionSymbolVector;
-typedef std::vector<FunctionSymbol *>::iterator  FunctionSymbolIterator;
+    //static int64_t globalIndex;
+};
 
 } // namespace JitBuilder
-
 } // namespace OMR
 
 #endif // defined(SYMBOL_INCL)

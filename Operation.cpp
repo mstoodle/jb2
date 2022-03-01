@@ -22,8 +22,9 @@
 #include <stdint.h>
 #include "Builder.hpp"
 #include "Case.hpp"
-#include "FunctionBuilder.hpp"
-#include "LiteralValue.hpp"
+#include "Compilation.hpp"
+#include "Extension.hpp"
+#include "Literal.hpp"
 #include "Location.hpp"
 #include "Operation.hpp"
 #include "OperationCloner.hpp"
@@ -31,6 +32,7 @@
 #include "TypeDictionary.hpp"
 #include "TypeGraph.hpp"
 #include "Value.hpp"
+#include "TextWriter.hpp"
 
 using namespace OMR::JitBuilder;
 
@@ -39,130 +41,47 @@ namespace OMR
 namespace JitBuilder
 {
 
-Operation::Operation(Action a, Builder * parent)
-   : OperationBase(a, parent)
-   {
-   }
+BuilderIterator Operation::builderEndIterator;
+CaseIterator Operation::caseEndIterator;
+LiteralIterator Operation::literalEndIterator;
+SymbolIterator Operation::symbolEndIterator;
+TypeIterator Operation::typeEndIterator;
+ValueIterator Operation::valueEndIterator;
 
+Operation::Operation(LOCATION, ActionID a, Extension *ext, Builder * parent)
+   : _id(parent->comp()->getOperationID())
+   , _ext(ext)
+   , _parent(parent)
+   , _action(a)
+   , _location(parent->location())
+   , _creationLocation(PASSLOC) {
+   } 
 
-ConstInt8::ConstInt8(Builder * parent, Value * result, int8_t value)
-   : OperationR1L1(aConstInt8, parent, result, LiteralValue::create(parent->fb()->dict(), value))
+Operation *
+Operation::setParent(Builder * newParent)
    {
-   }
-
-void
-ConstInt8::cloneTo(Builder *b, ValueMapper **resultMappers, ValueMapper **operandMappers, TypeMapper **typeMappers, LiteralMapper **literalMappers, SymbolMapper **symbolMappers, BuilderMapper **builderMappers) const
-   {
-   resultMappers[0]->add( b->ConstInt8(literalMappers[0]->next()->getInt8()) );
+   _parent = newParent;
+   return static_cast<OMR::JitBuilder::Operation *>(this);
    }
 
 Operation *
-ConstInt8::clone(Builder *b, OperationCloner *cloner) const
+Operation::setLocation(Location *location)
    {
-   return create(b, cloner->result(), cloner->literal()->getInt8());
-   }
-
-ConstInt16::ConstInt16(Builder * parent, Value * result, int16_t value)
-   : OperationR1L1(aConstInt16, parent, result, LiteralValue::create(parent->fb()->dict(), value))
-   {
+   _location = location;
+   return static_cast<OMR::JitBuilder::Operation *>(this);
    }
 
 void
-ConstInt16::cloneTo(Builder *b, ValueMapper **resultMappers, ValueMapper **operandMappers, TypeMapper **typeMappers, LiteralMapper **literalMappers, SymbolMapper **symbolMappers, BuilderMapper **builderMappers) const
-   {
-   resultMappers[0]->add( b->ConstInt16(literalMappers[0]->next()->getInt16()) );
-   }
-
-Operation *
-ConstInt16::clone(Builder *b, OperationCloner *cloner) const
-   {
-   return create(b, cloner->result(), cloner->literal()->getInt16());
-   }
-
-ConstInt32::ConstInt32(Builder * parent, Value * result, int32_t value)
-   : OperationR1L1(aConstInt32, parent, result, LiteralValue::create(parent->fb()->dict(), value))
-   {
-   }
+Operation::addToBuilder(Extension *ext, Builder *b, Operation *op) {
+   ext->addOperation(b, op);
+}
 
 void
-ConstInt32::cloneTo(Builder *b, ValueMapper **resultMappers, ValueMapper **operandMappers, TypeMapper **typeMappers, LiteralMapper **literalMappers, SymbolMapper **symbolMappers, BuilderMapper **builderMappers) const
-   {
-   resultMappers[0]->add( b->ConstInt32(literalMappers[0]->next()->getInt32()) );
-   }
-
-Operation *
-ConstInt32::clone(Builder *b, OperationCloner *cloner) const
-   {
-   return create(b, cloner->result(), cloner->literal()->getInt32());
-   }
-
-ConstInt64::ConstInt64(Builder * parent, Value * result, int64_t value)
-   : OperationR1L1(aConstInt64, parent, result, LiteralValue::create(parent->fb()->dict(), value))
-   {
-   }
-
-void
-ConstInt64::cloneTo(Builder *b, ValueMapper **resultMappers, ValueMapper **operandMappers, TypeMapper **typeMappers, LiteralMapper **literalMappers, SymbolMapper **symbolMappers, BuilderMapper **builderMappers) const
-   {
-   resultMappers[0]->add( b->ConstInt64(literalMappers[0]->next()->getInt64()) );
-   }
-
-Operation *
-ConstInt64::clone(Builder *b, OperationCloner *cloner) const
-   {
-   return create(b, cloner->result(), cloner->literal()->getInt64());
-   }
-
-ConstFloat::ConstFloat(Builder * parent, Value * result, float value)
-   : OperationR1L1(aConstFloat, parent, result, LiteralValue::create(parent->fb()->dict(), value))
-   {
-   }
-
-void
-ConstFloat::cloneTo(Builder *b, ValueMapper **resultMappers, ValueMapper **operandMappers, TypeMapper **typeMappers, LiteralMapper **literalMappers, SymbolMapper **symbolMappers, BuilderMapper **builderMappers) const
-   {
-   resultMappers[0]->add( b->ConstFloat(literalMappers[0]->next()->getFloat()) );
-   }
-
-Operation *
-ConstFloat::clone(Builder *b, OperationCloner *cloner) const
-   {
-   return create(b, cloner->result(), cloner->literal()->getFloat());
-   }
-
-ConstDouble::ConstDouble(Builder * parent, Value * result, double value)
-   : OperationR1L1(aConstDouble, parent, result, LiteralValue::create(parent->fb()->dict(), value))
-   {
-   }
-
-void
-ConstDouble::cloneTo(Builder *b, ValueMapper **resultMappers, ValueMapper **operandMappers, TypeMapper **typeMappers, LiteralMapper **literalMappers, SymbolMapper **symbolMappers, BuilderMapper **builderMappers) const
-   {
-   resultMappers[0]->add( b->ConstDouble(literalMappers[0]->next()->getDouble()) );
-   }
-
-Operation *
-ConstDouble::clone(Builder *b, OperationCloner *cloner) const
-   {
-   return create(b, cloner->result(), cloner->literal()->getDouble());
-   }
-
-ConstAddress::ConstAddress(Builder * parent, Value * result, void * value)
-   : OperationR1L1(aConstAddress, parent, result, LiteralValue::create(parent->fb()->dict(), value))
-   {
-   }
-
-void
-ConstAddress::cloneTo(Builder *b, ValueMapper **resultMappers, ValueMapper **operandMappers, TypeMapper **typeMappers, LiteralMapper **literalMappers, SymbolMapper **symbolMappers, BuilderMapper **builderMappers) const
-   {
-   resultMappers[0]->add( b->ConstAddress(literalMappers[0]->next()->getAddress()) );
-   }
-
-Operation *
-ConstAddress::clone(Builder *b, OperationCloner *cloner) const
-   {
-   return create(b, cloner->result(), cloner->literal()->getAddress());
-   }
+Operation::writeFull(TextWriter & w) const {
+    w.indent() << _parent << "!o" << _id << " : ";
+    write(w);
+}
+#if 0
 
 CoercePointer::CoercePointer(Builder * parent, Value * result, Type * t, Value * v)
    : OperationR1V1T1(aCoercePointer, parent, result, t, v)
@@ -570,7 +489,7 @@ ForLoop::ForLoop(Builder * parent, bool countsUp, LocalSymbol * loopSym,
                                   Builder * loopBody, Builder * loopBreak, Builder * loopContinue,
                                   Value * initial, Value * end, Value * bump)
    : Operation(aForLoop, parent)
-   , _countsUp(LiteralValue::create(parent->fb()->dict(), (int8_t)countsUp))
+   , _countsUp(Literal::create(parent->fb()->dict(), (int8_t)countsUp))
    , _loopSym(loopSym)
    , _loopBody(loopBody)
    , _loopBreak(loopBreak)
@@ -584,7 +503,7 @@ ForLoop::ForLoop(Builder * parent, bool countsUp, LocalSymbol * loopSym,
                                   Builder * loopBody, Builder * loopBreak,
                                   Value * initial, Value * end, Value * bump)
    : Operation(aForLoop, parent)
-   , _countsUp(LiteralValue::create(parent->fb()->dict(), (int8_t)countsUp))
+   , _countsUp(Literal::create(parent->fb()->dict(), (int8_t)countsUp))
    , _loopSym(loopSym)
    , _loopBody(loopBody)
    , _loopBreak(loopBreak)
@@ -598,7 +517,7 @@ ForLoop::ForLoop(Builder * parent, bool countsUp, LocalSymbol *loopSym,
                                   Builder * loopBody,
                                   Value * initial, Value * end, Value * bump)
    : Operation(aForLoop, parent)
-   , _countsUp(LiteralValue::create(parent->fb()->dict(), (int8_t)countsUp))
+   , _countsUp(Literal::create(parent->fb()->dict(), (int8_t)countsUp))
    , _loopSym(loopSym)
    , _loopBody(loopBody)
    , _loopBreak(NULL)
@@ -954,7 +873,7 @@ Switch::initializeTypeProductions(TypeDictionary * types, TypeGraph * graph)
    }
 
 CreateLocalArray::CreateLocalArray(Builder * parent, Value * result, int32_t numElements, Type * elementType)
-   : OperationR1L1T1(aCreateLocalArray, parent, result, LiteralValue::create(parent->fb()->dict(), numElements), elementType)
+   : OperationR1L1T1(aCreateLocalArray, parent, result, Literal::create(parent->fb()->dict(), numElements), elementType)
    {
    }
 
@@ -986,6 +905,7 @@ CreateLocalStruct::clone(Builder *b, OperationCloner *cloner) const
    {
    return create(b, cloner->result(), cloner->type());
    }
+#endif
 
 // New operation code
 // BEGIN {

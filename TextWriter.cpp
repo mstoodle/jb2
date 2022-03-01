@@ -19,74 +19,131 @@
  * SPDX-License-Identifier: EPL-2.0 OR Apache-2.0 OR GPL-2.0 WITH Classpath-exception-2.0 OR LicenseRef-GPL-2.0 WITH Assembly-exception
  *******************************************************************************/
 
-#include "TextWriter.hpp"
 #include "Builder.hpp"
-#include "Case.hpp"
-#include "DynamicOperation.hpp"
-#include "FunctionBuilder.hpp"
+#include "Compilation.hpp"
+#include "Literal.hpp"
+#include "LiteralDictionary.hpp"
 #include "Operation.hpp"
+#include "Symbol.hpp"
+#include "SymbolDictionary.hpp"
+#include "TextWriter.hpp"
 #include "Type.hpp"
+#include "TypeDictionary.hpp"
 #include "Value.hpp"
 
-using namespace OMR::JitBuilder;
+namespace OMR {
+namespace JitBuilder {
 
-void
-OMR::JitBuilder::TextWriter::writeDictionary(TypeDictionary *types)
+TextWriter::TextWriter(Compilation * comp, std::ostream & os, std::string perIndent)
+    : Visitor(comp->compiler())
+    , _os(os)
+    , _perIndent(perIndent)
+    , _indent(0) {
+    os << std::showbase // show the 0x prefix
+       << std::internal
+       << std::setfill('0'); // fill pointers with 0s
+}
+
+TextWriter &
+operator<<(TextWriter &w, const Builder *b)
    {
-   TextWriter &w = *this;
-   w << "[ TypeDictionary " << types << " " << types->name() << w.endl();
-   w.indentIn();
-   if (types->hasLinkedDictionary())
-      w.indent() << "[ linkedDictionary " << types->linkedDictionary() << " ]" << w.endl();
-   for (TypeIterator typeIt = types->TypesBegin();typeIt != types->TypesEnd();typeIt++)
-      {
-      Type *type = *typeIt;
-      writeType(type);
-      }
-   w.indentOut();
-   w.indent() << "]" << w.endl();
+   w << "B" << b->id();
+   if (b->name().length() > 0)
+   w << " \""" \"" << b->name() << "\"";
+   return w;
+   }
+
+#if 0
+TextWriter &
+operator<<(TextWriter &w, const Case *c)
+   {
+   w << c->value() << " : " << c->builder();
+   if (c->fallsThrough())
+   w << " fallthrough ";
+   return w;
+   }
+#endif
+
+TextWriter &
+operator<<(TextWriter &w, const Literal *lv)
+   {
+   return w << "l" << lv->id() << "_" << lv->type();
+   }
+
+TextWriter &
+operator<< (TextWriter &w, const LiteralDictionary *ld)
+   {
+   return w << "L" << ld->id();
+   }
+
+#if 0
+TextWriter &
+operator<< (TextWriter &w, FunctionBuilder *fb)
+   {
+   return w << "F" << fb->id();
+   }
+#endif
+
+TextWriter &
+operator<< (TextWriter &w, const Operation *op)
+   {
+   return w << "o" << op->id();
+   }
+
+#if 0
+TextWriter &
+operator<< (TextWriter &w, const ParameterSymbol *param)
+   {
+   return w << "p" << param->index() << "_" << param->type() << " \"" << param->name() << "\"";
+   }
+#endif
+
+TextWriter &
+operator<< (TextWriter &w, const Symbol *s)
+   {
+   return w << "s" << s->id() << "_" << s->type();
+   }
+
+TextWriter &
+operator<< (TextWriter &w, const SymbolDictionary *sd)
+   {
+   return w << "S" << sd->id();
+   }
+
+TextWriter &
+operator<<(TextWriter &w, const Type *t)
+   {
+   return w << "t" << t->id();
+   }
+
+TextWriter &
+operator<<(TextWriter &w, const TypeDictionary *dict)
+   {
+   return w << "T" << dict->id();
+   }
+
+TextWriter &
+operator<<(TextWriter &w, const Value *v)
+   {
+   return w << "v" << v->id() << "_" << v->type();
    }
 
 void
-OMR::JitBuilder::TextWriter::visitFunctionBuilderPreOps(FunctionBuilder * fb)
+OMR::JitBuilder::TextWriter::visitPreCompilation(Compilation * comp)
    {
    TextWriter &w = *this;
-
-   TypeDictionary *types = fb->dict();
-   writeDictionary(types);
-
-   w << "[ FunctionBuilder F" << fb->id() << " \"" << fb->name() << "\"" << w.endl();
-   w.indentIn();
-   w.indent() << "[ types " << fb->dict() << " ]" << w.endl();
-   w.indent() << "[ origin " << fb->fileName() + "::" + fb->lineNumber() << " ]" << w.endl();
-   w.indent() << "[ returnType " << fb->getReturnType() << "]" << w.endl();
-   for (ParameterSymbolIterator paramIt = fb->ParametersBegin();paramIt != fb->ParametersEnd(); paramIt++)
-      {
-      const ParameterSymbol *parameter = *paramIt;
-      w.indent() << "[ parameter " << parameter << " ]" << w.endl();
-      }
-   for (LocalSymbolIterator localIt = fb->LocalsBegin();localIt != fb->LocalsEnd();localIt++)
-      {
-      const LocalSymbol *local = *localIt;
-      w.indent() << "[ local " << local << " ]" << w.endl();
-      }
-   for (FunctionSymbolIterator functionIt = fb->FunctionsBegin();functionIt != fb->FunctionsEnd();functionIt++)
-      {
-      const FunctionSymbol *function = *functionIt;
-      w.indent() << "[ function " << function << " ]" << w.endl();
-      }
-   w.indent() << "[ operations" << w.endl();
-   w.indentIn();
+   w << "[ Compilation ";
+   w.indentIn(); // won't take effect until next endl!
+   comp->write(w);
    }
 
 void
-OMR::JitBuilder::TextWriter::visitFunctionBuilderPostOps(FunctionBuilder * fb)
+OMR::JitBuilder::TextWriter::visitPostCompilation(Compilation * comp)
    {
    TextWriter &w = *this;
 
    w.indentOut();
    w.indent() << "]" << w.endl();
-   //w.indentOut();
    }
 
 void
@@ -100,7 +157,10 @@ OMR::JitBuilder::TextWriter::visitBuilderPreOps(Builder * b)
       w.indent() << "[ Builder " << b << w.endl();;
       w.indentIn();
 
-      w.indent() << "[ parent " << b->parent() << " ]" << w.endl();
+      if (b->parent())
+         w.indent() << "[ parent " << b->parent() << " ]" << w.endl();
+      else
+         w.indent() << "[ parent NULL ]" << w.endl();
 
       if (b->numChildren() > 0)
          {
@@ -138,9 +198,9 @@ OMR::JitBuilder::TextWriter::visitBuilderPostOps(Builder * b)
       TextWriter &w = *this;
 
       w.indentOut();
-      w.indent() << "]" << w.endl();
+      w.indent() << "]" << w.endl(); // operations
       w.indentOut();
-      w.indent() << "]" << w.endl();
+      w.indent() << "]" << w.endl(); // builder
       }
    }
 
@@ -158,6 +218,7 @@ OMR::JitBuilder::TextWriter::writeType(Type *type, bool indent)
    {
    TextWriter &w = *this;
    printTypePrefix(type, indent);
+   #if 0
    if (type->isPointer())
       {
       PointerType *pType = static_cast<PointerType *>(type);
@@ -199,6 +260,7 @@ OMR::JitBuilder::TextWriter::writeType(Type *type, bool indent)
       w << " ]" << w.endl();
       }
    else
+   #endif
       {
       w << "primitiveType";
       Type *layout = type->layout();
@@ -210,17 +272,12 @@ OMR::JitBuilder::TextWriter::writeType(Type *type, bool indent)
    }
 
 void
-OMR::JitBuilder::TextWriter::printOperationPrefix(Operation * op)
-   {
-   TextWriter &w = *this;
-   w.indent() << op->fb()->name() << "!" << op->parent() << "!o" << op->id() << " : ";
-   }
-
-void
 OMR::JitBuilder::TextWriter::writeOperation(Operation * op)
    {
    TextWriter &w = *this;
-   printOperationPrefix(op);
+   op->writeFull(w);
+
+   #if 0
    if (op->isDynamic())
       {
       DynamicOperation *dOp = static_cast<DynamicOperation *>(op);
@@ -465,6 +522,7 @@ OMR::JitBuilder::TextWriter::writeOperation(Operation * op)
          assert(0);
          break;
       }
+   #endif
    }
 
 void
@@ -476,7 +534,10 @@ OMR::JitBuilder::TextWriter::visitOperation(Operation *op)
 void
 OMR::JitBuilder::TextWriter::visitEnd()
    {
-   TextWriter & w = *this;
-   w.indentOut();
-   w.indent() << "]" << w.endl();
+   //TextWriter & w = *this;
+   //w.indentOut();
+   //w.indent() << "]" << w.endl();
    }
+
+} // namespace JitBuilder
+} // namespace OMR

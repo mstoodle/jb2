@@ -25,6 +25,7 @@
 #define TOSTR(x)     #x
 #define LINETOSTR(x) TOSTR(x)
 
+#if 0
 #include "Builder.hpp"
 #include "DynamicOperation.hpp"
 #include "DynamicType.hpp"
@@ -36,23 +37,21 @@
 #include "Type.hpp"
 #include "TypeDictionary.hpp"
 #include "Value.hpp"
+#endif
+
+namespace OMR { namespace JitBuilder { class Compilation; } }
 
 bool initializeJit();
-bool constructFunctionBuilder(OMR::JitBuilder::FunctionBuilder * fb);
-int32_t compileFunctionBuilder(OMR::JitBuilder::FunctionBuilder * fb, void ** entry);
+#if 0
+int32_t compileFunction(Function* fb, void ** entry);
+bool constructFunctionBuilder(FunctionBuilder * fb);
+#endif
+int32_t compile(OMR::JitBuilder::Compilation *comp);
 void shutdownJit();
 
 // Legacy definitions: may need to make IlBuilder a class....
 //#define IlBuilder Builder
 //#define MethodBuilder FunctionBuilder
 //#define compileMethodBuilder(fb,e) compileFunctionBuilder(fb, e)
-
-// Global user definitions
-// BEGIN {
-//
-
-//
-// } END
-// Global user definitions
 
 #endif // defined(JITBUILDER_INCL)

@@ -22,54 +22,35 @@
 #ifndef LOCATION_INCL
 #define LOCATION_INCL
 
-#include "stdint.h"
+#include <stdint.h>
+#include <string>
+#include "IDs.hpp"
 
-namespace OMR
-{
+namespace OMR {
+namespace JitBuilder {
 
-namespace JitBuilder
-{
+class Compilation;
 
-class FunctionBuilder;
-
-class Location : Object
-   {
+class Location {
 public:
-   static Location * create(FunctionBuilder * fb)
-      {
-      return new Location(fb);
-      }
-   static Location * create(FunctionBuilder * fb, std::string lineNumber)
-      {
-      return new Location(fb, lineNumber);
-      }
-   static Location * create(FunctionBuilder * fb, std::string lineNumber, int32_t bcIndex)
-      {
-      return new Location(fb, lineNumber, bcIndex);
-      }
+    Location(Compilation *comp, std::string fileName, std::string lineNumber);
+    Location(Compilation *comp, std::string fileName, std::string lineNumber, int32_t bcIndex);
 
-   virtual size_t size()          { return sizeof(Location); }
-   uint64_t id() const            { return _id; }
-   int32_t bcIndex() const        { return _bcIndex; }
-   std::string fileName() const   { return _fileName; }
-   std::string lineNumber() const { return _lineNumber; }
+    virtual size_t size()          { return sizeof(Location); }
+    uint64_t id() const            { return _id; }
+    int32_t bcIndex() const        { return _bcIndex; }
+    std::string fileName() const   { return _fileName; }
+    std::string lineNumber() const { return _lineNumber; }
 
 protected:
-   Location(FunctionBuilder * fb);
-   Location(FunctionBuilder * fb, std::string lineNumber);
-   Location(FunctionBuilder * fb, std::string lineNumber, int32_t bcIndex);
-
-   int64_t           _id;
-   FunctionBuilder * _fb;
-   int32_t           _bcIndex;
-   std::string       _fileName;
-   std::string       _lineNumber;
-
-   static int64_t globalIndex;
-   };
+    int64_t       _id;
+    Compilation * _comp;
+    std::string   _fileName;
+    std::string   _lineNumber;
+    int32_t       _bcIndex;
+};
 
 } // namespace JitBuilder
-
 } // namespace OMR
 
 #endif // defined(LOCATION_INCL)

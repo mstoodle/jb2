@@ -19,12 +19,15 @@
  * SPDX-License-Identifier: EPL-2.0 OR Apache-2.0 OR GPL-2.0 WITH Classpath-exception-2.0 OR LicenseRef-GPL-2.0 WITH Assembly-exception
  *******************************************************************************/
 
+#include <stdint.h>
 #include "JitBuilder.hpp"
-#include "CodeGenerator.hpp"
-#include "TextWriter.hpp"
+//#include "CodeGenerator.hpp"
+//#include "TextWriter.hpp"
 
-#include "ilgen/MethodBuilder.hpp"
-#include "ilgen/TypeDictionary.hpp"
+//#include "ilgen/MethodBuilder.hpp"
+//#include "ilgen/TypeDictionary.hpp"
+
+namespace TR { class MethodBuilder; }
 
 bool internal_initializeJit();
 int32_t internal_compileMethodBuilder(TR::MethodBuilder * methodBuilder, void ** entryPoint);
@@ -37,6 +40,7 @@ initializeJit()
    return true;
    }
 
+#if 0
 bool
 constructFunctionBuilder(OMR::JitBuilder::FunctionBuilder * fb)
    {
@@ -85,12 +89,13 @@ class CompileMethodBuilder : public TR::MethodBuilder
    };
 
 int32_t
-compileFunctionBuilder(OMR::JitBuilder::FunctionBuilder *fb, void **entry)
+compileFunction(Function *func, void **entry)
    {
    TR::TypeDictionary types;
-   CompileMethodBuilder cmb(fb, &types);
+   CompileMethodBuilder cmb(func, &types);
    return internal_compileMethodBuilder(&cmb, entry);
    }
+#endif
 
 void
 shutdownJit()

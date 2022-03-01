@@ -22,63 +22,58 @@
 #ifndef VISITOR_INCL
 #define VISITOR_INCL
 
-#include <vector>
-#include <deque>
-#include "Object.hpp"
+#include <string>
+#include "Pass.hpp"
+#include "typedefs.hpp"
 
 
-namespace OMR
-{
+namespace OMR {
+namespace JitBuilder {
 
-namespace JitBuilder
-{
-
-class Type;
-class TypeDictionary;
-class FunctionBuilder;
 class Builder;
+class Compilation;
+class Compiler;
+class Extension;
 class Operation;
 
-typedef std::deque<Builder *> BuilderWorklist;
+class Visitor : public Pass {
+    public:
+    Visitor(Compiler *compiler, std::string name="", bool visitAppendedBuilders=false);
 
-class Visitor
-   {
-   public:
-   Visitor(FunctionBuilder * fb, bool visitAppendedBuilders=false)
-      : _fb(fb)
-      , _visitAppendedBuilders(visitAppendedBuilders)
-      { }
+    virtual CompileResult perform(Compilation *comp) {
+        start(comp);
+        if (_aborted)
+            return CompileFailed;
+        return CompileSuccessful;
+    }
 
-   void start();
-   void start(Builder * b);
-   void start(Operation * op);
+    virtual void start(Compilation *comp);
+    virtual void start(Builder * b);
+    virtual void start(Operation * op);
 
-   void setVisitAppendedBuilders(bool v) { _visitAppendedBuilders = v; }
+    protected:
+    void visitBuilder(Builder * b, std::vector<bool> & visited, BuilderWorklist & list);
+    void visitOperations(Builder * b, BuilderWorklist & worklist);
+    void abort();
 
-   FunctionBuilder *fb() const { return _fb; }
+    // subclass Visitor and override these functions as needed
+    virtual void visitBegin()                             { }
+    virtual void visitPreCompilation(Compilation * comp)  { }
+    virtual void visitPostCompilation(Compilation * comp) { }
+    virtual void visitBuilderPreOps(Builder * b)          { }
+    virtual void visitBuilderPostOps(Builder * b)         { }
+    virtual void visitOperation(Operation * op)           { }
+    virtual void visitEnd()                               { }
 
-   protected:
-   void visitBuilder(Builder * b, std::vector<bool> & visited, BuilderWorklist & list);
-   void visitOperations(Builder * b, BuilderWorklist & worklist);
+    // logging support: output msg to the log if enabled
+    void trace(std::string msg);
 
-   // subclass Visitor and override these functions as needed
-   virtual void visitBegin()                                      { }
-   virtual void visitFunctionBuilderPreOps(FunctionBuilder * fb)  { }
-   virtual void visitFunctionBuilderPostOps(FunctionBuilder * fb) { }
-   virtual void visitBuilderPreOps(Builder * b)                   { }
-   virtual void visitBuilderPostOps(Builder * b)                  { }
-   virtual void visitOperation(Operation * op)                    { }
-   virtual void visitEnd()                                        { }
-
-   // logging support: output msg to the log if enabled
-   void trace(std::string msg);
-
-   FunctionBuilder * _fb;
-   bool _visitAppendedBuilders;
-   };
+    Compilation *_comp;
+    bool _aborted;
+    bool _visitAppendedBuilders;
+};
 
 } // namespace JitBuilder
-
 } // namespace OMR
 
 #endif // defined(VISITOR_INCL)

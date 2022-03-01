@@ -19,25 +19,25 @@
  * SPDX-License-Identifier: EPL-2.0 OR Apache-2.0 OR GPL-2.0 WITH Classpath-exception-2.0 OR LicenseRef-GPL-2.0 WITH Assembly-exception
  *******************************************************************************/
 
-#include "Value.hpp"
 #include "Builder.hpp"
-#include "FunctionBuilder.hpp"
+#include "Compilation.hpp"
+#include "Value.hpp"
 
-using namespace OMR::JitBuilder;
-
-int64_t OMR::JitBuilder::Value::globalIndex = 0;
+namespace OMR {
+namespace JitBuilder {
 
 Value *
-Value::create(Builder * parent, Type * type)
+Value::create(const Builder * parent, const Type * type)
    {
    Value *value = new Value(parent, type);
-   parent->fb()->registerObject(value);
    return value;
    }
 
-Value::Value(Builder * parent, Type * type)
-   : Object(parent->fb())
-   , _id(globalIndex++)
+Value::Value(const Builder * parent, const Type * type)
+   : _id(parent->comp()->getValueID())
    , _parent(parent)
    , _type(type)
    { }
+
+} // namespace JitBuilder
+} // namespace OMR

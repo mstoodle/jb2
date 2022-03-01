@@ -22,44 +22,33 @@
 #ifndef TEXTWRITER_INCL
 #define TEXTWRITER_INCL
 
-
 #include <iostream>
 #include <iomanip>
 #include <vector>
 #include <deque>
 #include "Visitor.hpp"
-#include "Builder.hpp"
-#include "Case.hpp"
-#include "FunctionBuilder.hpp"
-#include "Operation.hpp"
-#include "Symbol.hpp"
-#include "Type.hpp"
-#include "TypeDictionary.hpp"
-#include "TypeGraph.hpp"
-#include "Value.hpp"
 
-namespace OMR
-{
+namespace OMR {
+namespace JitBuilder {
 
-namespace JitBuilder
-{
+class Builder;
+class Case;
+class Compilation;
+class Literal;
+class LiteralDictionary;
+class Operation;
+class Symbol;
+class SymbolDictionary;
+class Type;
+class TypeDictionary;
+class Value;
 
-class TextWriter : public Visitor
-   {
+class TextWriter : public Visitor {
 public:
-   TextWriter(FunctionBuilder * fb, std::ostream & os, std::string perIndent)
-      : Visitor(fb)
-      , _os(os)
-      , _perIndent(perIndent)
-      , _indent(0)
-      {
-      os << std::showbase // show the 0x prefix
-            << std::internal
-            << std::setfill('0'); // fill pointers with 0s
-      }
+   TextWriter(Compilation * comp, std::ostream & os, std::string perIndent);
 
-   void print()               { start(); }
-   void print(Builder * b)    { start(b); }
+   void print(Compilation *comp) { start(comp); }
+   void print(Builder * b) { start(b); }
    void print(Operation * op) { start(op); }
 
    friend TextWriter &operator<<(TextWriter &w, const bool v)
@@ -92,11 +81,6 @@ public:
       w._os << v;
       return w;
       }
-   friend TextWriter &operator<<(TextWriter &w, const size_t v)
-      {
-      w._os << v;
-      return w;
-      }
    friend TextWriter &operator<<(TextWriter &w, const void * v)
       {
       w._os << v;
@@ -112,18 +96,6 @@ public:
       w._os << v;
       return w;
       }
-   friend TextWriter &operator<<(TextWriter &w, LiteralValue *lv)
-      {
-      lv->print(&w);
-      return w;
-      }
-   //
-   // User type handlng
-   // BEGIN {
-
-   // } END
-   // User type handling
-   //
 
    friend TextWriter &operator<<(TextWriter &w, const std::string s)
       {
@@ -135,54 +107,17 @@ public:
       w._os << s;
       return w;
       }
-   friend TextWriter & operator<<(TextWriter &w, const Builder *b)
-      {
-      w << "B" << b->id();
-      if (b->name().length() > 0)
-         w << " \""" \"" << b->name() << "\"";
-      return w;
-      }
-   friend TextWriter &operator<<(TextWriter &w, const Case *c)
-      {
-      w << c->value() << " : " << c->builder();
-      if (c->fallsThrough())
-         w << " fallthrough ";
-      return w;
-      }
-   friend TextWriter & operator<< (TextWriter &w, FunctionBuilder *fb)
-      {
-      return w << "F" << fb->id();
-      }
-   friend TextWriter & operator<< (TextWriter &w, Operation *op)
-      {
-      return w << "o" << op->id();
-      }
-   friend TextWriter & operator<< (TextWriter &w, const ParameterSymbol *param)
-      {
-      return w << "p" << param->index() << "_" << param->type() << " \"" << param->name() << "\"";
-      }
-   friend TextWriter & operator<< (TextWriter &w, const Symbol *s)
-      {
-      return w << "s" << s->id() << "_" << s->type() << " \"" << s->name() << "\"";
-      }
-   friend TextWriter &operator<<(TextWriter &w, const Type *t)
-      {
-      return w << "t" << t->id();
-      }
-   friend TextWriter & operator<<(TextWriter &w, const TypeDictionary *dict)
-      {
-      return w << "D" << dict->id();
-      }
-   friend TextWriter & operator<<(TextWriter &w, const TypeGraph *graph)
-      {
-      return w << "G" << graph->id();
-      }
-   friend TextWriter &operator<<(TextWriter &w, const Value *v)
-      {
-      return w << "v" << v->id() << "_" << v->type();
-      }
+   friend TextWriter & operator<<(TextWriter &w, const Builder *b);
+   //friend TextWriter &operator<<(TextWriter &w, const Case *c);
+   friend TextWriter & operator<<(TextWriter &w, const Literal *lv);
+   friend TextWriter & operator<<(TextWriter &w, const LiteralDictionary *ld);
+   friend TextWriter & operator<<(TextWriter &w, const Operation *op);
+   friend TextWriter & operator<<(TextWriter &w, const Symbol *s);
+   friend TextWriter & operator<<(TextWriter &w, const SymbolDictionary *sd);
+   friend TextWriter & operator<<(TextWriter &w, const Type *t);
+   friend TextWriter & operator<<(TextWriter &w, const TypeDictionary *dict);
+   friend TextWriter & operator<<(TextWriter &w, const Value *v);
 
-   void writeDictionary(TypeDictionary *types);
    void writeType(Type *type, bool indent=true);
    void writeOperation(Operation *op);
 
@@ -208,8 +143,8 @@ public:
 
    protected:
 
-      virtual void visitFunctionBuilderPreOps(FunctionBuilder * fb);
-      virtual void visitFunctionBuilderPostOps(FunctionBuilder * fb);
+      virtual void visitPreCompilation(Compilation * comp);
+      virtual void visitPostCompilation(Compilation * comp);
       virtual void visitBuilderPreOps(Builder * b);
       virtual void visitBuilderPostOps(Builder * b);
       virtual void visitOperation(Operation * op);
@@ -221,7 +156,7 @@ public:
       std::ostream & _os;
       std::string _perIndent;
       int32_t _indent;
-   };
+};
 
 // RAII class for indenting log output
 class LogIndent
