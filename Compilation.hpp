@@ -93,7 +93,7 @@ class Compilation {
 
     virtual CompileResultCode compile(std::string strategy) { return FailureFatal; }
     void setLogger(TextWriter * logger) { _logger = logger; }
-    TextWriter * logger(bool enabled=false) const { return enabled ? _logger : NULL; }
+    TextWriter * logger(bool enabled=true) const { return enabled ? _logger : NULL; }
     virtual void write(TextWriter &w) const;
 
     virtual bool buildIL() { return true; }

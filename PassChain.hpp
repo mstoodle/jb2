@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2020, 2020 IBM Corp. and others
+ * Copyright (c) 2022, 2022 IBM Corp. and others
  *
  * This program and the accompanying materials are made available under
  * the terms of the Eclipse Public License 2.0 which accompanies this
@@ -15,45 +15,48 @@
  *
  * [1] https://www.gnu.org/software/classpath/license.html
  * [2] http://openjdk.java.net/legal/assembly-exception.html
- *
+ * 
  * SPDX-License-Identifier: EPL-2.0 OR Apache-2.0 OR GPL-2.0 WITH Classpath-exception-2.0 OR LicenseRef-GPL-2.0 WITH Assembly-exception
  *******************************************************************************/
 
-#include "DynamicOperation.hpp"
-#include "DynamicType.hpp"
-#include "TypeDictionary.hpp"
+#include <deque>
 
-namespace OMR
-{
+namespace OMR {
+namespace JitBuilder {
 
-namespace JitBuilder
-{
+class Builder;
+class Literal;
+class Operation;
+class Pass;
+class PassExtension;
+class Symbol;
+class Type;
+class Value;
 
-DynamicType::DynamicType(TypeDictionary *dict, std::string name, size_t size, ValuePrinter *printer, StructType *layout, LiteralExploder *exploder, OperationExpander *expander, TypeRegistrar *registrar)
-   : Type(dict, name, size, printer)
-   , _layout(layout)
-   , _exploder(exploder)
-   , _expander(expander)
-   , _registrar(registrar)
-   {
-   dict->registerDynamicType(this);
-   }
+class PassChain
+    enum ChainPolicy {
+	SameOrder=0;
+        ReverseOrder=1;
+    };
 
-bool
-DynamicType::expand(OperationReplacer *replacer) const
-   {
-   if (_expander)
-      return _expander(replacer);
-   return false;
-   }
+public:
+    PassChain(Pass *pass)
+        : _pass(pass) {
+    }
 
-void
-DynamicType::initializeTypeProductions(TypeDictionary *dict, TypeGraph *graph)
-   {
-   if (_registrar)
-      _registrar(this, dict, graph);
-   }
+    virtual bool processBuilder(Pass *pass, Builder *b);
+    virtual bool processLiteral(Pass *pass, Literal *lv);
+    virtual bool processOperation(Pass *pass, Operation *op);
+    virtual bool processSymbol(Pass *pass, Symbol *sym);
+    virtual bool processType(Pass *pass, Type *type);
+    virtual bool processValue(Pass *pass, Value *v);
+
+    void addPassExtension(PassExtension *pass, ChainPolicy policy=ReverseOrder);
+
+protected:
+    Pass *_pass;
+    std::deque<PassExtension *> _chain;
+};
 
 } // namespace JitBuilder
-
 } // namespace OMR

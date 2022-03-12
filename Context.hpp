@@ -42,7 +42,6 @@ public:
     ContextID id() const { return _id; }
     std::string name() { return _name; }
 
-    void addSymbol(Symbol *symbol);
     Symbol *lookupSymbol(std::string name, bool includeParents=false);
     bool removeSymbol(Symbol *symbol);
 
@@ -50,6 +49,8 @@ public:
     SymbolIterator &SymbolsEnd()  { return symbolEndIterator; }
 
 protected:
+    void addSymbol(Symbol *symbol);
+
     uint64_t _id;
     Compilation * _comp;
     std::string _name;

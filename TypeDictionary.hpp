@@ -52,7 +52,7 @@ public:
     TypeIterator TypesBegin() const { return TypeIterator(_types); }
     TypeIterator TypesEnd() const { return TypeIterator(); }
 
-    Type *LookupType(uint64_t id);
+    const Type *LookupType(uint64_t id);
     void RemoveType(const Type *type);
     TypeID getTypeID() { return _nextTypeID++; }
     TypeID numTypes() const { return _nextTypeID; }
@@ -64,15 +64,15 @@ public:
 
     void write(TextWriter &w);
 
+    void registerType(const Type *type);
 protected:
-    void registerType(Type *type);
-    void internalRegisterType(Type *type);
+    void internalRegisterType(const Type *type);
 
     TypeDictionaryID _id;
     Compiler * _compiler;
     std::string _name;
-    std::vector<Type *> _types;
-    std::vector<Type *> _ownedTypes;
+    std::vector<const Type *> _types;
+    std::vector<const Type *> _ownedTypes;
     TypeID _nextTypeID;
     TypeDictionary * _linkedDictionary;
     };

@@ -36,7 +36,6 @@ class Op_Return : public Operation {
     virtual Operation * clone(LOCATION, Builder *b, OperationCloner *cloner) const;
     virtual void write(TextWriter &w) const;
     virtual void jbgen(JB1MethodBuilder *j1mb) const;
-    static const std::string & name() { return opName; }
 
     virtual int32_t numOperands() const { return _value ? 1 : 0; }
     virtual Value * operand(int32_t i=0) const
@@ -54,12 +53,10 @@ class Op_Return : public Operation {
             return OperandsEnd();
         }
 
-
     protected:
     Op_Return(LOCATION, Extension *ext, Builder * parent, ActionID aReturn);
     Op_Return(LOCATION, Extension *ext, Builder * parent, ActionID aReturn, Value * v);
     Value * _value;
-    static const std::string opName;
     }
 
 #if 0

@@ -19,13 +19,17 @@
  * SPDX-License-Identifier: EPL-2.0 OR Apache-2.0 OR GPL-2.0 WITH Classpath-exception-2.0 OR LicenseRef-GPL-2.0 WITH Assembly-exception
  *******************************************************************************/
 
+#include <cstring>
 #include "BaseExtension.hpp"
 #include "BaseTypes.hpp"
 #include "Compiler.hpp"
+#include "Function.hpp"
+#include "FunctionCompilation.hpp"
 #include "JB1MethodBuilder.hpp"
 #include "Literal.hpp"
 #include "Type.hpp"
 #include "TextWriter.hpp"
+#include "TypeDictionary.hpp"
 
 namespace OMR {
 namespace JitBuilder {
@@ -37,7 +41,7 @@ NoTypeType::printValue(TextWriter &w, const void *p) const {
 }
 
 bool
-NoTypeType::mapJB1Type(JB1MethodBuilder *j1mb) const {
+NoTypeType::registerJB1Type(JB1MethodBuilder *j1mb) const {
     j1mb->registerNoType(this);
     return true;
 }
@@ -66,7 +70,7 @@ Int8Type::printLiteral(TextWriter & w, const Literal *lv) const {
 }
 
 bool
-Int8Type::mapJB1Type(JB1MethodBuilder *j1mb) const {
+Int8Type::registerJB1Type(JB1MethodBuilder *j1mb) const {
     j1mb->registerInt8(this);
     return true;
 }
@@ -95,7 +99,7 @@ Int16Type::printLiteral(TextWriter & w, const Literal *lv) const {
 }
 
 bool
-Int16Type::mapJB1Type(JB1MethodBuilder *j1mb) const {
+Int16Type::registerJB1Type(JB1MethodBuilder *j1mb) const {
     j1mb->registerInt16(this);
     return true;
 }
@@ -125,7 +129,7 @@ Int32Type::printLiteral(TextWriter & w, const Literal *lv) const {
 }
 
 bool
-Int32Type::mapJB1Type(JB1MethodBuilder *j1mb) const {
+Int32Type::registerJB1Type(JB1MethodBuilder *j1mb) const {
     j1mb->registerInt32(this);
     return true;
 }
@@ -155,7 +159,7 @@ Int64Type::printLiteral(TextWriter & w, const Literal *lv) const {
 }
 
 bool
-Int64Type::mapJB1Type(JB1MethodBuilder *j1mb) const {
+Int64Type::registerJB1Type(JB1MethodBuilder *j1mb) const {
     j1mb->registerInt64(this);
     return true;
 }
@@ -185,7 +189,7 @@ Float32Type::printLiteral(TextWriter & w, const Literal *lv) const {
 }
 
 bool
-Float32Type::mapJB1Type(JB1MethodBuilder *j1mb) const {
+Float32Type::registerJB1Type(JB1MethodBuilder *j1mb) const {
     j1mb->registerFloat(this);
     return true;
 }
@@ -215,7 +219,7 @@ Float64Type::printLiteral(TextWriter & w, const Literal *lv) const {
 }
 
 bool
-Float64Type::mapJB1Type(JB1MethodBuilder *j1mb) const {
+Float64Type::registerJB1Type(JB1MethodBuilder *j1mb) const {
     j1mb->registerDouble(this);
     return true;
 }
@@ -253,95 +257,181 @@ AddressType::printLiteral(TextWriter & w, const Literal *lv) const {
 }
 
 bool
-AddressType::mapJB1Type(JB1MethodBuilder *j1mb) const {
+AddressType::registerJB1Type(JB1MethodBuilder *j1mb) const {
     j1mb->registerAddress(this);
     return true;
 }
 
 
+PointerTypeBuilder::PointerTypeBuilder(BaseExtension *ext, Function *func)
+    : _ext(ext)
+    , _func(func)
+    , _comp(func->comp())
+    , _dict(_comp->dict())
+    , _baseType(NULL)
+    , _helper(NULL) {
+}
+
+const PointerType *
+PointerTypeBuilder::create(LOCATION) {
+    const PointerType *existingType = _comp->pointerTypeFromBaseType(_baseType);
+    if (existingType != NULL)
+        return existingType;
+
+    const PointerType *newType = new PointerType(PASSLOC, this);
+    _dict->registerType(newType);
+    return newType;
+}
+
+PointerType::PointerType(LOCATION, PointerTypeBuilder *builder)
+    : Type(PASSLOC, builder->dict(), builder->name(), builder->extension()->compiler()->platformWordSize() ) {
+
+    if (builder->helper())
+        builder->helper()(this, builder);
+    _baseType = builder->baseType();
+    assert(_baseType);
+}
+
+Literal *
+PointerType::literal(LOCATION, Compilation *comp, const void * value) const {
+    const void **pValue = new const void *[1];
+    *pValue = value;
+    return this->Type::literal(PASSLOC, comp, reinterpret_cast<const LiteralBytes *>(pValue));
+}
+bool
+PointerType::literalsAreEqual(const LiteralBytes *l1, const LiteralBytes *l2) const {
+    return (*reinterpret_cast<void * const *>(l1)) == (*reinterpret_cast<void * const *>(l2));
+}
+
 void
-PointerType::printType(TextWriter &w)
-   {
-   }
+PointerType::writeSpecificType(TextWriter &w) const {
+    w << "pointerType ";
+}
 
 void
 PointerType::printValue(TextWriter &w, const void *p) const
    {
-   w << name() << " " << *(reinterpret_cast<void * const *>(p));
+   w << name() << " " << *(reinterpret_cast<const void * const *>(p));
    }
 
+void
+PointerType::printLiteral(TextWriter & w, const Literal *lv) const {
+   w << name() << "(" << (lv->value<void * const>()) << ")";
+}
 
-#if 0
-FieldType::FieldType(LOCATION, Extension *ext, StructType *structType, Literal *fieldName, Type *type, size_t offset)
-    : Type(PASSLOC, ext, fieldName->get<std::string>(), type->size())
+bool
+PointerType::registerJB1Type(JB1MethodBuilder *j1mb) const {
+    if (!j1mb->typeRegistered(_baseType)) // wait until base type is registered
+        return false;
+
+    j1mb->registerPointer(this, _baseType);
+    return true;
+}
+
+FieldType::FieldType(LOCATION, TypeDictionary *dict, const StructType *structType, std::string name, const Type *type, size_t offset)
+    : Type(PASSLOC, dict, name, type->size())
     , _structType(structType)
-    , _fieldName(fieldName)
+    , _fieldName(name)
     , _type(type)
     , _offset(offset) {
 }
-#endif
 
 void
-FieldType::printType(TextWriter &w)
-   {
-   }
+FieldType::writeSpecificType(TextWriter & w) const {
+    w << "FieldType " << _name << " size " << _type->size() << " " << _type << "@" << _offset << " ";
+}
+
+bool
+FieldType::registerJB1Type(JB1MethodBuilder *j1mb) const {
+    // Fields are registered by the StructType
+    //j1mb->registerField(_structType->name(), name(), _type, _offset);
+    return true;
+}
+
+
+StructTypeBuilder::StructTypeBuilder(BaseExtension *ext, Function *func)
+    : _ext(ext)
+    , _func(func)
+    , _comp(func->comp())
+    , _dict(func->comp()->dict())
+    , _size(0)
+    , _helper(NULL) {
+}
 
 void
-FieldType::printValue(TextWriter &w, const void *p) const
-   {
-   }
+StructTypeBuilder::createFields(LOCATION, StructType *structType) {
+    for (auto it = _fields.begin(); it != _fields.end(); it++) {
+        FieldInfo info = *it;
+        structType->addField(PASSLOC, _dict, info._name, info._type, info._offset);
+    }
+}
 
-#if 0
-FieldType *
-StructType::addField(LOCATION, Literal *name, Type *type, size_t offset)
-   {
-   assert(name->kind() == T_string || name->kind() == T_typename);
-   FieldType *field = LookupField(name->getString());
-   if (field)
-      return field;
+bool
+StructTypeBuilder::verifyFields(const StructType *sType) {
+    // todo: check fields match!
+    return true;
+}
 
-   field = FieldType::create(PASSLOC, ext(), this, name, type, offset);
-   _fieldsByName.insert({name->getString(), field});
-   _fieldsByOffset.insert({offset, field});
+const StructType *
+StructTypeBuilder::create(LOCATION) {
+    const StructType *existingType = _comp->structTypeFromName(_name);
+    if (existingType != NULL) {
+        if (verifyFields(existingType))
+            return existingType;
+        // error code?
+        return NULL;
+    }
 
-   if (_size < offset + type->size())
-      _size = offset + type->size();
+    const StructType *newType = new StructType(PASSLOC, this);
+    return newType;
+}
 
-   return field;
-   }
-#endif
+StructType::StructType(LOCATION, StructTypeBuilder *builder)
+    : Type(PASSLOC, builder->dict(), builder->name(), builder->size()) {
+    _dict->registerType(this); // proactive: other types may be created before we're done
+    if (builder->helper())
+        builder->helper()(this, builder);
+    builder->createFields(PASSLOC, this);
+}
 
-FieldIterator
-StructType::RemoveField(FieldIterator &it)
-   {
-   FieldType *fieldType = it->second;
+const FieldType *
+StructType::addField(LOCATION, TypeDictionary *dict, std::string name, const Type *type, size_t offset) {
+    const FieldType *preExistingField = LookupField(name);
+    if (preExistingField) {
+        if (preExistingField->type() == type && preExistingField->offset() == offset)
+            return preExistingField;
+        return NULL;
+    }
 
-   // iterator is for _fieldsByName, so just erase
-   auto it1 = _fieldsByName.erase(it);
+    FieldType *field = new FieldType(PASSLOC, dict, this, name, type, offset);
+    _fieldsByName.insert({name, field});
+    _fieldsByOffset.insert({offset, field});
 
-   // have to look for it in _fieldsByOffset and erase from it
-   auto it2 = _fieldsByOffset.find(fieldType->offset());
-   while (it2 != _fieldsByOffset.end())
-      {
-      // can have multiple fields at an offset so make sure we remove the right one
-      FieldType *fType = it2->second;
-      if (fType == fieldType)
-         {
-         _fieldsByOffset.erase(it2);
-         break;
-         }
-      else
-         it2++;
-      }
+    if (_size < offset + type->size())
+        _size = offset + type->size();
 
-   return it1;
-   }
+    _dict->registerType(field);
+    return field;
+}
 
 void
-StructType::printType(TextWriter &w)
-   {
-   // TODO
-   }
+StructType::writeSpecificType(TextWriter &w) const {
+    w << "structType size " << size();
+    for (auto it = FieldsBegin(); it != FieldsEnd(); it++) {
+        auto field = it->second;
+        w << " " << field << "@" << field->offset();
+    }
+}
+
+Literal *
+StructType::literal(LOCATION, Compilation *comp, const LiteralBytes * structValue) const {
+    return this->Type::literal(PASSLOC, comp, structValue);
+}
+
+bool
+StructType::literalsAreEqual(const LiteralBytes *l1, const LiteralBytes *l2) const {
+    return memcmp(l1, l2, size()/8) == 0;
+}
 
 void
 StructType::printValue(TextWriter &w, const void *p) const
@@ -349,7 +439,44 @@ StructType::printValue(TextWriter &w, const void *p) const
    // TODO
    }
 
-#if 0
+void
+StructType::printLiteral(TextWriter & w, const Literal *lv) const {
+   // TODO
+}
+
+void
+StructType::registerAllFields(JB1MethodBuilder *j1mb, std::string structName, std::string fNamePrefix, size_t baseOffset) const {
+    for (auto fIt = FieldsBegin(); fIt != FieldsEnd(); fIt++) {
+        const FieldType *fType = fIt->second;
+        std::string fieldName = fNamePrefix + fType->name();
+        size_t fieldOffset = baseOffset + fType->offset();
+
+        if (fType->isStruct()) {
+            // define a "dummy" field corresponding to the struct field itself, so we can ask for its address easily
+            // in case this field's struct needs to be passed to anything
+            j1mb->registerField(structName, fieldName, static_cast<BaseExtension *>(_ext)->NoType, fieldOffset);
+            const StructType *innerStructType = static_cast<const StructType *>(fType->type());
+            registerAllFields(j1mb, structName, fieldName + ".", fieldOffset);
+        }
+        else {
+            j1mb->registerField(structName, fieldName, fType->type(), fieldOffset);
+        }
+    }
+}
+
+bool
+StructType::registerJB1Type(JB1MethodBuilder *j1mb) const {
+    if (!j1mb->typeRegistered(this)) {
+        j1mb->registerStruct(this);
+        return false; // first pass just creates struct types
+    }
+
+    registerAllFields(j1mb, name(), std::string(""), 0); // second pass defines the fields
+    j1mb->closeStruct(name());
+    return true;
+}
+
+#if NEED_UNION
 void
 UnionType::printType(TextWriter &w)
    {

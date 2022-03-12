@@ -52,19 +52,21 @@ public:
 #if 0
     class Builder {
     public:
-        Builder *extention(Extension *x) { _ext = x; return this; }
+        Builder *extension(Extension *x) { _ext = x; return this; }
         Builder *dict(TypeDictionary *dict) { _dict = dict; }
         Builder *name(std::string myName) { _name = myName; }
         Builder *size(size_t mySize) { _size = mySize; })
+        Builder *layout(Type *layout) { _layout = layout; }
 
-        Type *create() {
-            return new Type(_ext->compiler()->nextTypeID()kk
+        Type *create(LOCATION) {
+            return new Type(PASSLOC, _ext, _name, _size, _layout);
         }
     protected:
-        Extension *      _ext;
+        Extension * _ext;
         TypeDictionary * _dict;
-        std::string      _name;
-        size_t           _size;
+        std::string _name;
+        size_t _size;
+        Type * _layout;
     };
 #endif
     friend class Compiler;
@@ -95,28 +97,36 @@ public:
     virtual bool isFunction() const { return false; }
     virtual bool isDynamic() const { return false; }
 
-    void writeType(TextWriter & w);
-    virtual void writeSpecificType(TextWriter &w);
+    void writeType(TextWriter & w) const;
+    virtual void writeSpecificType(TextWriter &w) const;
     virtual void printValue(TextWriter & w, const void *p) const { }
     virtual void printLiteral(TextWriter & w, const Literal *lv) const { }
     virtual bool literalsAreEqual(const LiteralBytes *lv1, const LiteralBytes *lv2) const { return false; }
 
-    // returning NULL from the next function means that values of this type cannot be broken down further
-    virtual Type *layout() const { return NULL; }
-    virtual LiteralMapper *explode(Literal *value, LiteralMapper *m=NULL) const { return NULL; }
-
+    // creates a Literal of this Type from the raw LiteralBytes
     Literal * literal(LOCATION, Compilation *comp, const LiteralBytes *value) const;
 
-    virtual bool mapJB1Type(JB1MethodBuilder *j1mb) const { return true; }
+    // returning NULL from the next function means that values of this Type cannot be broken down further
+    virtual const Type *layout() const { return _layout; }
+
+    // for Types with non-NULL layout, converts a literal of Type to the literals of the layout type in the LiteralMapper
+    virtual LiteralMapper *explode(Literal *value, LiteralMapper *m=NULL) const { return NULL; }
+
+    // register this Type's corresponding JB1 type(s) in the JB1MethodBuilder
+    virtual bool registerJB1Type(JB1MethodBuilder *j1mb) const { return true; }
+
 protected:
     friend class Extension;
 
-    static Type * create(LOCATION, Extension *ext, std::string name, size_t size) {
-        return new Type(PASSLOC, ext, name, size);
+    static Type * create(LOCATION, Extension *ext, std::string name, size_t size, const Type * layout=NULL) {
+        return new Type(PASSLOC, ext, name, size, layout);
+    }
+    static Type * create(LOCATION, TypeDictionary *dict, std::string name, size_t size, const Type * layout=NULL) {
+        return new Type(PASSLOC, dict, name, size, layout);
     }
 
-    Type(LOCATION, Extension *ext, std::string name, size_t size);
-    Type(LOCATION, TypeDictionary *dict, std::string name, size_t size);
+    Type(LOCATION, Extension *ext, std::string name, size_t size, const Type *layout=NULL);
+    Type(LOCATION, TypeDictionary *dict, std::string name, size_t size, const Type *layout=NULL);
 
     Extension *_ext;
     CreateLocation _createLoc;
@@ -124,7 +134,7 @@ protected:
     TypeID _id;
     std::string _name;
     size_t _size;
-    Type * _layout;
+    const Type * _layout;
 };
 
 } // namespace JitBuilder

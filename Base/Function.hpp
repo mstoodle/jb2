@@ -66,6 +66,7 @@ public:
     LocalSymbol * DefineLocal(std::string name, const Type * type);
     void DefineFunction(LOCATION, std::string name, std::string fileName, std::string lineNumber, void *entryPoint, const Type *returnType, int32_t numParms, ...);
     void DefineFunction(LOCATION, std::string name, std::string fileName, std::string lineNumber, void *entryPoint, const Type *returnType, int32_t numParms, const Type **parmTypes);
+    const PointerType * PointerTo(LOCATION, const Type *baseType);
 
     std::string name() const                        { return _givenName; }
     std::string fileName() const                    { return _fileName; }
@@ -78,6 +79,7 @@ public:
     LocalSymbolIterator LocalsBegin() const;
     LocalSymbolIterator LocalsEnd() const;
     LocalSymbolVector ResetLocals();
+    LocalSymbol * LookupLocal(std::string name);
 
     FunctionSymbolIterator FunctionsBegin()  const { return FunctionSymbolIterator(_functions); }
     FunctionSymbolIterator FunctionsEnd()  const { return endFunctionIterator; }
@@ -111,7 +113,7 @@ public:
         return true;
     }
 
-    bool Construct();
+    CompileResult Compile(TextWriter *logger=NULL);
 
     template<typename T>
     T nativeEntry(int i=0) const {

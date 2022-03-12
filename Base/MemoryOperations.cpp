@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2021, 2021 IBM Corp. and others
+ * Copyright (c) 2021, 2022 IBM Corp. and others
  *
  * This program and the accompanying materials are made available under
  * the terms of the Eclipse Public License 2.0 which accompanies this
@@ -20,100 +20,177 @@
  *******************************************************************************/
 
 #include <stdint.h>
+#include "BaseExtension.hpp"
+#include "BaseSymbols.hpp"
+#include "BaseTypes.hpp"
 #include "Builder.hpp"
-//#include "Case.hpp"
-#include "Compilation.hpp"
-#include "Extension.hpp"
+#include "ControlOperations.hpp"
+#include "Function.hpp"
+#include "JB1MethodBuilder.hpp"
 #include "Literal.hpp"
 #include "Location.hpp"
+#include "MemoryOperations.hpp"
 #include "Operation.hpp"
-//#include "OperationCloner.hpp"
-//#include "OperationReplacer.hpp"
-#include "TypeDictionary.hpp"
-#include "Value.hpp"
+#include "OperationCloner.hpp"
 #include "TextWriter.hpp"
+#include "Value.hpp"
 
 using namespace OMR::JitBuilder;
 
-namespace OMR
-{
-namespace JitBuilder
-{
+namespace OMR {
+namespace JitBuilder {
+namespace Base {
 
-BuilderIterator Operation::builderEndIterator;
-CaseIterator Operation::caseEndIterator;
-LiteralIterator Operation::literalEndIterator;
-SymbolIterator Operation::symbolEndIterator;
-TypeIterator Operation::typeEndIterator;
-ValueIterator Operation::valueEndIterator;
-
-Operation::Operation(LOCATION, ActionID a, Extension *ext, Builder * parent)
-   : _id(parent->comp()->getOperationID())
-   , _ext(ext)
-   , _parent(parent)
-   , _action(a)
-   , _name(ext->actionName(a))
-   , _location(parent->location())
-   , _creationLocation(PASSLOC) {
-   } 
+//
+// Load
+//
+Op_Load::Op_Load(LOCATION, Extension *ext, Builder * parent, ActionID aLoad, Value *result, Symbol *symbol)
+    : OperationR1S1(PASSLOC, aLoad, ext, parent, result, symbol) {
+}
 
 Operation *
-Operation::setParent(Builder * newParent)
-   {
-   _parent = newParent;
-   return static_cast<OMR::JitBuilder::Operation *>(this);
-   }
+Op_Load::clone(LOCATION, Builder *b, OperationCloner *cloner) const {
+    return new Op_Load(PASSLOC, this->_ext, b, this->action(), this->_result, this->_symbol);
+}
+
+void
+Op_Load::jbgen(JB1MethodBuilder *j1mb) const {
+    j1mb->Load(location(), this->parent(), this->_result, this->_symbol);
+}
+
+
+//
+// Store
+//
+Op_Store::Op_Store(LOCATION, Extension *ext, Builder * parent, ActionID aStore, Symbol *symbol, Value *value)
+    : OperationR0S1V1(PASSLOC, aStore, ext, parent, symbol, value) {
+}
 
 Operation *
-Operation::setLocation(Location *location)
-   {
-   _location = location;
-   return static_cast<OMR::JitBuilder::Operation *>(this);
-   }
-
-void
-Operation::addToBuilder(Extension *ext, Builder *b, Operation *op) {
-   ext->addOperation(b, op);
+Op_Store::clone(LOCATION, Builder *b, OperationCloner *cloner) const {
+    return new Op_Store(PASSLOC, this->_ext, b, this->action(), this->_symbol, this->_value);
 }
 
 void
-Operation::writeFull(TextWriter & w) const {
-    w.indent() << _parent << "!o" << _id << " : ";
-    write(w);
+Op_Store::jbgen(JB1MethodBuilder *j1mb) const {
+    j1mb->Store(location(), this->parent(), this->_symbol, this->_value);
+}
+
+
+//
+// LoadAt
+//
+Op_LoadAt::Op_LoadAt(LOCATION, Extension *ext, Builder * parent, ActionID aLoadAt, Value *result, Value *ptrValue)
+    : OperationR1V1(PASSLOC, aLoadAt, ext, parent, result, ptrValue) {
+}
+
+Operation *
+Op_LoadAt::clone(LOCATION, Builder *b, OperationCloner *cloner) const {
+    return new Op_LoadAt(PASSLOC, this->_ext, b, this->action(), this->_result, this->_value);
 }
 
 void
-OperationR1L1::write(TextWriter &w) const {
-    w << result() << " = " << name() << " " << literal() << w.endl();
+Op_LoadAt::jbgen(JB1MethodBuilder *j1mb) const {
+    j1mb->LoadAt(location(), this->parent(), this->_result, this->_value);
+}
+
+
+//
+// StoreAt
+//
+Op_StoreAt::Op_StoreAt(LOCATION, Extension *ext, Builder * parent, ActionID aStoreAt, Value *ptrValue, Value *value)
+    : OperationR0V2(PASSLOC, aStoreAt, ext, parent, ptrValue, value) {
+}
+
+Operation *
+Op_StoreAt::clone(LOCATION, Builder *b, OperationCloner *cloner) const {
+    return new Op_StoreAt(PASSLOC, this->_ext, b, this->action(), this->_left, this->_right);
 }
 
 void
-OperationR1S1::write(TextWriter & w) const {
-    w << this->_result << " = " << this->name() << " " << this->_symbol << w.endl();
+Op_StoreAt::jbgen(JB1MethodBuilder *j1mb) const {
+    j1mb->StoreAt(location(), this->parent(), this->_left, this->_right);
+}
+
+
+//
+// LoadField
+//
+Op_LoadField::Op_LoadField(LOCATION, Extension *ext, Builder * parent, ActionID aLoadField, Value *result, const FieldType *fieldType, Value *structValue)
+    : OperationR1V1T1(PASSLOC, aLoadField, ext, parent, result, fieldType, structValue) {
+}
+
+Operation *
+Op_LoadField::clone(LOCATION, Builder *b, OperationCloner *cloner) const {
+    return new Op_LoadField(PASSLOC, this->_ext, b, this->action(), this->_result, static_cast<const FieldType *>(_type), this->_value);
 }
 
 void
-OperationR0S1V1::write(TextWriter & w) const {
-    w << this->name() << " " << this->_symbol << " " << this->_value << w.endl();
+Op_LoadField::jbgen(JB1MethodBuilder *j1mb) const {
+    assert(0); // needs to be expanded
+}
+
+
+//
+// StoreField
+//
+Op_StoreField::Op_StoreField(LOCATION, Extension *ext, Builder * parent, ActionID aStoreField, const FieldType *fieldType, Value *structValue, Value *value)
+    : OperationR0V2T1(PASSLOC, aStoreField, ext, parent, fieldType, structValue, value) {
+}
+
+Operation *
+Op_StoreField::clone(LOCATION, Builder *b, OperationCloner *cloner) const {
+    return new Op_StoreField(PASSLOC, this->_ext, b, this->action(), static_cast<const FieldType *>(_type), this->_base, this->_value);
 }
 
 void
-OperationR1V1::write(TextWriter & w) const {
-    w << this->_result << " = " << this->name() << " " << this->_value << w.endl();
+Op_StoreField::jbgen(JB1MethodBuilder *j1mb) const {
+    assert(0); // needs to be expanded
+}
+
+
+//
+// LoadFieldAt
+//
+Op_LoadFieldAt::Op_LoadFieldAt(LOCATION, Extension *ext, Builder * parent, ActionID aLoadFieldAt, Value *result, const FieldType *fieldType, Value *pStruct)
+    : OperationR1V1T1(PASSLOC, aLoadFieldAt, ext, parent, result, fieldType, pStruct) {
+}
+
+Operation *
+Op_LoadFieldAt::clone(LOCATION, Builder *b, OperationCloner *cloner) const {
+    return new Op_LoadFieldAt(PASSLOC, this->_ext, b, this->action(), this->_result, static_cast<const FieldType *>(this->_type), this->_value);
 }
 
 void
-OperationR1V1T1::write(TextWriter & w) const {
-    w << this->_result << " = " << this->name() << " " << this->_type << " " << this->_value << w.endl();
+Op_LoadFieldAt::jbgen(JB1MethodBuilder *j1mb) const {
+    const FieldType *fType = static_cast<const FieldType *>(_type);
+    const StructType *sType = fType->owningStruct();
+    j1mb->LoadIndirect(location(), this->parent(), this->_result, sType->name(), fType->name(), this->_value);
+}
+
+
+//
+// StoreFieldAt
+//
+Op_StoreFieldAt::Op_StoreFieldAt(LOCATION, Extension *ext, Builder * parent, ActionID aStoreFieldAt, const FieldType *fieldType, Value *pStruct, Value *value)
+    : OperationR0V2T1(PASSLOC, aStoreFieldAt, ext, parent, fieldType, pStruct, value) {
+}
+
+Operation *
+Op_StoreFieldAt::clone(LOCATION, Builder *b, OperationCloner *cloner) const {
+    return new Op_StoreFieldAt(PASSLOC, this->_ext, b, this->action(), static_cast<const FieldType *>(this->_type), this->_base, this->_value);
 }
 
 void
-OperationR0V2::write(TextWriter & w) const {
-    w << this->name() << " " << this->_left << " " << this->_right << w.endl();
+Op_StoreFieldAt::jbgen(JB1MethodBuilder *j1mb) const {
+    const FieldType *fType = static_cast<const FieldType *>(_type);
+    const StructType *sType = fType->owningStruct();
+    j1mb->StoreIndirect(location(), this->parent(), sType->name(), fType->name(), this->_base, this->_value);
 }
 
+
+///////////////////////////////////////////////////////////////////////////////////
 #if 0
-
 CoercePointer::CoercePointer(Builder * parent, Value * result, Type * t, Value * v)
    : OperationR1V1T1(aCoercePointer, parent, result, t, v)
    {
@@ -816,46 +893,6 @@ IfThenElse::initializeTypeProductions(TypeDictionary * types, TypeGraph * graph)
    graph->registerValidOperation(types->NoType, aIfThenElse, types->Int64);
    }
 
-Return::Return(Builder * parent)
-   : Operation(aReturn, parent), _value(NULL)
-   {
-   }
-
-Return::Return(Builder * parent, Value * v)
-   : Operation(aReturn, parent), _value(v)
-   {
-   }
-
-void
-Return::cloneTo(Builder *b, ValueMapper **resultMappers, ValueMapper **operandMappers, TypeMapper **typeMappers, LiteralMapper **literalMappers, SymbolMapper **symbolMappers, BuilderMapper **builderMappers) const
-   {
-   if (NULL != _value)
-      b->Return(operandMappers[0]->next());
-   else
-      b->Return();
-   }
-
-Operation *
-Return::clone(Builder *b, OperationCloner *cloner) const
-   {
-   if (NULL != _value)
-      return create(b, cloner->operand());
-   else
-      return create(b);
-   }
-
-void
-Return::initializeTypeProductions(TypeDictionary * types, TypeGraph * graph)
-   {
-   graph->registerValidOperation(types->NoType, aReturn, types->Int8);
-   graph->registerValidOperation(types->NoType, aReturn, types->Int16);
-   graph->registerValidOperation(types->NoType, aReturn, types->Int32);
-   graph->registerValidOperation(types->NoType, aReturn, types->Int64);
-   graph->registerValidOperation(types->NoType, aReturn, types->Float);
-   graph->registerValidOperation(types->NoType, aReturn, types->Double);
-   graph->registerValidOperation(types->NoType, aReturn, types->Address);
-   }
-
 Switch::Switch(Builder * parent, Value * selector, Builder *defaultTarget, int numCases, Case ** cases)
    : OperationR0V1(aSwitch, parent, selector)
    , _defaultTarget(defaultTarget)
@@ -936,15 +973,9 @@ CreateLocalStruct::clone(Builder *b, OperationCloner *cloner) const
    {
    return create(b, cloner->result(), cloner->type());
    }
+
 #endif
 
-// New operation code
-// BEGIN {
-//
-
-//
-// } END
-// New operation code
-
+} // namespace Base
 } // namespace JitBuilder
 } // namespace OMR

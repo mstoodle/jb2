@@ -31,7 +31,6 @@
 #include "Location.hpp"
 #include "Operation.hpp"
 #include "OperationCloner.hpp"
-#include "OperationReplacer.hpp"
 #include "TextWriter.hpp"
 #include "Value.hpp"
 
@@ -44,8 +43,6 @@ namespace Base {
 //
 // Return
 //
-const std::string Op_Return::opName="Return";
-
 Op_Return::Op_Return(LOCATION, Extension *ext, Builder * parent, ActionID aReturn)
     : Operation(PASSLOC, aReturn, ext, parent), _value(NULL) {
 }

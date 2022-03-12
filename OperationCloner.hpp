@@ -34,7 +34,7 @@ namespace JitBuilder
 {
 
 class Builder;
-class LiteralValue;
+class Literal;
 class Operation;
 class Symbol;
 class Type;
@@ -63,7 +63,7 @@ class OperationCloner
       return this;
       }
 
-   OperationCloner *changeLiteral(LiteralValue *v, uint32_t i=0)
+   OperationCloner *changeLiteral(Literal *v, uint32_t i=0)
       {
       if (i < _numLiterals)
          _literals[i] = v;
@@ -126,7 +126,7 @@ class OperationCloner
       {
       return _numLiterals;
       }
-   LiteralValue *literal(uint32_t i=0) const
+   Literal *literal(uint32_t i=0) const
       {
       if (i < _numLiterals) return _literals[i];
       return NULL;
@@ -166,7 +166,7 @@ class OperationCloner
    Type **_types;
 
    int32_t _numLiterals;
-   LiteralValue **_literals;
+   Literal **_literals;
 
    int32_t _numSymbols;
    Symbol **_symbols;

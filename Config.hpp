@@ -29,6 +29,7 @@ namespace OMR
 namespace JitBuilder
 {
 
+class FunctionBuilder;
 class Transformer;
 
 class Config

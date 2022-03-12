@@ -109,6 +109,7 @@ SymbolDictionary::internalRegisterSymbol(Symbol *symbol) {
 
 void
 SymbolDictionary::registerSymbol(Symbol *symbol) {
+    symbol->assignID(_nextSymbolID++);
     internalRegisterSymbol(symbol);
     _ownedSymbols.push_back(symbol);
 }
@@ -123,6 +124,7 @@ SymbolDictionary::write(TextWriter &w)
    for (SymbolIterator symbolIt = this->SymbolsBegin();symbolIt != this->SymbolsEnd();symbolIt++)
       {
       Symbol *symbol = *symbolIt;
+      w.indent();
       symbol->write(w);
       }
    w.indentOut();

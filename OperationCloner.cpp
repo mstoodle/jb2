@@ -82,7 +82,7 @@ OperationCloner::init()
       _types = new Type *[_numTypes];
 
    if (_numLiterals > 0)
-      _literals = new LiteralValue *[_numLiterals];
+      _literals = new Literal *[_numLiterals];
 
    if (_numSymbols > 0)
       _symbols = new Symbol *[_numSymbols];

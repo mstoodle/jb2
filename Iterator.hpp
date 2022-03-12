@@ -115,7 +115,7 @@ typedef Iterator<Builder> BuilderIterator;
 typedef Iterator<Case> CaseIterator;
 typedef Iterator<Literal> LiteralIterator;
 typedef Iterator<Symbol> SymbolIterator;
-typedef Iterator<Type> TypeIterator;
+typedef Iterator<const Type> TypeIterator;
 typedef Iterator<Value> ValueIterator;
 
 } // namespace JitBuilder

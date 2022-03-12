@@ -23,7 +23,6 @@
 #define TRANSFORMER_INCL
 
 #include <string>
-#include "Object.hpp"
 #include "Visitor.hpp"
 
 namespace OMR

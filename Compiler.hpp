@@ -79,6 +79,13 @@ public:
 
     TypeDictionaryID getTypeDictionaryID() { return this->_nextTypeDictionaryID++; }
 
+    const std::string actionName(ActionID a) const {
+        assert(a < _nextActionID);
+        auto found = _actionNames.find(a);
+        assert(found != _actionNames.end());
+        return found->second;
+    }
+
     uint8_t platformWordSize() { return 64; } // should test _targetPlatform!
 
 protected:

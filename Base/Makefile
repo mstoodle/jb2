@@ -13,6 +13,7 @@ BASE_OBJECTS = BaseExtension.o \
 	       ControlOperations.o \
                Function.o \
                FunctionCompilation.o \
+	       MemoryOperations.o \
 	       NativeCallableContext.o
 
 #	       BaseOperations.o \

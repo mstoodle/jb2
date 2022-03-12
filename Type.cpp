@@ -29,25 +29,25 @@
 namespace OMR {
 namespace JitBuilder {
 
-Type::Type(LOCATION, Extension *ext, std::string name, size_t size)
+Type::Type(LOCATION, Extension *ext, std::string name, size_t size, const Type *layout)
     : _ext(ext)
     , _createLoc(PASSLOC)
     , _dict(ext->compiler()->dict())
-    , _id(_dict->getTypeID())
+    , _id(ext->compiler()->dict()->getTypeID())
     , _name(name)
     , _size(size)
-    , _layout(NULL) {
+    , _layout(layout) {
 
 }
 
-Type::Type(LOCATION, TypeDictionary *dict, std::string name, size_t size)
+Type::Type(LOCATION, TypeDictionary *dict, std::string name, size_t size, const Type *layout)
     : _ext(NULL)
     , _createLoc(PASSLOC)
     , _dict(dict)
-    , _id(_dict->getTypeID())
+    , _id(dict->getTypeID())
     , _name(name)
     , _size(size)
-    , _layout(NULL) {
+    , _layout(layout) {
 
 }
 
@@ -58,17 +58,18 @@ Type::literal(LOCATION, Compilation *comp, const LiteralBytes *value) const {
 }
 
 void
-Type::writeType(TextWriter &w) {
-   w.indent() << "[ " << " type " << this << " " << size() << " " << name() << " ";
+Type::writeType(TextWriter &w) const {
+   w.indent() << "[ type " << this << " " << size() << " " << name() << " ";
    writeSpecificType(w);
+    w << "]" << w.endl();
 }
 
 void
-Type::writeSpecificType(TextWriter &w) {
+Type::writeSpecificType(TextWriter &w) const {
     w << "primitiveType";
     if (_layout)
         w << " layout " << _layout;
-    w << "]" << w.endl();
 }
+
 } // namespace JitBuilder
 } // namespace OMR

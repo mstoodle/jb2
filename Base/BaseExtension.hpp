@@ -23,6 +23,7 @@
 #define BASEEXTENSION_INCL
 
 #include <stdint.h>
+#include <map>
 #include "CreateLoc.hpp"
 #include "Extension.hpp"
 #include "IDs.hpp"
@@ -57,12 +58,14 @@ class Float32Type;
 class Float64Type;
 class AddressType;
 class PointerType;
+class PointerTypeBuilder;
 class FieldType;
 class StructType;
 class UnionType;
 class FunctionType;
 
 class BaseExtension : public Extension {
+    friend class PointerTypeBuilder;
 
     public:
     BaseExtension(Compiler *compiler);
@@ -94,20 +97,11 @@ class BaseExtension : public Extension {
     const AddressType *Address;
     const IntegerType *Word;
 
-    PointerType * PointerTo(LOCATION, Type * baseType);
-    StructType *LookupStruct(LOCATION, std::string name);
-    StructType * DefineStruct(LOCATION, std::string structName, size_t size=0);
-    UnionType * DefineUnion(LOCATION, std::string unionName);
-    //FieldType * DefineField(std::string structName, std::string fieldName, Type * fieldType, size_t offset) { // deprecated
-    //    return DefineField(LookupStruct(structName), Literal::create(this, fieldName), fieldType, offset);
-    //}
-    //FieldType * DefineField(StructType *structType, std::string fieldName, Type * fieldType, size_t offset) {
-    //    return DefineField(structType, Literal::create(this, fieldName), fieldType, offset);
-    //}
-    //FieldType * DefineField(LOCATION, StructType *structType, Literal *fieldName, Type * fieldType, size_t offset);
-    //void CloseStruct(LOCATION, StructType *structType);
-    //void CloseUnion(LOCATION, UnionType *unionType);
-    const FunctionType *DefineFunctionType(LOCATION, std::string name, const Type *returnType, int32_t numParms, const Type **parmTypes);
+    #if 0
+    const FunctionType * DefineFunctionType(LOCATION, FunctionTypeBuilder *builder);
+    #endif
+    // deprecated
+    const FunctionType * DefineFunctionType(LOCATION, std::string name, const Type *returnType, int32_t numParms, const Type **parmTypes);
 
     //
     // Actions
@@ -124,6 +118,16 @@ class BaseExtension : public Extension {
 
     // Control actions
     const ActionID aReturn;
+
+    // Memory actions
+    const ActionID aLoad;
+    const ActionID aStore;
+    const ActionID aLoadAt;
+    const ActionID aStoreAt;
+    const ActionID aLoadField;
+    const ActionID aStoreField;
+    const ActionID aLoadFieldAt;
+    const ActionID aStoreFieldAt;
 
     //
     // Operations
@@ -143,7 +147,17 @@ class BaseExtension : public Extension {
 
     // Control operations
     void Return(LOCATION, Builder *b);
-    void Return(LOCATION, Builder *b, Value *v=NULL);
+    void Return(LOCATION, Builder *b, Value *v);
+
+    // Memory operations
+    Value * Load(LOCATION, Builder *b, Symbol *sym);
+    void Store(LOCATION, Builder *b, Symbol *sym, Value *value);
+    Value * LoadAt(LOCATION, Builder *b, Value *ptrValue);
+    void StoreAt(LOCATION, Builder *b, Value *ptrValue, Value *value);
+    Value * LoadField(LOCATION, Builder *b, const FieldType *fieldType, Value *structValue);
+    void StoreField(LOCATION, Builder *b, const FieldType *fieldType, Value *structValue, Value *value);
+    Value * LoadFieldAt(LOCATION, Builder *b, const FieldType *fieldType, Value *pStruct);
+    void StoreFieldAt(LOCATION, Builder *b, const FieldType *fieldType, Value *pStruct, Value *value);
 
     // Pseudo operations
     Location * SourceLocation(LOCATION, Builder *b, std::string func);

@@ -22,76 +22,53 @@
 #ifndef CODEGENERATOR_INCL
 #define CODEGENERATOR_INCL
 
-#include <map>
-#include <string>
-#include "Transformer.hpp"
+#include <vector>
+#include <deque>
+#include "typedefs.hpp"
 
-namespace TR { class IlBuilder; }
-namespace TR { class IlType; }
-namespace TR { class IlValue; }
-namespace TR { class MethodBuilder; }
-namespace TR { class TypeDictionary; }
 
-namespace OMR
-{
-
-namespace JitBuilder
-{
+namespace OMR {
+namespace JitBuilder {
 
 class Builder;
-class Case;
-class FunctionBuilder;
+class Compilation;
 class Operation;
-class PointerType;
-class StructType;
 class Type;
-class Value;
+class TypeDictionary;
 
-class CodeGenerator : public Transformer
+class CodeGenerator : public Visitor
    {
-public:
-   CodeGenerator(FunctionBuilder * fb, TR::MethodBuilder * mb);
+   public:
+   CodeGenerator(Compilation *comp)
+      : Visitor(_comp)
+      , _visitAppendedBuilders(visitAppendedBuilders)
+      { }
 
-   TR::MethodBuilder *mb()    { return _mb; }
-   void * entryPoint() const  { return _entryPoint; }
-   int32_t returnCode() const { return _compileReturnCode; }
+   void start();
+   void start(Builder * b);
+   void start(Operation * op);
 
-   void generateFunctionAPI(FunctionBuilder *fb);
+   protected:
+   void visitBuilder(Builder * b, std::vector<bool> & visited, BuilderWorklist & list);
+   void visitOperations(Builder * b, BuilderWorklist & worklist);
 
-protected:
-   virtual FunctionBuilder * transformFunctionBuilder(FunctionBuilder * fb);
-   virtual Builder * transformOperation(Operation *op);
-   virtual FunctionBuilder * transformFunctionBuilderAtEnd(FunctionBuilder * fb);
+   // subclass Visitor and override these functions as needed
+   virtual void visitBegin()                             { }
+   virtual void visitPreCompilation(Compilation * comp)  { }
+   virtual void visitPostCompilation(Compilation * comp) { }
+   virtual void visitBuilderPreOps(Builder * b)          { }
+   virtual void visitBuilderPostOps(Builder * b)         { }
+   virtual void visitOperation(Operation * op)           { }
+   virtual void visitEnd()                               { }
 
-   TR::IlBuilder *mapBuilder(Builder * b);
-   void storeBuilder(Builder * b, TR::IlBuilder *omr_b);
-   TR::IlType *mapPointerType(TR::TypeDictionary * types, PointerType * t);
-   TR::IlType *mapStructFields(TR::TypeDictionary * types, StructType * sType, char * structName, std::string fNamePrefix, size_t baseOffset);
-   TR::IlType *mapType(Type * t);
-   void storeType(Type * t, TR::IlType *omr_t);
-   TR::IlValue *mapValue(Value * v);
-   void storeValue(Value * v, TR::IlValue *omr_v);
-   void *mapCase(TR::IlBuilder *omr_b, Case * c); // void * so we don't have to include IlBuilder.hpp in this header
+   // logging support: output msg to the log if enabled
+   void trace(std::string msg);
 
-   char * findOrCreateString(std::string str);
-
-   void printAllMaps();
-
-   std::map<uint64_t,TR::IlBuilder *> _builders;
-   std::map<uint64_t,void *> _cases; // void * so we don't need to include IlBuilder.hpp in this header
-   std::map<uint64_t,TR::IlType *> _types;
-   std::map<uint64_t,TR::IlValue *> _values;
-   std::map<uint64_t,TR::MethodBuilder *> _methodBuilders;
-   std::map<uint64_t,TR::TypeDictionary *> _typeDictionaries;
-   std::map<std::string,char *> _strings;
-
-   TR::MethodBuilder *_mb;
-   void *  _entryPoint;
-   int32_t _compileReturnCode;
+   Compilation *_comp;
+   bool _visitAppendedBuilders;
    };
 
 } // namespace JitBuilder
-
 } // namespace OMR
 
 #endif // defined(CODEGENERATOR_INCL)

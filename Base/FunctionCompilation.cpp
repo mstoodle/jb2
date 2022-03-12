@@ -39,6 +39,26 @@ FunctionCompilation::addInitialBuildersToWorklist(BuilderWorklist & worklist) {
     this->_func->addInitialBuildersToWorklist(worklist);
 }
 
+const PointerType *
+FunctionCompilation::pointerTypeFromBaseType(const Type *baseType) {
+    auto found = _pointerTypeFromBaseType.find(baseType);
+    if (found != _pointerTypeFromBaseType.end()) {
+        const PointerType *t = found->second;
+        return t;
+    }
+    return NULL;
+}
+
+const StructType *
+FunctionCompilation::structTypeFromName(std::string name) {
+    auto found = _structTypeFromName.find(name);
+    if (found != _structTypeFromName.end()) {
+        const StructType *t = found->second;
+        return t;
+    }
+    return NULL;
+}
+
 void
 FunctionCompilation::write(TextWriter &w) const {
     w << "Function" << w.endl();

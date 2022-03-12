@@ -57,13 +57,16 @@ public:
     virtual bool ilBuilt() const;
     virtual void setNativeEntryPoint(void *entry, int i=0);
 
-#if 0 // move to Function?
-#endif
+    const PointerType * pointerTypeFromBaseType(const Type * baseType);
+    const StructType * structTypeFromName(std::string name);
 
 protected:
     virtual void addInitialBuildersToWorklist(BuilderWorklist & worklist);
 
+
     Function *_func;
+    std::map<const Type *,const PointerType *> _pointerTypeFromBaseType;
+    std::map<std::string,const StructType *> _structTypeFromName;
 };
 
 } // namespace FunctionCompilation

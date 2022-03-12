@@ -26,6 +26,7 @@
 #include "JitBuilder.hpp"
 #include "Location.hpp"
 #include "Operation.hpp"
+#include "Symbol.hpp"
 #include "TextWriter.hpp"
 #include "Type.hpp"
 #include "TypeDictionary.hpp"
@@ -56,20 +57,27 @@ JB1MethodBuilder::~JB1MethodBuilder() {
 void
 JB1MethodBuilder::registerTypes(TypeDictionary *dict) {
     TypeID numTypes = dict ->numTypes();
+    std::vector<bool> mappedTypes(numTypes);
+    //mappedTypes.clear();
     while (numTypes > 0) {
         TypeID startNumTypes = numTypes;
         for (auto it = dict->TypesBegin(); it != dict->TypesEnd(); it++) {
-            Type *type = *it;
-            if (_types.find(type->id()) == _types.end()) {
-                bool mapped = type->mapJB1Type(this);
+            const Type *type = *it;
+            if (mappedTypes[type->id()] != true) {
+                bool mapped = type->registerJB1Type(this);
                 if (mapped) {
-                    assert(_types.find(type->id()) != _types.end());
                     numTypes--;
+                    mappedTypes[type->id()] = true;
                 }
             }
         }
         assert(numTypes < startNumTypes);
     }
+}
+
+bool
+JB1MethodBuilder::typeRegistered(const Type *t) {
+    return (_types.find(t->id()) != _types.end());
 }
 
 void
@@ -118,6 +126,46 @@ void
 JB1MethodBuilder::registerAddress(const Type * t) {
     assert(_types.find(t->id()) == _types.end());
     _types[t->id()] = _mb->typeDictionary()->Address;
+}
+
+void
+JB1MethodBuilder::registerPointer(const Type * pointerType, const Type *baseType) {
+    auto found = _types.find(pointerType->id());
+    if (found != _types.end()) {
+        assert(found->second->baseType() == map(baseType));
+        return;
+    }
+
+    assert(_types.find(baseType->id()) != _types.end());
+    TR::IlType *baseIlType = _types[baseType->id()];
+
+    TR::TypeDictionary *dict = _mb->typeDictionary();
+    TR::IlType *ptrIlType = dict->PointerTo(baseIlType);
+
+    _types[pointerType->id()] = ptrIlType;
+}
+
+void
+JB1MethodBuilder::registerStruct(const Type * type) {
+    auto found = _types.find(type->id());
+    assert(found == _types.end());
+
+    TR::TypeDictionary *dict = _mb->typeDictionary();
+    TR::IlType *structIlType = dict->DefineStruct(findOrCreateString(type->name()));
+
+    _types[type->id()] = structIlType;
+}
+
+void
+JB1MethodBuilder::registerField(std::string structName, std::string fieldName, const Type *type, size_t offset) {
+    TR::TypeDictionary *dict = _mb->typeDictionary();
+    dict->DefineField(findOrCreateString(structName), findOrCreateString(fieldName), map(type), offset/8); // JB1 uses byte offsets
+}
+
+void
+JB1MethodBuilder::closeStruct(std::string structName) {
+    TR::TypeDictionary *dict = _mb->typeDictionary();
+    dict->CloseStruct(findOrCreateString(structName));
 }
 
 void
@@ -243,9 +291,53 @@ void
 JB1MethodBuilder::Return(Location *loc, Builder *b, Value *v) {
     TR::IlBuilder *omr_b = map(b);
     omr_b->setBCIndex(loc->bcIndex())->SetCurrentIlGenerator();
-    omr_b->Return(map(v));
+    if (v != NULL)
+        omr_b->Return(map(v));
+    else
+        omr_b->Return();
 }
 
+void
+JB1MethodBuilder::Load(Location *loc, Builder *b, Value *result, Symbol *sym) {
+    TR::IlBuilder *omr_b = map(b);
+    omr_b->setBCIndex(loc->bcIndex())->SetCurrentIlGenerator();
+    registerValue(result, omr_b->Load(findOrCreateString(sym->name())));
+}
+
+void
+JB1MethodBuilder::Store(Location *loc, Builder *b, Symbol *sym, Value *value) {
+    TR::IlBuilder *omr_b = map(b);
+    omr_b->setBCIndex(loc->bcIndex())->SetCurrentIlGenerator();
+    omr_b->Store(findOrCreateString(sym->name()), map(value));
+}
+
+void
+JB1MethodBuilder::LoadAt(Location *loc, Builder *b, Value *result, Value *ptrValue) {
+    TR::IlBuilder *omr_b = map(b);
+    omr_b->setBCIndex(loc->bcIndex())->SetCurrentIlGenerator();
+    registerValue(result, omr_b->LoadAt(map(ptrValue->type()), map(ptrValue)));
+}
+
+void
+JB1MethodBuilder::StoreAt(Location *loc, Builder *b, Value *ptrValue, Value *value) {
+    TR::IlBuilder *omr_b = map(b);
+    omr_b->setBCIndex(loc->bcIndex())->SetCurrentIlGenerator();
+    omr_b->StoreAt(map(ptrValue), map(value));
+}
+
+void
+JB1MethodBuilder::LoadIndirect(Location *loc, Builder *b, Value *result, std::string structName, std::string fieldName, Value *pStruct) {
+    TR::IlBuilder *omr_b = map(b);
+    omr_b->setBCIndex(loc->bcIndex())->SetCurrentIlGenerator();
+    registerValue(result, omr_b->LoadIndirect(findOrCreateString(structName), findOrCreateString(fieldName), map(pStruct)));
+}
+
+void
+JB1MethodBuilder::StoreIndirect(Location *loc, Builder *b, std::string structName, std::string fieldName, Value *pStruct, Value *value) {
+    TR::IlBuilder *omr_b = map(b);
+    omr_b->setBCIndex(loc->bcIndex())->SetCurrentIlGenerator();
+    omr_b->StoreIndirect(findOrCreateString(structName), findOrCreateString(fieldName), map(pStruct), map(value));
+}
 
 //
 // internal functions
@@ -298,20 +390,6 @@ JB1MethodBuilder::map(const Type * t) {
 }
 
 #if 0
-void
-JBCodeGenerator::registerPointer(Type * pointerType, Type *baseType) {
-    if (_types.find(pointerType->id()) != _types.end())
-        return;
-
-    if (_types.find(baseType->id()) == _types.end())
-        baseType->mapJB1Type(this);
-
-    TR::TypeDictionary (types = _mb->typeDictionary();
-    TR::IlType *baseIlType = _types[baseType->id()];
-    TR::IlType *ptrIlType = types->PointerTo(baseIlType);
-    _types[pointerType->id()] = ptrIlType;
-}
-
 // mapStructFields is designed to iterate (recursively) through the fields of a struct/union,
 // defining the fields of that struct in the `types` dictionary. If a field has a struct or
 // union type, then the fields of that struct/union are also walked and added directly to
@@ -411,7 +489,7 @@ JBCodeGenerator::generateFunctionAPI(FunctionBuilder *fb) {
         for (auto it = dict->TypesBegin(); it !+ dict->TypeEnd(); it++) {
             Type *type = *it;
             if (_types[type->id()] == NULL) {
-                bool mapped = type->mapJB1Type(this)
+                bool mapped = type->registerJB1Type(this)
                 if (mapped) {
                     assert(_types[type->id()] != NULL);
                     numTypes--;

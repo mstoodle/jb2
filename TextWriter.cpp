@@ -210,7 +210,8 @@ OMR::JitBuilder::TextWriter::printTypePrefix(Type * type, bool indent)
    TextWriter &w = *this;
    if (indent)
       w.indent();
-   w << "[ " << ((void*)type) << " type " << type << " " << type->size() << " " << type->name() << " ";
+   //w << "[ " << ((void*)type) << " type " << type << " " << type->size() << " " << type->name() << " ";
+   w << "[ type " << type << " " << type->size() << " " << type->name() << " ";
    }
 
 void
@@ -263,7 +264,7 @@ OMR::JitBuilder::TextWriter::writeType(Type *type, bool indent)
    #endif
       {
       w << "primitiveType";
-      Type *layout = type->layout();
+      const Type *layout = type->layout();
       if (layout)
          w << " layout " << layout;
       w << "]" << w.endl();

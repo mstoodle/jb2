@@ -57,7 +57,7 @@ TypeDictionary::TypeDictionary(Compiler *compiler, std::string name, TypeDiction
     , _linkedDictionary(linkedDict) {
     for (TypeIterator typeIt = linkedDict->TypesBegin(); typeIt != linkedDict->TypesEnd(); typeIt++)
         {
-        Type *type = *typeIt;
+        const Type *type = *typeIt;
         internalRegisterType(type);
         }
     _nextTypeID = linkedDict->_nextTypeID;
@@ -65,15 +65,15 @@ TypeDictionary::TypeDictionary(Compiler *compiler, std::string name, TypeDiction
 
 TypeDictionary::~TypeDictionary() {
     for (auto it = _ownedTypes.begin(); it != _ownedTypes.end(); it++) {
-        Type *type = *it;
+        const Type *type = *it;
         delete type;
     }
 }
 
-Type *
+const Type *
 TypeDictionary::LookupType(TypeID id) {
     for (auto it = TypesBegin(); it != TypesEnd(); it++) {
-        Type *type = *it;
+        const Type *type = *it;
         if (type->id() == id)
             return type;
     }
@@ -99,7 +99,7 @@ TypeDictionary::write(TextWriter &w) {
     if (this->hasLinkedDictionary())
         w.indent() << "[ linkedDictionary " << this->linkedDictionary() << " ]" << w.endl();
     for (TypeIterator typeIt = this->TypesBegin();typeIt != this->TypesEnd();typeIt++) {
-        Type *type = *typeIt;
+        const Type *type = *typeIt;
         type->writeType(w);
     }
     w.indentOut();
@@ -107,59 +107,17 @@ TypeDictionary::write(TextWriter &w) {
 }
 
 void
-TypeDictionary::internalRegisterType(Type *type) {
+TypeDictionary::internalRegisterType(const Type *type) {
     _types.push_back(type);
 }
 
 void
-TypeDictionary::registerType(Type *type) {
+TypeDictionary::registerType(const Type *type) {
     internalRegisterType(type);
     _ownedTypes.push_back(type);
 }
 
 #if 0
-
-// Move below to BaseExtension
-
-void
-TypeDictionary::createPrimitiveTypes()
-   {
-   NoType = NoTypeType::create(this);
-   addType(NoType);
-
-   Int8 = Int8Type::create(this);
-   addType(Int8);
-
-   Int16 = Int16Type::create(this);
-   addType(Int16);
-
-   Int32 = Int32Type::create(this);
-   addType(Int32);
-
-   Int64 = Int64Type::create(this);
-   addType(Int64);
-
-   Float = FloatType::create(this);
-   addType(Float);
-
-   Double = DoubleType::create(this);
-   addType(Double);
-
-   Address = PointerType::create(this, "Address", Int8);
-   addType(Address);
-
-   Word = Int64; // should really be changed based on Config
-
-   //
-   // User type handling
-   // BEGIN {
-
-   // } END
-   // User type handling
-   //
-
-   }
-
 PointerType *
 TypeDictionary::PointerTo(Type * baseType)
    {

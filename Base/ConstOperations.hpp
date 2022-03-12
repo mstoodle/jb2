@@ -42,12 +42,9 @@ class Op_ConstInt8 : public OperationR1L1
     friend class BaseExtension;
     public:
     virtual Operation * clone(LOCATION, Builder *b, OperationCloner *cloner) const;
-    virtual void write(TextWriter &w) const;
     virtual void jbgen(JB1MethodBuilder *j1mb) const;
-    static const std::string & name() { return opName; }
     protected:
     Op_ConstInt8(LOCATION, Extension *ext, Builder * parent, ActionID aConstInt8, Value *result, Literal *lv);
-    static const std::string opName;
     };
 
 class Op_ConstInt16 : public OperationR1L1
@@ -55,12 +52,9 @@ class Op_ConstInt16 : public OperationR1L1
     friend class BaseExtension;
     public:
     virtual Operation * clone(LOCATION, Builder *b, OperationCloner *cloner) const;
-    virtual void write(TextWriter &w) const;
     virtual void jbgen(JB1MethodBuilder *j1mb) const;
-    static const std::string & name() { return opName; }
     protected:
     Op_ConstInt16(LOCATION, Extension *ext, Builder * parent, ActionID aConstInt16, Value * result, Literal *lv);
-    static const std::string opName;
     };
 
 
@@ -69,12 +63,9 @@ class Op_ConstInt32 : public OperationR1L1
     friend class BaseExtension;
     public:
     virtual Operation * clone(LOCATION, Builder *b, OperationCloner *cloner) const;
-    virtual void write(TextWriter &w) const;
     virtual void jbgen(JB1MethodBuilder *j1mb) const;
-    static const std::string & name() { return opName; }
     protected:
     Op_ConstInt32(LOCATION, Extension *ext, Builder * parent, ActionID aConstInt32, Value * result, Literal *lv);
-    static const std::string opName;
     };
 
 class Op_ConstInt64 : public OperationR1L1
@@ -82,12 +73,9 @@ class Op_ConstInt64 : public OperationR1L1
     friend class BaseExtension;
     public:
     virtual Operation * clone(LOCATION, Builder *b, OperationCloner *cloner) const;
-    virtual void write(TextWriter &w) const;
     virtual void jbgen(JB1MethodBuilder *j1mb) const;
-    static const std::string & name() { return opName; }
     protected:
     Op_ConstInt64(LOCATION, Extension *ext, Builder * parent, ActionID aConstInt64, Value * result, Literal *lv);
-    static const std::string opName;
     };
 
 class Op_ConstFloat32 : public OperationR1L1
@@ -95,12 +83,9 @@ class Op_ConstFloat32 : public OperationR1L1
     friend class BaseExtension;
     public:
     virtual Operation * clone(LOCATION, Builder *b, OperationCloner *cloner) const;
-    virtual void write(TextWriter &w) const;
     virtual void jbgen(JB1MethodBuilder *j1mb) const;
-    static const std::string & name() { return opName; }
     protected:
     Op_ConstFloat32(LOCATION, Extension *ext, Builder * parent, ActionID aConstFloat32, Value * result, Literal *lv);
-    static const std::string opName;
     };
 
 class Op_ConstFloat64 : public OperationR1L1
@@ -108,12 +93,9 @@ class Op_ConstFloat64 : public OperationR1L1
     friend class BaseExtension;
     public:
     virtual Operation * clone(LOCATION, Builder *b, OperationCloner *cloner) const;
-    virtual void write(TextWriter &w) const;
     virtual void jbgen(JB1MethodBuilder *j1mb) const;
-    static const std::string & name() { return opName; }
     protected:
     Op_ConstFloat64(LOCATION, Extension *ext, Builder * parent, ActionID aConstFloat64, Value * result, Literal *lv);
-    static const std::string opName;
     };
 
 class Op_ConstAddress : public OperationR1L1
@@ -121,12 +103,9 @@ class Op_ConstAddress : public OperationR1L1
     friend class BaseExtension;
     public:
     virtual Operation * clone(LOCATION, Builder *b, OperationCloner *cloner) const;
-    virtual void write(TextWriter &w) const;
     virtual void jbgen(JB1MethodBuilder *j1mb) const;
-    static const std::string & name() { return opName; }
     protected:
     Op_ConstAddress(LOCATION, Extension *ext, Builder * parent, ActionID aConstAddress, Value * result, Literal *lv);
-    static const std::string opName;
     };
 
 } // namespace Base

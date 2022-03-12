@@ -41,14 +41,16 @@ class Extension {
     friend class Compiler;
     friend class Operation;
 
-    public:
+public:
     virtual const SemanticVersion * semver() const { return &version; }
 
     Extension(Compiler *compiler, std::string name);
     Compiler *compiler() const { return _compiler; }
     std::string name() const { return _name; }
 
-    protected:
+    const std::string actionName(ActionID a) const;
+
+protected:
 
     ActionID registerAction(std::string name);
     PassID addPass(Pass *pass); 

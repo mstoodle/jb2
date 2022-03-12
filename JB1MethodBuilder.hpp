@@ -58,6 +58,7 @@ public:
     int32_t returnCode() const { return _compileReturnCode; }
 
     void registerTypes(TypeDictionary *dict);
+    bool typeRegistered(const Type *t);
 
     void registerNoType(const Type * t);
     void registerInt8(const Type * t);
@@ -68,12 +69,11 @@ public:
     void registerDouble(const Type * t);
     void registerAddress(const Type * t);
     void registerBuilder(Builder * b);
-    #if 0
-    void registerPointer(Type *ptrType, Type *baseType);
-    void registerStruct(Type *t);
-    void registerUnion(Type *t);
-    void registerField(std::string name, Type *t, size_t offset=0);
-    #endif
+    void registerPointer(const Type *ptrType, const Type *baseType);
+    void registerStruct(const Type *type);
+    void registerField(std::string structName, std::string fieldName, const Type *type, size_t offset);
+    void closeStruct(std::string structName);
+
     void FunctionName(std::string name);
     void FunctionFile(std::string file);
     void FunctionLine(std::string line);
@@ -100,6 +100,13 @@ public:
     void EntryPoint(Builder *entryBuilder);
     void Return(Location *loc, Builder *b);
     void Return(Location *loc, Builder *b, Value *value);
+
+    void Load(Location *loc, Builder *b, Value *result, Symbol *sym);
+    void Store(Location *loc, Builder *b, Symbol *sym, Value *value);
+    void LoadAt(Location *loc, Builder *b, Value *result, Value *ptrValue);
+    void StoreAt(Location *loc, Builder *b, Value *ptrValue, Value *value);
+    void LoadIndirect(Location *loc, Builder *b, Value *result, std::string structName, std::string fieldName, Value *pStruct);
+    void StoreIndirect(Location *loc, Builder *b, std::string structName, std::string fieldName, Value *pStruct, Value *value);
 
     void generateFunctionAPI(FunctionBuilder *fb);
 

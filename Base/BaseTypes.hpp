@@ -22,6 +22,7 @@
 #ifndef BASETYPES_INCL
 #define BASETYPES_INCL
 
+#include <list>
 #include <map>
 #include "Type.hpp"
 
@@ -36,6 +37,8 @@ class TextWriter;
 namespace Base {
 
 class BaseExtension;
+class Function;
+class FunctionCompilation;
 
 class NoTypeType : public Type {
     friend class BaseExtension;
@@ -43,7 +46,7 @@ class NoTypeType : public Type {
     public:
     static NoTypeType * create(LOCATION, Extension *ext) { return new NoTypeType(PASSLOC, ext); }
     virtual void printValue(TextWriter &w, const void *p) const;
-    virtual bool mapJB1Type(JB1MethodBuilder *j1mb) const;
+    virtual bool registerJB1Type(JB1MethodBuilder *j1mb) const;
 
     protected:
     NoTypeType(LOCATION, Extension *ext)
@@ -79,7 +82,7 @@ class Int8Type : public IntegerType {
     virtual bool isConcrete() const { return true; }
     virtual void printValue(TextWriter &w, const void *p) const;
     virtual void printLiteral(TextWriter &w, const Literal *lv) const;
-    virtual bool mapJB1Type(JB1MethodBuilder *j1mb) const;
+    virtual bool registerJB1Type(JB1MethodBuilder *j1mb) const;
 
     protected:
     Int8Type(LOCATION, Extension *ext) : IntegerType(PASSLOC, ext, "Int8", 8) { }
@@ -95,7 +98,7 @@ class Int16Type : public IntegerType {
     virtual bool isConcrete() const { return true; }
     virtual void printValue(TextWriter &w, const void *p) const;
     virtual void printLiteral(TextWriter &w, const Literal *lv) const;
-    virtual bool mapJB1Type(JB1MethodBuilder *j1mb) const;
+    virtual bool registerJB1Type(JB1MethodBuilder *j1mb) const;
 
     protected:
     Int16Type(LOCATION, Extension *ext) : IntegerType(PASSLOC, ext, "Int16", 16) { }
@@ -111,7 +114,7 @@ class Int32Type : public IntegerType {
     virtual bool isConcrete() const { return true; }
     virtual void printValue(TextWriter &w, const void *p) const;
     virtual void printLiteral(TextWriter &w, const Literal *lv) const;
-    virtual bool mapJB1Type(JB1MethodBuilder *j1mb) const;
+    virtual bool registerJB1Type(JB1MethodBuilder *j1mb) const;
 
     protected:
     Int32Type(LOCATION, Extension *ext) : IntegerType(PASSLOC, ext, "Int32", 32) { }
@@ -128,7 +131,7 @@ class Int64Type : public IntegerType {
     virtual bool isConcrete() const { return true; }
     virtual void printValue(TextWriter &w, const void *p) const;
     virtual void printLiteral(TextWriter &w, const Literal *lv) const;
-    virtual bool mapJB1Type(JB1MethodBuilder *j1mb) const;
+    virtual bool registerJB1Type(JB1MethodBuilder *j1mb) const;
 
     protected:
     Int64Type(LOCATION, Extension *ext) : IntegerType(PASSLOC, ext, "Int64", 64) { }
@@ -153,7 +156,7 @@ class Float32Type : public FloatingPointType {
     virtual bool isConcrete() const { return true; }
     virtual void printValue(TextWriter &w, const void *p) const;
     virtual void printLiteral(TextWriter &w, const Literal *lv) const;
-    virtual bool mapJB1Type(JB1MethodBuilder *j1mb) const;
+    virtual bool registerJB1Type(JB1MethodBuilder *j1mb) const;
 
     protected:
     Float32Type(LOCATION, Extension *ext) : FloatingPointType(PASSLOC, ext, "Float32", 32) { }
@@ -169,7 +172,7 @@ class Float64Type : public FloatingPointType {
     virtual bool isConcrete() const { return true; }
     virtual void printValue(TextWriter &w, const void *p) const;
     virtual void printLiteral(TextWriter &w, const Literal *lv) const;
-    virtual bool mapJB1Type(JB1MethodBuilder *j1mb) const;
+    virtual bool registerJB1Type(JB1MethodBuilder *j1mb) const;
 
     protected:
     Float64Type(LOCATION, Extension *ext) : FloatingPointType(PASSLOC, ext, "Float64", 64) { }
@@ -179,126 +182,197 @@ class AddressType : public Type {
     friend class BaseExtension;
 
     public:
+    virtual bool isConcrete() const { return true; }
     virtual size_t size() const { return 64; } // should be platform specific
     Literal *literal(LOCATION, Compilation *comp, const void * value) const;
     virtual bool literalsAreEqual(const LiteralBytes *l1, const LiteralBytes *l2) const;
-    virtual bool isConcrete() const { return true; }
     virtual void printValue(TextWriter &w, const void *p) const;
     virtual void printLiteral(TextWriter &w, const Literal *lv) const;
-    virtual bool mapJB1Type(JB1MethodBuilder *j1mb) const;
+    virtual bool registerJB1Type(JB1MethodBuilder *j1mb) const;
 
     protected:
     AddressType(LOCATION, Extension *ext);
     AddressType(LOCATION, Extension *ext, std::string name);
 };
 
-class PointerType : public AddressType {
-    friend class BaseExtension;
-    friend class Type;
-    friend class TypeDictionary;
+class PointerType;
+class PointerTypeBuilder;
+typedef void (PointerTypeHelper)(PointerType *pType, PointerTypeBuilder *builder);
+
+class PointerTypeBuilder {
+public:
+    PointerTypeBuilder(BaseExtension *ext, Function *func);
+    PointerTypeBuilder *setBaseType(const Type *type) { _baseType = type; return this; }
+    PointerTypeBuilder *setHelper(PointerTypeHelper *helper) { _helper = helper; return this; }
+
+    BaseExtension *extension() const { return _ext; }
+    TypeDictionary *dict() const { return _dict; }
+    const Type *baseType() const { return _baseType; }
+    PointerTypeHelper *helper() const { return _helper; }
+    std::string name() const { return std::string("PointerTo(") + _baseType->name() + std::string(")"); }
+
+    const PointerType *create(LOCATION);
+
+protected:
+    BaseExtension * _ext;
+    Function * _func;
+    FunctionCompilation * _comp;
+    TypeDictionary *_dict;
+    const Type * _baseType;
+    PointerTypeHelper *_helper;
+};
+    
+class PointerType : public Type {
+    friend class PointerTypeBuilder;
 
     public:
     virtual bool isPointer() const { return true; }
+    const Type * BaseType() const { return _baseType; }
 
-    Type * BaseType() { return _baseType; }
-
-    virtual void printType(TextWriter &w);
+    Literal *literal(LOCATION, Compilation *comp, const void * value) const;
+    virtual bool literalsAreEqual(const LiteralBytes *l1, const LiteralBytes *l2) const;
+    virtual void writeSpecificType(TextWriter &w) const;
     virtual void printValue(TextWriter &w, const void *p) const;
+    virtual void printLiteral(TextWriter &w, const Literal *lv) const;
+    virtual bool registerJB1Type(JB1MethodBuilder *j1mb) const;
 
     protected:
-    static PointerType * create(LOCATION, Extension *ext, std::string name, Type * baseType) { return new PointerType(PASSLOC, ext, name, baseType); }
-    PointerType(LOCATION, Extension *ext, std::string name, Type * baseType)
-        : AddressType(PASSLOC, ext, name) // should really be 32 or 64 from ext->compiler()
-        , _baseType(baseType)
-        { }
-    Type * _baseType;
+    PointerType(LOCATION, PointerTypeBuilder *builder);
+    const Type * _baseType;
 };
 
-class FieldType;
-typedef std::map<std::string, FieldType *>::const_iterator FieldIterator;
+struct StructType;
+
+class FieldType : public Type {
+    friend class StructType;
+    #if NEED_UNION
+    friend class UnionType; // ?
+    #endif
+
+    public:
+    const StructType *owningStruct() const  { return _structType; }
+    std::string fieldName() const { return _fieldName; }
+    const Type *type() const { return _type; }
+    size_t offset() const { return _offset; }
+    virtual bool isField() const { return true; }
+
+    Literal *literal(LOCATION, Compilation *comp, const LiteralBytes * structValue) const { return NULL; };
+    virtual bool literalsAreEqual(const LiteralBytes *l1, const LiteralBytes *l2) const { return false; }
+    virtual void writeSpecificType(TextWriter &w) const;
+    virtual void printValue(TextWriter &w, const void *p) const { }
+    virtual void printLiteral(TextWriter &w, const Literal *lv) const { }
+    virtual bool registerJB1Type(JB1MethodBuilder *j1mb) const;
+
+    protected:
+    FieldType(LOCATION, TypeDictionary *dict, const StructType *structType, std::string fieldName, const Type *type, size_t offset);
+
+    const StructType *_structType;
+    std::string _fieldName;
+    const Type *_type;
+    size_t _offset;
+};
+
+typedef std::map<std::string, const FieldType *>::const_iterator FieldIterator;
+
+class StructTypeBuilder;
+typedef void (StructHelperFunction)(StructType *sType, StructTypeBuilder *builder);
+#if NEED_UNION
+class UnionType;
+#endif
+
+class StructTypeBuilder {
+    // FieldInfo is used to record fields
+    struct FieldInfo {
+        std::string _name;
+        const Type * _type;
+        size_t _offset;
+        FieldInfo(std::string name, const Type *type, size_t offset)
+            : _name(name), _type(type), _offset(offset) {
+        }
+    };
+
+public:
+    StructTypeBuilder(BaseExtension *ext, Function *func);
+    #if NEED_UNION
+    StructTypeBuilder *setUnion(bool v=false); { _buildUnion = v; return this; }
+    #endif
+    StructTypeBuilder *setName(std::string n) { _name = n; return this; }
+    StructTypeBuilder *setSize(size_t size) { _size = size; return this; }
+    StructTypeBuilder *setHelper(StructHelperFunction *helper) { _helper = helper; return this; }
+    StructTypeBuilder *addField(std::string name, const Type *fieldType, size_t offset) {
+        FieldInfo info(name, fieldType, offset);
+        _fields.push_back(info);
+        return this;
+    }
+
+    BaseExtension *extension() const { return _ext; }
+    TypeDictionary *dict() const { return _dict; }
+    std::string name() const { return _name; }
+    size_t size() const { return _size; }
+    StructHelperFunction *helper() const { return _helper; }
+
+    void createFields(LOCATION, StructType *structType);
+    bool verifyFields(const StructType *sType);
+
+    const StructType * create(LOCATION);
+    #if NEED_UNION
+    const UnionType *createUnion();
+    #endif
+
+protected:
+    BaseExtension * _ext;
+    Function * _func;
+    FunctionCompilation * _comp;
+    TypeDictionary * _dict;
+    std::string _name;
+    size_t _size;
+    #if NEED_UNION
+    bool _buildUnion;
+    #endif
+    std::list<FieldInfo> _fields;
+    StructHelperFunction *_helper;
+};
 
 class StructType : public Type {
-    friend class BaseExtension;
-    friend class TypeDictionary;
+    friend class StructTypeBuilder;
 
     public:
     virtual bool isStruct() const { return true; }
-
-    Literal *literal(LOCATION, Compilation *comp, void * structValue);
     virtual bool isConcrete() const { return true; }
 
-    bool closed() const           { return _closed; }
-    void setClosed(bool c=true)   { _closed = c; }
+    Literal *literal(LOCATION, Compilation *comp, const LiteralBytes * structValue) const;
+    virtual bool literalsAreEqual(const LiteralBytes *l1, const LiteralBytes *l2) const;
+    virtual void writeSpecificType(TextWriter &w) const;
+    virtual void printValue(TextWriter &w, const void *p) const;
+    virtual void printLiteral(TextWriter &w, const Literal *lv) const;
+    virtual bool registerJB1Type(JB1MethodBuilder *j1mb) const;
 
-    virtual FieldType * addField(LOCATION, Literal *name, Type *type, size_t offset);
     FieldIterator FieldsBegin() const { return _fieldsByName.cbegin(); }
     FieldIterator FieldsEnd() const   { return _fieldsByName.cend(); }
-    FieldType *LookupField(std::string fieldName)
+    const FieldType *LookupField(std::string fieldName) const
         {
         auto it = _fieldsByName.find(fieldName);
         if (it == _fieldsByName.end())
             return NULL;
         return it->second;
         }
-    FieldIterator RemoveField(FieldIterator &it);
-
-    virtual void printType(TextWriter &w);
-    virtual void printValue(TextWriter &w, const void *p) const;
 
     protected:
-    static StructType * create(LOCATION, Extension *ext, std::string name) {
-        return new StructType(PASSLOC, ext, name, 0);
-    }
+    StructType(LOCATION, StructTypeBuilder *builder);
+    virtual const FieldType * addField(LOCATION, TypeDictionary *dict, std::string name, const Type *type, size_t offset);
+    void registerAllFields(JB1MethodBuilder *j1mb, std::string structName, std::string fNamePrefix, size_t baseOffset) const;
 
-    static StructType * create(LOCATION, Extension *ext, std::string name, size_t size) {
-        return new StructType(PASSLOC, ext, name, size); // size in bits, used to be bytes!
-    }
-
-    StructType(LOCATION, Extension *ext, std::string name, size_t size)
-        : Type(PASSLOC, ext, name, size)
-        , _closed(false) {
-        if (size > 0)
-            _closed = true;
-    }
-
-    bool _closed;
-    std::map<std::string, FieldType *> _fieldsByName;
-    std::multimap<size_t, FieldType *> _fieldsByOffset;
+    std::map<std::string, const FieldType *> _fieldsByName;
+    std::multimap<size_t, const FieldType *> _fieldsByOffset;
 };
 
-class FieldType : public Type {
-    friend class BaseExtension;
-
-    public:
-    static FieldType * create(LOCATION, Extension *ext, StructType *structType, Literal *fieldName, Type *type, size_t offset) {
-        return new FieldType(PASSLOC, ext, structType, fieldName, type, offset);
-    }
-
-    StructType *owningStruct() const  { return _structType; }
-    Literal *fieldName() const   { return _fieldName; }
-    Type *type() const                { return _type; }
-    size_t offset() const             { return _offset; }
-
-    virtual bool isField() const      { return true; }
-
-    virtual void printType(TextWriter &w);
-    virtual void printValue(TextWriter &w, const void *p) const;
-
-    protected:
-    FieldType(LOCATION, Extension *ext, StructType *structType, Literal *fieldName, Type *type, size_t offset);
-
-    StructType *_structType;
-    Literal *_fieldName;
-    Type *_type;
-    size_t _offset;
-};
-
-#if 0
+#if NEED_UNION
+// why is this class needed?
 class UnionType : public StructType {
-    friend class BaseExtension;
-    friend class TypeDictionary;
+    friend class StructTypeBuilder;
 
     public:
+    virtual bool isStruct() const { return false; }
     virtual bool isUnion() const { return true; }
 
     Literal *literal(LOCATION, Compilation *comp, void * unionValue);
@@ -315,16 +389,7 @@ class UnionType : public StructType {
     virtual void printValue(TextWriter *w, const void *p) const;
 
     protected:
-    static UnionType * create(LOCATION, Extension *ext, std::string name) {
-        return new UnionType(PASSLOC, ext, name, 0);
-    }
-    static UnionType * create(LOCATION, Extension *ext, std::string name, size_t size) {
-        return new UnionType(PASSLOC, ext, name, size);
-    }
-
-    UnionType(LOCATION, Extension *ext, std::string name, size_t size)
-        : StructType(PASSLOC, ext, name, size)
-        { }
+    UnionType(LOCATION, StructBuilder *builder);
 };
 #endif
 
@@ -333,6 +398,57 @@ class FunctionType : public Type {
     friend class TypeDictionary;
 
     public:
+    #if 0
+    class TypeBuilder {
+        struct FieldInfo {
+            std::string _name;
+            const Type * _type;
+            size_t _offset;
+            FieldInfo(std::string name, const Type *type, size_t offset)
+                : _name(name, _type(type), _offset(offset) {
+            }
+        };
+    public:
+        TypeBuilder()
+            : _ext(NULL)
+            , _name("")
+            , _size(0)
+            , _helper(NULL) {
+        }
+        TypeBuilder *setExtension(Extension *ext) { _ext = ext; }
+        TypeBuilder *setName(std::string n) { _name = n; }
+        TypeBuilder *setSize(size_t size) { _size = size; }
+        TypeBuilder *addField(std::string name, const Type *fieldType, size_t offset) {
+            FieldInfo info(name, fieldType, offset);
+            _fields.push_back(info);
+        }
+        TypeBuilder *setHelper(StructHelperFuntion *helper) { _helper = helper; }
+
+        Extention *extension() const { return _extension; }
+        std::string name() const { return _name; }
+        size_t size() const { return _size; }
+        StructHelperFunction *helper() const { return _helper; }
+
+        void createFields(LOCATION, StructType *structType) {
+            for (auto it = _fields.begin(); it != _fields.end(); it++) {
+                FieldInfo info = *it;
+                structType->addField(PASSLOC, info._name, info._type, info._offset);
+            }
+        }
+
+        const StructType *create() {
+            return StructType::create(this);
+        }
+
+    protected:
+        Extension * _ext;
+        std::string _name;
+        size_t _size;
+        std::list<FieldInfo> _fields;
+        StructHelperFunction _helper;
+    };
+    #endif
+    
     static FunctionType * create(LOCATION, Extension *ext, std::string name, const Type *returnType, int32_t numParms, const Type ** parmTypes);
 
     ~FunctionType() { delete[] _parmTypes; }

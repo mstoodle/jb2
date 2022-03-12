@@ -19,9 +19,11 @@
  * SPDX-License-Identifier: EPL-2.0 OR Apache-2.0 OR GPL-2.0 WITH Classpath-exception-2.0 OR LicenseRef-GPL-2.0 WITH Assembly-exception
  *******************************************************************************/
 
+#include "Compilation.hpp"
 #include "Compiler.hpp"
 #include "Pass.hpp"
 #include "Strategy.hpp"
+#include "TextWriter.hpp"
 
 namespace OMR {
 namespace JitBuilder {
@@ -44,9 +46,28 @@ CompileResult
 Strategy::perform(Compilation *comp) {
     for (auto it = _passes.begin(); it != _passes.end(); it++) {
         Pass *pass = *it;
+
+        if (comp->logger()) {
+            TextWriter &log = *comp->logger();
+            log << "IL before pass " << pass->name() << log.endl();
+            log.print(comp);
+        }
+
         CompileResult rc = pass->perform(comp);
-        if (rc != CompileSuccessful)
+
+        if (rc != CompileSuccessful) {
+            if (comp->logger()) {
+                TextWriter &log = *comp->logger();
+                log << "Final IL" << log.endl();
+                log.print(comp);
+            }
             return rc;
+        }
+    }
+    if (comp->logger()) {
+        TextWriter &log = *comp->logger();
+        log << "Final IL" << log.endl();
+        log.print(comp);
     }
     return CompileSuccessful;
 }

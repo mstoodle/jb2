@@ -19,8 +19,10 @@
  * SPDX-License-Identifier: EPL-2.0 OR Apache-2.0 OR GPL-2.0 WITH Classpath-exception-2.0 OR LicenseRef-GPL-2.0 WITH Assembly-exception
  *******************************************************************************/
 
+#include "Compilation.hpp"
 #include "Context.hpp"
 #include "Symbol.hpp"
+#include "SymbolDictionary.hpp"
 
 
 namespace OMR {
@@ -38,6 +40,7 @@ Context::Context(Compilation *comp, Context *parent, std::string name)
 
 void
 Context::addSymbol(Symbol *symbol) {
+    this->_comp->symdict()->registerSymbol(symbol);
     this->_symbolByName.insert({symbol->name(), symbol});
     this->_symbols.push_back(symbol);
 }

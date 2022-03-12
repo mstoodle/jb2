@@ -31,7 +31,6 @@
 #include "Location.hpp"
 #include "Operation.hpp"
 #include "OperationCloner.hpp"
-#include "OperationReplacer.hpp"
 #include "TextWriter.hpp"
 #include "Value.hpp"
 
@@ -42,29 +41,13 @@ namespace Base {
 //
 // ConstInt8
 //
-
-const std::string Op_ConstInt8::opName="ConstInt8";
-
 Op_ConstInt8::Op_ConstInt8(LOCATION, Extension *ext, Builder * parent, ActionID aConstInt8, Value * result, Literal *lv)
     : OperationR1L1(PASSLOC, aConstInt8, ext, parent, result, lv) {
 }
 
-#if 0
-void
-Op_ConstInt8::cloneTo(LOCATION, Builder *b, ValueMapper **resultMappers, ValueMapper **operandMappers, TypeMapper **typeMappers, LiteralMapper **literalMappers, SymbolMapper **symbolMappers, BuilderMapper **builderMappers) const {
-    Operation *op = new Op_ConstInt8(PASSLOC, this->_ext, b, this->action(), resultMappers[0]->next(), literalMappers[0]->next());
-    Operation::addToBuilder(this->_ext, b, op);
-}
-#endif
-
 Operation *
 Op_ConstInt8::clone(LOCATION, Builder *b, OperationCloner *cloner) const {
     return new Op_ConstInt8(PASSLOC, this->_ext, b, this->action(), cloner->result(), cloner->literal());
-}
-
-void
-Op_ConstInt8::write(TextWriter &w) const {
-    w << result() << " = " << name() << " " << literal() << w.endl();
 }
 
 void
@@ -75,29 +58,13 @@ Op_ConstInt8::jbgen(JB1MethodBuilder *j1mb) const {
 //
 // ConstInt16
 //
-
-const std::string Op_ConstInt16::opName="ConstInt16";
-
 Op_ConstInt16::Op_ConstInt16(LOCATION, Extension *ext, Builder * parent, ActionID aConstInt16, Value * result, Literal *lv)
     : OperationR1L1(PASSLOC, aConstInt16, ext, parent, result, lv) {
 }
 
-#if 0
-void
-Op_ConstInt16::cloneTo(LOCATION, Builder *b, ValueMapper **resultMappers, ValueMapper **operandMappers, TypeMapper **typeMappers, LiteralMapper **literalMappers, SymbolMapper **symbolMappers, BuilderMapper **builderMappers) const {
-    Operation *op = new Op_ConstInt16(PASSLOC, this->_ext, b, this->action(), resultMappers[0]->next(), literalMappers[0]->next());
-    Operation::addToBuilder(this->_ext, b, op);
-}
-#endif
-
 Operation *
 Op_ConstInt16::clone(LOCATION, Builder *b, OperationCloner *cloner) const {
     return new Op_ConstInt16(PASSLOC, this->_ext, b, this->action(), cloner->result(), cloner->literal());
-}
-
-void
-Op_ConstInt16::write(TextWriter &w) const {
-    w << result() << " = " << name() << " " << literal() << w.endl();
 }
 
 void
@@ -109,28 +76,13 @@ Op_ConstInt16::jbgen(JB1MethodBuilder *j1mb) const {
 //
 // ConstInt32
 //
-const std::string Op_ConstInt32::opName="ConstInt32";
-
 Op_ConstInt32::Op_ConstInt32(LOCATION, Extension *ext, Builder * parent, ActionID aConstInt32, Value * result, Literal *lv)
     : OperationR1L1(PASSLOC, aConstInt32, ext, parent, result, lv) {
 }
 
-#if 0
-void
-Op_ConstInt32::cloneTo(LOCATION, Builder *b, ValueMapper **resultMappers, ValueMapper **operandMappers, TypeMapper **typeMappers, LiteralMapper **literalMappers, SymbolMapper **symbolMappers, BuilderMapper **builderMappers) const {
-    Operation *op = new Op_ConstInt32(PASSLOC, this->_ext, b, this->action(), resultMappers[0]->next(), literalMappers[0]->next());
-    Operation::addToBuilder(this->_ext, b, op);
-}
-#endif
-
 Operation *
 Op_ConstInt32::clone(LOCATION, Builder *b, OperationCloner *cloner) const {
     return new Op_ConstInt32(PASSLOC, this->_ext, b, this->action(), cloner->result(), cloner->literal());
-}
-
-void
-Op_ConstInt32::write(TextWriter &w) const {
-    w << result() << " = " << name() << " " << literal() << w.endl();
 }
 
 void
@@ -142,28 +94,13 @@ Op_ConstInt32::jbgen(JB1MethodBuilder *j1mb) const {
 //
 // ConstInt64
 //
-const std::string Op_ConstInt64::opName="ConstInt64";
-
 Op_ConstInt64::Op_ConstInt64(LOCATION, Extension *ext, Builder * parent, ActionID aConstInt64, Value * result, Literal *lv)
     : OperationR1L1(PASSLOC, aConstInt64, ext, parent, result, lv) {
 }
 
-#if 0
-void
-Op_ConstInt64::cloneTo(LOCATION, Builder *b, ValueMapper **resultMappers, ValueMapper **operandMappers, TypeMapper **typeMappers, LiteralMapper **literalMappers, SymbolMapper **symbolMappers, BuilderMapper **builderMappers) const {
-    Operation *op = new Op_ConstInt64(PASSLOC, this->_ext, b, this->action(), resultMappers[0]->next(), literalMappers[0]->next());
-    Operation::addToBuilder(this->_ext, b, op);
-}
-#endif
-
 Operation *
 Op_ConstInt64::clone(LOCATION, Builder *b, OperationCloner *cloner) const {
     return new Op_ConstInt64(PASSLOC, this->_ext, b, this->action(), cloner->result(), cloner->literal());
-}
-
-void
-Op_ConstInt64::write(TextWriter &w) const {
-    w << result() << " = " << name() << " " << literal() << w.endl();
 }
 
 void
@@ -175,28 +112,13 @@ Op_ConstInt64::jbgen(JB1MethodBuilder *j1mb) const {
 //
 // ConstFloat32
 //
-const std::string Op_ConstFloat32::opName="ConstFloat32";
-
 Op_ConstFloat32::Op_ConstFloat32(LOCATION, Extension *ext, Builder * parent, ActionID aConstFloat32, Value * result, Literal *lv)
     : OperationR1L1(PASSLOC, aConstFloat32, ext, parent, result, lv) {
 }
 
-#if 0
-void
-Op_ConstFloat32::cloneTo(LOCATION, Builder *b, ValueMapper **resultMappers, ValueMapper **operandMappers, TypeMapper **typeMappers, LiteralMapper **literalMappers, SymbolMapper **symbolMappers, BuilderMapper **builderMappers) const {
-    Operation *op = new Op_ConstFloat32(PASSLOC, this->_ext, b, this->action(), resultMappers[0]->next(), literalMappers[0]->next());
-    Operation::addToBuilder(this->_ext, b, op);
-}
-#endif
-
 Operation *
 Op_ConstFloat32::clone(LOCATION, Builder *b, OperationCloner *cloner) const {
     return new Op_ConstFloat32(PASSLOC, this->_ext, b, this->action(), cloner->result(), cloner->literal());
-}
-
-void
-Op_ConstFloat32::write(TextWriter &w) const {
-    w << result() << " = " << name() <<  " " << literal() << w.endl();
 }
 
 void
@@ -208,28 +130,13 @@ Op_ConstFloat32::jbgen(JB1MethodBuilder *j1mb) const {
 //
 // ConstFloat64
 //
-const std::string Op_ConstFloat64::opName="ConstFloat64";
-
 Op_ConstFloat64::Op_ConstFloat64(LOCATION, Extension *ext, Builder * parent, ActionID aConstFloat64, Value * result, Literal *lv)
    : OperationR1L1(PASSLOC, aConstFloat64, ext, parent, result, lv) {
 }
 
-#if 0
-void
-Op_ConstFloat64::cloneTo(LOCATION, Builder *b, ValueMapper **resultMappers, ValueMapper **operandMappers, TypeMapper **typeMappers, LiteralMapper **literalMappers, SymbolMapper **symbolMappers, BuilderMapper **builderMappers) const {
-    Operation *op = new Op_ConstFloat64(PASSLOC, this->_ext, b, this->action(), resultMappers[0]->next(), literalMappers[0]->next());
-    Operation::addToBuilder(this->_ext, b, op);
-}
-#endif
-
 Operation *
 Op_ConstFloat64::clone(LOCATION, Builder *b, OperationCloner *cloner) const {
     return new Op_ConstFloat64(PASSLOC, this->_ext, b, this->action(), cloner->result(), cloner->literal());
-}
-
-void
-Op_ConstFloat64::write(TextWriter &w) const {
-    w << result() << " = " << name() <<  " " << literal() << w.endl();
 }
 
 void
@@ -241,28 +148,13 @@ Op_ConstFloat64::jbgen(JB1MethodBuilder *j1mb) const {
 //
 // ConstAddress
 //
-const std::string Op_ConstAddress::opName="ConstAddress";
-
 Op_ConstAddress::Op_ConstAddress(LOCATION, Extension *ext, Builder * parent, ActionID aConstAddress, Value * result, Literal *lv)
     : OperationR1L1(PASSLOC, aConstAddress, ext, parent, result, lv) {
 }
 
-#if 0
-void
-Op_ConstAddress::cloneTo(LOCATION, Builder *b, ValueMapper **resultMappers, ValueMapper **operandMappers, TypeMapper **typeMappers, LiteralMapper **literalMappers, SymbolMapper **symbolMappers, BuilderMapper **builderMappers) const {
-    Operation *op = new Op_ConstAddress(PASSLOC, this->_ext, b, this->action(), resultMappers[0]->next(), literalMappers[0]->next());
-    Operation::addToBuilder(this->_ext, b, op);
-}
-#endif
-
 Operation *
 Op_ConstAddress::clone(LOCATION, Builder *b, OperationCloner *cloner) const {
     return new Op_ConstAddress(PASSLOC, this->_ext, b, this->action(), cloner->result(), cloner->literal());
-}
-
-void
-Op_ConstAddress::write(TextWriter &w) const {
-    w << result() << " = " << name() << " " << literal() << w.endl();
 }
 
 void

@@ -30,6 +30,7 @@
 #include "Compiler.hpp"
 #include "JB1CodeGenerator.hpp"
 #include "Location.hpp"
+#include "MemoryOperations.hpp"
 #include "Strategy.hpp"
 #include "TextWriter.hpp"
 #include "Value.hpp"
@@ -58,14 +59,22 @@ BaseExtension::BaseExtension(Compiler *compiler)
     , Float64(registerType<Float64Type>(new Float64Type(LOC, this)))
     , Address(registerType<AddressType>(new AddressType(LOC, this)))
     , Word(compiler->platformWordSize() == 64 ? (IntegerType *)this->Int64 : (IntegerType *)this->Int32)
-    , aConstInt8(registerAction(Op_ConstInt8::name()))
-    , aConstInt16(registerAction(Op_ConstInt16::name()))
-    , aConstInt32(registerAction(Op_ConstInt32::name()))
-    , aConstInt64(registerAction(Op_ConstInt64::name()))
-    , aConstFloat32(registerAction(Op_ConstFloat32::name()))
-    , aConstFloat64(registerAction(Op_ConstFloat64::name()))
-    , aConstAddress(registerAction(Op_ConstAddress::name()))
-    , aReturn(registerAction(Op_Return::name())) {
+    , aConstInt8(registerAction(std::string("ConstInt8")))
+    , aConstInt16(registerAction(std::string("ConstInt16")))
+    , aConstInt32(registerAction(std::string("ConstInt32")))
+    , aConstInt64(registerAction(std::string("ConstInt64")))
+    , aConstFloat32(registerAction(std::string("ConstFloat32")))
+    , aConstFloat64(registerAction(std::string("ConstFloat64")))
+    , aConstAddress(registerAction(std::string("ConstAddress")))
+    , aLoad(registerAction(std::string("Load")))
+    , aStore(registerAction(std::string("Store")))
+    , aLoadAt(registerAction(std::string("LoadAt")))
+    , aStoreAt(registerAction(std::string("StoreAt")))
+    , aLoadField(registerAction(std::string("LoadField")))
+    , aStoreField(registerAction(std::string("StoreField")))
+    , aLoadFieldAt(registerAction(std::string("LoadFieldAt")))
+    , aStoreFieldAt(registerAction(std::string("StoreFieldAt")))
+    , aReturn(registerAction(std::string("Return"))) {
 
     Strategy *jb1cgStrategy = new Strategy(compiler, "jb1cg");
     Pass *jb1cg = new JB1CodeGenerator(compiler);
@@ -82,6 +91,7 @@ BaseExtension::~BaseExtension() {
     delete Int16;
     delete Int8;
     delete NoType;
+    // delete pointer types?
 }
 
 //
@@ -166,6 +176,77 @@ BaseExtension::Return(LOCATION, Builder *b, Value *v) {
 }
 
 //
+// Memory operations
+//
+
+Value *
+BaseExtension::Load(LOCATION, Builder *b, Symbol * sym)
+   {
+   Value * result = createValue(b, sym->type());
+   addOperation(b, new Op_Load(PASSLOC, this, b, this->aLoad, result, sym));
+   return result;
+   }
+
+void
+BaseExtension::Store(LOCATION, Builder *b, Symbol * sym, Value *value)
+   {
+   addOperation(b, new Op_Store(PASSLOC, this, b, this->aLoad, sym, value));
+   }
+
+Value *
+BaseExtension::LoadAt(LOCATION, Builder *b, Value *ptrValue)
+   {
+   assert(ptrValue->type()->isPointer());
+   const Type *baseType = (static_cast<const PointerType *>(ptrValue->type()))->BaseType();
+   Value * result = createValue(b, baseType);
+   addOperation(b, new Op_LoadAt(PASSLOC, this, b, this->aLoadAt, result, ptrValue));
+   return result;
+   }
+
+void
+BaseExtension::StoreAt(LOCATION, Builder *b, Value *ptrValue, Value *value)
+   {
+   assert(ptrValue->type()->isPointer());
+   const Type *baseType = (static_cast<const PointerType *>(ptrValue->type()))->BaseType();
+   assert(baseType == value->type());
+   addOperation(b, new Op_StoreAt(PASSLOC, this, b, this->aStoreAt, ptrValue, value));
+   }
+
+Value *
+BaseExtension::LoadField(LOCATION, Builder *b, const FieldType *fieldType, Value *structValue) {
+   assert(structValue->type()->isStruct());
+   assert(fieldType->owningStruct() == structValue->type());
+   Value * result = createValue(b, fieldType->type());
+   addOperation(b, new Op_LoadField(PASSLOC, this, b, this->aLoadField, result, fieldType, structValue));
+   return result;
+}
+
+void
+BaseExtension::StoreField(LOCATION, Builder *b, const FieldType *fieldType, Value *structValue, Value *value) {
+   assert(structValue->type()->isStruct());
+   assert(fieldType->owningStruct() == structValue->type());
+   addOperation(b, new Op_StoreField(PASSLOC, this, b, this->aStoreField, fieldType, structValue, value));
+}
+
+Value *
+BaseExtension::LoadFieldAt(LOCATION, Builder *b, const FieldType *fieldType, Value *pStruct) {
+   assert(pStruct->type()->isPointer());
+   const Type *structType = (static_cast<const PointerType *>(pStruct->type()))->BaseType();
+   assert(fieldType->owningStruct() == structType);
+   Value * result = createValue(b, fieldType->type());
+   addOperation(b, new Op_LoadFieldAt(PASSLOC, this, b, this->aLoadFieldAt, result, fieldType, pStruct));
+   return result;
+}
+
+void
+BaseExtension::StoreFieldAt(LOCATION, Builder *b, const FieldType *fieldType, Value *pStruct, Value *value) {
+   assert(pStruct->type()->isPointer());
+   const Type *structType = (static_cast<const PointerType *>(pStruct->type()))->BaseType();
+   assert(fieldType->owningStruct() == structType);
+   addOperation(b, new Op_StoreFieldAt(PASSLOC, this, b, this->aStoreFieldAt, fieldType, pStruct, value));
+}
+
+//
 // Pseudo operations
 //
 
@@ -206,8 +287,8 @@ BaseExtension::DefineFunctionType(LOCATION, std::string name, const Type *return
 }
 
 #if 0
-PointerType *
-BaseExtension::PointerTo(const Type * baseType)
+const PointerType *
+BaseExtension::PointerTo(LOCATION, const Type * baseType)
    {
    // don't replicate types
    std::map<Type *,PointerType *>::iterator found = _pointerTypeFromBaseType.find(baseType);
@@ -218,15 +299,16 @@ BaseExtension::PointerTo(const Type * baseType)
       }
 
    // if not found already, then create it
-   PointerType * newType = PointerType::create(this, std::string("PointerTo(") + baseType->name()  + std::string(")"), baseType);
+   PointerType::TypeBuilder builder;
+   builder.setExtension(this);
+   builder.setBaseType(baseType);
+   PointerType * newType = PointerType::create(PASSLOC, &builder);
    addType(newType);
    _pointerTypeFromBaseType[baseType] = newType;
    registerPointerType(newType);
    return newType;
    }
-#endif
 
-#if 0
 Value *
 BuilderBase::CoercePointer(Type * t, Value * v)
    {

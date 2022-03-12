@@ -22,22 +22,27 @@
 #ifndef SYMBOL_INCL
 #define SYMBOL_INCL
 
+#include <cassert>
 #include <string>
 #include <vector>
+#include "IDs.hpp"
 
 namespace OMR {
 namespace JitBuilder {
 
+class SymbolDictionary;
 class TextWriter;
 class Type;
 
 class Symbol {
+    friend class SymbolDictionary;
+
 public:
     static Symbol *create(std::string name, const Type * type) { return new Symbol(name, type); }
 
     std::string name() const { return _name; }
     const Type * type() const { return _type; }
-    uint64_t id() const { return _id; }
+    SymbolID id() const { return _id; }
 
     virtual bool isLocal() const     { return false; }
     virtual bool isParameter() const { return false; }
@@ -51,12 +56,15 @@ public:
 protected:
     Symbol(std::string name, const Type * type)
         : _name(name)
-        , _type(type) {
-//      , _id(globalIndex++)
+        , _type(type)
+      , _id(NoSymbol) {
     }
+
+    void assignID(SymbolID id) { assert(_id == NoSymbol); assert(id != NoSymbol); _id = id; }
+
     std::string _name;
     const Type * _type;
-    uint64_t _id;
+    SymbolID _id;
 
     //static int64_t globalIndex;
 };

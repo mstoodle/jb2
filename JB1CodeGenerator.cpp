@@ -136,7 +136,7 @@ JBCodeGenerator::generateFunctionAPI(FunctionBuilder *fb) {
         for (auto it = dict->TypesBegin(); it !+ dict->TypeEnd(); it++) {
             Type *type = *it;
             if (_types[type->id()] == NULL) {
-                bool mapped = type->mapJB1Type(this)
+                bool mapped = type->registerJB1Type(this)
                 if (mapped) {
                     assert(_types[type->id()] != NULL);
                     numTypes--;

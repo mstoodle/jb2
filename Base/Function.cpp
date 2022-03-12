@@ -182,6 +182,13 @@ Function::internalDefineFunction(LOCATION,
     _functions.push_back(sym);
 }
 
+const PointerType *
+Function::PointerTo(LOCATION, const Type *baseType) {
+    PointerTypeBuilder pb(this->_ext, this);
+    pb.setBaseType(baseType);
+    return pb.create(PASSLOC);
+}
+
 LocalSymbolIterator
 Function::LocalsBegin() const {
     return _nativeContext->LocalsBegin();
@@ -212,6 +219,22 @@ Function::ResetLocals() {
     return _nativeContext->ResetLocals();
 }
 
+LocalSymbol *
+Function::LookupLocal(std::string name) {
+    for (LocalSymbolIterator lIt = _nativeContext->LocalsBegin(); lIt != _nativeContext->LocalsEnd(); lIt++) {
+        LocalSymbol * local = *lIt;
+        if (local->name() == name)
+            return local;
+    }
+
+    for (ParameterSymbolIterator pIt = _nativeContext->ParametersBegin(); pIt != _nativeContext->ParametersEnd(); pIt++) {
+        ParameterSymbol * parameter = *pIt;
+        if (parameter->name() == name)
+            return parameter;
+    }
+    return NULL;
+}
+
 FunctionSymbolVector
 Function::ResetFunctions() {
     FunctionSymbolVector prev = _functions;
@@ -220,31 +243,19 @@ Function::ResetFunctions() {
 }
 
 Symbol *
-Function::getSymbol(std::string name)
-   {
-   for (LocalSymbolIterator lIt = _nativeContext->LocalsBegin(); lIt != _nativeContext->LocalsEnd(); lIt++)
-      {
-      LocalSymbol * local = *lIt;
-      if (local->name() == name)
-         return local;
-      }
+Function::getSymbol(std::string name) {
+    LocalSymbol *localSym = LookupLocal(name);
+    if (localSym)
+        return localSym;
 
-   for (ParameterSymbolIterator pIt = _nativeContext->ParametersBegin(); pIt != _nativeContext->ParametersEnd(); pIt++)
-      {
-      ParameterSymbol * parameter = *pIt;
-      if (parameter->name() == name)
-         return parameter;
-      }
+    for (FunctionSymbolIterator fIt = FunctionsBegin(); fIt != FunctionsEnd(); fIt++) {
+        FunctionSymbol * function = *fIt;
+        if (function->name() == name)
+            return function;
+    }
 
-   for (FunctionSymbolIterator fIt = FunctionsBegin(); fIt != FunctionsEnd(); fIt++)
-      {
-      FunctionSymbol * function = *fIt;
-      if (function->name() == name)
-         return function;
-      }
-
-   return NULL;
-   }
+    return NULL;
+}
 
 const Type *
 Function::returnType() const {
@@ -322,24 +333,17 @@ Function::jbgenProlog(JB1MethodBuilder *j1mb) {
     j1mb->EntryPoint(_entryPoints[0]);
 }
 
-#if 0
 CompileResult
-Function::Compile() {
-    FunctionCompilation comp(this->_compiler, this);
-    assert(_numEntryPoints >= 1);
-    _entryPoints[0] = NULL;
-    int32_t returnCode = compileFunction(this, reinterpret_cast<void **>(_entryPoints));
-    if (returnCode == 0)
-        return CompileOK;
-    return CompileFail;
+Function::Compile(TextWriter *logger) {
+    _comp->setLogger(logger);
+    bool success = constructIL();
+    if (!success)
+        return CompileFailed;
+
+    return _ext->jb1cgCompile(_comp);
 }
 
-bool
-Function::Construct()
-   {
-   return constructFunction(this);
-   }
-
+#if 0
 void *
 Function::internalCompile(int32_t *returnCode)
    {

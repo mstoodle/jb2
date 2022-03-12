@@ -46,4 +46,4 @@ CXXFLAGS=-Igtest/include \
 	g++ $(CXXFLAGS) -c $<
 
 clean:
-	rm -f jb2test *.o
+	rm -f testbase testcompiler testsemver *.o

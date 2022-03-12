@@ -31,11 +31,8 @@
 #include "Iterator.hpp"
 #include "Mapper.hpp"
 
-namespace OMR
-{
-
-namespace JitBuilder
-{
+namespace OMR {
+namespace JitBuilder {
 
 class Builder;
 class Extension;
@@ -87,11 +84,13 @@ class Operation {
     virtual int32_t numResults() const                  { return 0; }
     virtual Value * result(int i=0) const               { return NULL; }
  
+    // Change to mayReadShadow() and mustReadShadow
     virtual SymbolIterator ReadSymbolsBegin()           { return SymbolIterator(); }
             SymbolIterator ReadSymbolsEnd()             { return symbolEndIterator; }
     virtual int32_t numReadSymbols() const              { return 0; }
     virtual Symbol * readSymbol(int i=0) const          { return NULL; }
 
+    // Change to mayWriteShadow() and mustWriteShadow
     virtual SymbolIterator WrittenSymbolsBegin()        { return SymbolIterator(); }
             SymbolIterator WrittenSymbolsEnd()          { return symbolEndIterator; }
     virtual int32_t numWrittenSymbols() const           { return 0; }
@@ -112,23 +111,16 @@ class Operation {
     virtual TypeIterator TypesBegin()                   { return TypeIterator(); }
             TypeIterator &TypesEnd()                    { return typeEndIterator; }
     virtual int32_t numTypes() const                    { return 0; }
-    virtual Type * type(int i=0) const                  { return NULL; }
+    virtual const Type * type(int i=0) const            { return NULL; }
 
-    // deprecated
-    //virtual Operation * clone(LOCATION, Builder *b, Value **results) const = 0;
-    //virtual Operation * clone(LOCATION, Builder *b, Value **results, Value **operands, Builder **builders) const = 0;
-    //virtual void cloneTo(LOCATION, Builder *b, ValueMapper **resultMappers, ValueMapper **operandMappers, TypeMapper **typeMappers, LiteralMapper **literalMappers, SymbolMapper **symbolMappers, BuilderMapper **builderMappers) const = 0;
-
-    // the new clone API
     virtual Operation * clone(LOCATION, Builder *b, OperationCloner *cloner) const = 0;
 
     virtual bool hasExpander() const                       { return false; }
     virtual bool expand(OperationReplacer *replacer) const { return false; }
 
     void writeFull(TextWriter & w) const;
-
+    const std::string & name() const { return _name; }
     virtual void write(TextWriter & w) const { }
-
     virtual void jbgen(JB1MethodBuilder *j1mb) const { }
 
 protected:
@@ -143,6 +135,7 @@ protected:
     Extension    * _ext;
     Builder      * _parent;
     ActionID       _action;
+    const std::string _name;
     Location     * _location;
     CreateLocation _creationLocation;
 
@@ -152,7 +145,7 @@ protected:
     static SymbolIterator symbolEndIterator;
     static TypeIterator typeEndIterator;
     static ValueIterator valueEndIterator;
-    };
+};
 
 
 // Following are "structural" classes that are used to hold results(R), literals(L),
@@ -161,53 +154,50 @@ protected:
 // listed above. So the structural Operation class with one result and two operand
 // values is called OperationR1V2. Operation sub classes then derive from these
 // structural classes and can add some semantically relevant services.
-class OperationR1 : public Operation
-   {
-   public:
-   virtual size_t size() const                { return sizeof(OperationR1); }
-   virtual ValueIterator ResultsBegin()       { return ValueIterator(_result); }
-   virtual int32_t numResults() const         { return 1; }
-   virtual Value * result(int i=0) const
-      {
-      if (i == 0) return _result;
-      return NULL;
-      }
+class OperationR1 : public Operation {
+    public:
+    virtual size_t size() const                { return sizeof(OperationR1); }
+    virtual ValueIterator ResultsBegin()       { return ValueIterator(_result); }
+    virtual int32_t numResults() const         { return 1; }
+    virtual Value * result(int i=0) const {
+        if (i == 0) return _result;
+        return NULL;
+    }
 
-   protected:
-   OperationR1(LOCATION, ActionID a, Extension *ext, Builder * parent, Value * result)
-      : Operation(PASSLOC, a, ext, parent)
-      , _result(result)
-      { }
+     protected:
+     OperationR1(LOCATION, ActionID a, Extension *ext, Builder * parent, Value * result)
+         : Operation(PASSLOC, a, ext, parent)
+         , _result(result) {
+     }
 
-   Value * _result;
-   };
+     Value * _result;
+};
 
-class OperationR1L1 : public OperationR1
-   {
-   public:
-   virtual int32_t numLiterals() const { return 1; }
-   virtual Literal *literal(int i=0) const
-      {
-      if (i == 0) return _v;
-      return NULL;
-      }
-   virtual LiteralIterator LiteralsBegin()       { return LiteralIterator(_v); }
+class OperationR1L1 : public OperationR1 {
+    public:
+    virtual int32_t numLiterals() const { return 1; }
+    virtual Literal *literal(int i=0) const {
+        if (i == 0) return _v;
+        return NULL;
+    }
+    virtual LiteralIterator LiteralsBegin() { return LiteralIterator(_v); }
+    virtual void write(TextWriter & w) const;
 
-   protected:
-   OperationR1L1(LOCATION, ActionID a, Extension *ext, Builder * parent, Value * result, Literal *value)
-      : OperationR1(PASSLOC, a, ext, parent, result)
-      , _v(value)
-      { }
+    protected:
+    OperationR1L1(LOCATION, ActionID a, Extension *ext, Builder * parent, Value * result, Literal *value)
+         : OperationR1(PASSLOC, a, ext, parent, result)
+         , _v(value)
+         { }
 
-   Literal *_v;
-   };
+    Literal *_v;
+};
 
 class OperationR1L1T1 : public OperationR1L1
    {
    public:
    virtual size_t size() const      { return sizeof(OperationR1L1T1); }
    virtual int32_t numTypes() const { return 1; }
-   virtual Type * type(int i=0) const
+   virtual const Type * type(int i=0) const
       {
       if (i == 0) return _elementType;
       return NULL;
@@ -215,33 +205,32 @@ class OperationR1L1T1 : public OperationR1L1
    virtual TypeIterator TypesBegin() { return TypeIterator(_elementType); }
 
    protected:
-   OperationR1L1T1(LOCATION, ActionID a, Extension *ext, Builder * parent, Value * result, Literal *numElements, Type *elementType)
+   OperationR1L1T1(LOCATION, ActionID a, Extension *ext, Builder * parent, Value * result, Literal *numElements, const Type *elementType)
       : OperationR1L1(PASSLOC, a, ext, parent, result, numElements)
       , _elementType(elementType)
       { }
 
-   Type *_elementType;
+   const Type *_elementType;
    };
 
-class OperationR1S1 : public OperationR1
-   {
-   public:
-   virtual int32_t numSymbols() const { return 1; }
-   virtual Symbol *symbol(int i=0) const
-      {
-      if (i == 0) return _symbol;
-      return NULL;
-      }
-   virtual SymbolIterator SymbolsBegin() { return SymbolIterator(_symbol); }
+class OperationR1S1 : public OperationR1 {
+public:
+    virtual int32_t numSymbols() const { return 1; }
+    virtual Symbol *symbol(int i=0) const {
+        if (i == 0) return _symbol;
+        return NULL;
+    }
+    virtual SymbolIterator SymbolsBegin() { return SymbolIterator(_symbol); }
+    virtual void write(TextWriter & w) const;
 
-   protected:
-   OperationR1S1(LOCATION, ActionID a, Extension *ext, Builder * parent, Value * result, Symbol *symbol)
-      : OperationR1(PASSLOC, a, ext, parent, result)
-      , _symbol(symbol)
-      { }
+protected:
+    OperationR1S1(LOCATION, ActionID a, Extension *ext, Builder * parent, Value * result, Symbol *symbol)
+        : OperationR1(PASSLOC, a, ext, parent, result)
+        , _symbol(symbol) {
+    }
 
-   Symbol *_symbol;
-   };
+     Symbol *_symbol;
+};
 
 class OperationR0V1 : public Operation
    {
@@ -265,76 +254,76 @@ class OperationR0V1 : public Operation
    Value * _value;
    };
 
-class OperationR1V1 : public OperationR1
-   {
-   public:
-   virtual size_t size() const         { return sizeof(OperationR1V1); }
-   virtual int32_t numOperands() const { return 1; }
-   virtual Value * operand(int i=0) const
-      {
-      if (i == 0) return _value;
-      return NULL;
-      }
+class OperationR1V1 : public OperationR1 {
+public:
+    virtual size_t size() const         { return sizeof(OperationR1V1); }
+    virtual int32_t numOperands() const { return 1; }
+    virtual Value * operand(int i=0) const {
+        if (i == 0) return _value;
+        return NULL;
+    }
 
-   virtual ValueIterator OperandsBegin()       { return ValueIterator(_value); }
+    virtual ValueIterator OperandsBegin()       { return ValueIterator(_value); }
 
-   protected:
-   OperationR1V1(LOCATION, ActionID a, Extension *ext, Builder * parent, Value * result, Value * value)
-      : OperationR1(PASSLOC, a, ext, parent, result)
-      , _value(value)
-      { }
+    virtual void write(TextWriter & w) const;
 
-   Value * _value;
-   };
+protected:
+    OperationR1V1(LOCATION, ActionID a, Extension *ext, Builder * parent, Value * result, Value * value)
+        : OperationR1(PASSLOC, a, ext, parent, result)
+        , _value(value) {
+    }
 
-class OperationR1V1T1 : public OperationR1V1
-   {
-   public:
-   virtual size_t size() const         { return sizeof(OperationR1V1T1); }
-   virtual int32_t numTypes() const { return 1; }
-   virtual Type * type(int i=0) const
-      {
-      if (i == 0) return _type;
-      return NULL;
-      }
+    Value * _value;
+};
 
-   virtual TypeIterator TypesBegin()       { return TypeIterator(_type); }
+class OperationR1V1T1 : public OperationR1V1 {
+public:
+    virtual size_t size() const         { return sizeof(OperationR1V1T1); }
+    virtual int32_t numTypes() const { return 1; }
+    virtual const Type * type(int i=0) const {
+        if (i == 0) return _type;
+        return NULL;
+    }
 
-   protected:
-   OperationR1V1T1(LOCATION, ActionID a, Extension *ext, Builder * parent, Value * result, Type * t, Value * v)
-      : OperationR1V1(PASSLOC, a, ext, parent, result, v)
-      , _type(t)
-      { }
+    virtual TypeIterator TypesBegin()       { return TypeIterator(_type); }
 
-   Type * _type;
-   };
+    virtual void write(TextWriter & w) const;
 
-class OperationR0V2 : public Operation
-   {
-   public:
-   virtual size_t size() const         { return sizeof(OperationR0V2); }
-   virtual int32_t numOperands() const { return 2; }
-   virtual Value * operand(int i=0) const
-      {
-      if (i == 0) return _left;
-      if (i == 1) return _right;
-      return NULL;
-      }
-   virtual Value * getLeft() const  { return _left; }
-   virtual Value * getRight() const { return _right; }
+protected:
+    OperationR1V1T1(LOCATION, ActionID a, Extension *ext, Builder * parent, Value * result, const Type * t, Value * v)
+        : OperationR1V1(PASSLOC, a, ext, parent, result, v)
+        , _type(t) {
+    }
 
-   virtual ValueIterator OperandsBegin()       { return ValueIterator(_left, _right); }
+     const Type * _type;
+};
 
-   protected:
-   OperationR0V2(LOCATION, ActionID a, Extension *ext, Builder * parent, Value * left, Value * right)
-      : Operation(PASSLOC, a, ext, parent)
-      , _left(left)
-      , _right(right)
-      { }
+class OperationR0V2 : public Operation {
+public:
+    virtual size_t size() const         { return sizeof(OperationR0V2); }
+    virtual int32_t numOperands() const { return 2; }
+    virtual Value * operand(int i=0) const {
+        if (i == 0) return _left;
+        if (i == 1) return _right;
+        return NULL;
+    }
+    virtual Value * getLeft() const  { return _left; }
+    virtual Value * getRight() const { return _right; }
 
-   Value * _left;
-   Value * _right;
-   };
+    virtual ValueIterator OperandsBegin()       { return ValueIterator(_left, _right); }
+
+    virtual void write(TextWriter & w) const;
+
+protected:
+    OperationR0V2(LOCATION, ActionID a, Extension *ext, Builder * parent, Value * left, Value * right)
+        : Operation(PASSLOC, a, ext, parent)
+        , _left(left)
+        , _right(right) {
+    }
+
+    Value * _left;
+    Value * _right;
+};
 
 class OperationR1V2 : public OperationR1
    {
@@ -368,7 +357,7 @@ class OperationR1V2T1 : public OperationR1V2
    public:
    virtual size_t size() const         { return sizeof(OperationR1V2T1); }
    virtual int32_t numTypes() const { return 1; }
-   virtual Type * type(int i=0) const
+   virtual const Type * type(int i=0) const
       {
       if (i == 0) return _type;
       return NULL;
@@ -388,12 +377,12 @@ class OperationR1V2T1 : public OperationR1V2
 
 
    protected:
-   OperationR1V2T1(LOCATION, ActionID a, Extension *ext, Builder * parent, Value * result, Type * t, Value * addr, Value * v)
+   OperationR1V2T1(LOCATION, ActionID a, Extension *ext, Builder * parent, Value * result, const Type * t, Value * addr, Value * v)
       : OperationR1V2(PASSLOC, a, ext, parent, result, addr, v)
       , _type(t)
       { }
 
-   Type * _type;
+   const Type * _type;
    };
 
 class OperationR1T1 : public OperationR1
@@ -401,7 +390,7 @@ class OperationR1T1 : public OperationR1
    public:
    virtual size_t size() const         { return sizeof(OperationR1V2T1); }
    virtual int32_t numTypes() const { return 1; }
-   virtual Type * type(int i=0) const
+   virtual const Type * type(int i=0) const
       {
       if (i == 0) return _type;
       return NULL;
@@ -409,45 +398,44 @@ class OperationR1T1 : public OperationR1
    virtual TypeIterator TypesBegin()       { return TypeIterator(_type); }
 
    protected:
-   OperationR1T1(LOCATION, ActionID a, Extension *ext, Builder * parent, Value * result, Type * t)
+   OperationR1T1(LOCATION, ActionID a, Extension *ext, Builder * parent, Value * result, const Type * t)
       : OperationR1(PASSLOC, a, ext, parent, result)
       , _type(t)
       { }
 
-   Type * _type;
+   const Type * _type;
    };
 
-class OperationR0S1V1 : public Operation
-   {
-   public:
-   virtual size_t size() const { return sizeof(OperationR0S1V1); }
+class OperationR0S1V1 : public Operation {
+public:
+    virtual size_t size() const { return sizeof(OperationR0S1V1); }
 
-   virtual int32_t numSymbols() const { return 1; }
-   virtual Symbol *symbol(int i=0) const
-      {
-      if (i == 0) return _symbol;
-      return NULL;
-      }
-   virtual SymbolIterator SymbolsBegin() { return SymbolIterator(_symbol); }
+    virtual int32_t numSymbols() const { return 1; }
+    virtual Symbol *symbol(int i=0) const {
+        if (i == 0) return _symbol;
+        return NULL;
+    }
+    virtual SymbolIterator SymbolsBegin() { return SymbolIterator(_symbol); }
 
-   virtual int32_t numOperands() const { return 1; }
-   virtual Value * operand(int i=0) const
-      {
-      if (i == 0) return _value;
-      return NULL;
-      }
-   virtual ValueIterator OperandsBegin() { return ValueIterator(_value); }
+    virtual int32_t numOperands() const { return 1; }
+    virtual Value * operand(int i=0) const {
+        if (i == 0) return _value;
+        return NULL;
+    }
+    virtual ValueIterator OperandsBegin() { return ValueIterator(_value); }
 
-   protected:
-   OperationR0S1V1(LOCATION, ActionID a, Extension *ext, Builder * parent, Symbol *symbol, Value * value)
-      : Operation(PASSLOC, a, ext, parent)
-      , _symbol(symbol)
-      , _value(value)
-      { }
+    virtual void write(TextWriter & w) const;
 
-   Symbol *_symbol;
-   Value * _value;
-   };
+protected:
+    OperationR0S1V1(LOCATION, ActionID a, Extension *ext, Builder * parent, Symbol *symbol, Value * value)
+        : Operation(PASSLOC, a, ext, parent)
+        , _symbol(symbol)
+        , _value(value) {
+    }
+
+    Symbol *_symbol;
+    Value * _value;
+};
 
 class OperationR0T1 : public Operation
    {
@@ -455,7 +443,7 @@ class OperationR0T1 : public Operation
    virtual size_t size() const { return sizeof(OperationR0T1); }
 
    virtual int32_t numTypes() const { return 1; }
-   virtual Type *type(int i=0) const
+   virtual const Type *type(int i=0) const
       {
       if (i == 0) return _type;
       return NULL;
@@ -463,12 +451,12 @@ class OperationR0T1 : public Operation
    virtual TypeIterator TypesBegin()       { return TypeIterator(_type); }
 
    protected:
-   OperationR0T1(LOCATION, ActionID a, Extension *ext, Builder *parent, Type *type)
+   OperationR0T1(LOCATION, ActionID a, Extension *ext, Builder *parent, const Type *type)
       : Operation(PASSLOC, a, ext, parent)
       , _type(type)
       { }
 
-   Type *_type;
+   const Type *_type;
    };
 
 class OperationR0V2T1 : public OperationR0T1
@@ -485,7 +473,7 @@ class OperationR0V2T1 : public OperationR0T1
    virtual ValueIterator OperandsBegin()       { return ValueIterator(_base, _value); }
 
    protected:
-   OperationR0V2T1(LOCATION, ActionID a, Extension *ext, Builder *parent, Type *type, Value * base, Value * value)
+   OperationR0V2T1(LOCATION, ActionID a, Extension *ext, Builder *parent, const Type *type, Value * base, Value * value)
       : OperationR0T1(PASSLOC, a, ext, parent, type)
       , _base(base)
       , _value(value)
@@ -694,60 +682,6 @@ class IndexAt : public OperationR1V2T1
    IndexAt(Builder * parent, Value * result, Type * pointerType, Value * address, Value * value);
    };
 
-class Load : public OperationR1S1
-   {
-   public:
-   static Load * create(Builder * parent, Value * result, Symbol *local)
-      { return new Load(parent, result, local); }
-   
-   virtual Operation * clone(Builder *b, Value **results) const
-      {
-      assert(results);
-      return create(b, results[0], symbol());
-      }
-   virtual Operation * clone(Builder *b, Value **results, Value **operands, Builder **builders) const
-      {
-      assert(results && NULL == operands && NULL == builders);
-      return create(b, results[0], symbol());
-      }
-   virtual void cloneTo(Builder *b, ValueMapper **resultMappers, ValueMapper **operandMappers, TypeMapper **typeMappers, LiteralMapper **literalMapppers, SymbolMapper **symbolMappers, BuilderMapper **builderMappers) const;
-
-   virtual Operation * clone(Builder *b, OperationCloner *cloner) const;
-
-   protected:
-   Load(Builder * parent, Value * result, std::string name);
-   Load(Builder * parent, Value * result, Symbol *s)
-      : OperationR1S1(aLoad, parent, result, s)
-      { }
-   };
-
-class LoadAt : public OperationR1V1T1
-   {
-   public:
-   static LoadAt * create(Builder * parent, Value * result, Type * pointerType, Value * address)
-      { return new LoadAt(parent, result, pointerType, address); }
-   
-   virtual Operation * clone(Builder *b, Value **results) const
-      {
-      assert(results);
-      return create(b, results[0], type(0), operand(0));
-      }
-   virtual Operation * clone(Builder *b, Value **results, Value **operands, Builder **builders) const
-      {
-      assert(results && operands && NULL == builders);
-      return create(b, results[0], type(0), operands[0]);
-      }
-   virtual void cloneTo(Builder *b, ValueMapper **resultMappers, ValueMapper **operandMappers, TypeMapper **typeMappers, LiteralMapper **literalMapppers, SymbolMapper **symbolMappers, BuilderMapper **builderMappers) const;
-
-   virtual Operation * clone(Builder *b, OperationCloner *cloner) const;
-
-   virtual bool hasExpander() const { return true; }
-   virtual bool expand(OperationReplacer *r) const;
-
-   protected:
-   LoadAt(Builder * parent, Value * result, Type * pointerType, Value * address);
-   };
-
 class LoadField : public OperationR1V1T1
    {
    public:
@@ -802,63 +736,6 @@ class LoadIndirect : public OperationR1V1T1
    LoadIndirect(Builder * parent, Value * result, FieldType *fieldType, Value * structBase)
       : OperationR1V1T1(aLoadIndirect, parent, result, fieldType, structBase)
       { }
-   };
-
-class Store : public OperationR0S1V1
-   {
-   public:
-   static Store * create(Builder * parent, Symbol *local, Value * value)
-      { return new Store(parent, local, value); }
-   
-   virtual Operation * clone(Builder *b, Value **results) const
-      {
-      assert(NULL == results);
-      return create(b, symbol(), operand(0));
-      }
-   virtual Operation * clone(Builder *b, Value **results, Value **operands, Builder **builders) const
-      {
-      assert(NULL == results && operands && NULL == builders);
-      return create(b, symbol(), operands[0]);
-      }
-   virtual void cloneTo(Builder *b, ValueMapper **resultMappers, ValueMapper **operandMappers, TypeMapper **typeMappers, LiteralMapper **literalMapppers, SymbolMapper **symbolMappers, BuilderMapper **builderMappers) const;
-
-   virtual Operation * clone(Builder *b, OperationCloner *cloner) const;
-
-   protected:
-   Store(Builder * parent, std::string name, Value * value);
-   Store(Builder * parent, Symbol *s, Value * value)
-      : OperationR0S1V1(aStore, parent, s, value)
-      { }
-   };
-
-class StoreAt : public OperationR0V2
-   {
-   public:
-   static StoreAt * create(Builder * parent, Value * address, Value * value)
-      { return new StoreAt(parent, address, value); }
-   
-   virtual Value * getAddress() const { return _left; }
-   virtual Value * getValue() const   { return _right; }
-
-   virtual Operation * clone(Builder *b, Value **results) const
-      {
-      assert(NULL == results);
-      return create(b, getAddress(), getValue());
-      }
-   virtual Operation * clone(Builder *b, Value **results, Value **operands, Builder **builders) const
-      {
-      assert(NULL == results && operands && NULL == builders);
-      return create(b, operands[0], operands[1]);
-      }
-   virtual void cloneTo(Builder *b, ValueMapper **resultMappers, ValueMapper **operandMappers, TypeMapper **typeMappers, LiteralMapper **literalMapppers, SymbolMapper **symbolMappers, BuilderMapper **builderMappers) const;
-
-   virtual Operation * clone(Builder *b, OperationCloner *cloner) const;
-
-   virtual bool hasExpander() const { return true; }
-   virtual bool expand(OperationReplacer *r) const;
-
-   protected:
-   StoreAt(Builder * parent, Value * address, Value * value);
    };
 
 class StoreField : public OperationR0V2T1

@@ -47,6 +47,11 @@ Extension::internalRegisterType(Type *type) {
     this->_compiler->dict()->registerType(type);
 }
 
+const std::string
+Extension::actionName(ActionID id) const {
+    return _compiler->actionName(id);
+}
+
 ActionID
 Extension::registerAction(std::string name) {
     return _compiler->assignActionID(name);
