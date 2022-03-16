@@ -96,12 +96,17 @@ public:
     virtual bool isField() const { return false; }
     virtual bool isFunction() const { return false; }
     virtual bool isDynamic() const { return false; }
+    virtual bool isInteger() const { return false; }
+    virtual bool isFloatingPoint() const { return false; }
 
     void writeType(TextWriter & w) const;
     virtual void writeSpecificType(TextWriter &w) const;
     virtual void printValue(TextWriter & w, const void *p) const { }
     virtual void printLiteral(TextWriter & w, const Literal *lv) const { }
     virtual bool literalsAreEqual(const LiteralBytes *lv1, const LiteralBytes *lv2) const { return false; }
+
+    virtual const int64_t getInteger(const Literal *lv) const { return 0; }
+    virtual const double getFloatingPoint(const Literal *lv) const { return 0.0d; }
 
     // creates a Literal of this Type from the raw LiteralBytes
     Literal * literal(LOCATION, Compilation *comp, const LiteralBytes *value) const;

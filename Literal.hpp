@@ -51,6 +51,9 @@ public:
     void write(TextWriter & w) const;
     bool operator==(Literal & other);
 
+    const int64_t getInteger() const;
+    const double getFloatingPoint() const;
+
 protected:
     LiteralID _id;
     CreateLocation _creator;

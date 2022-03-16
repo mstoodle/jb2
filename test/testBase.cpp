@@ -461,3 +461,133 @@ TEST(BaseExtension, createStoreFiveFieldStructAddress) {
     void *ptr = (void *)&str;
     f(ptr, &str); void * x = str.f5; EXPECT_EQ((intptr_t)x, (intptr_t)ptr);
 }
+
+// Test function that loads f2 from a parameter struct, stores it to f2 of a locally allocated struct, then loads f2 again and returns it
+#define CREATESTRUCTFUNC(type1,type2,type3,ctype1,ctype2,ctype3) \
+    BASE_FUNC(CreateStruct_ ## type1 ## _ ## type2 ## _ ## type3 ## _Function, "0", "CreateStruct_" #type1 "_" #type2 "_" #type3 ".cpp", \
+        Base::ParameterSymbol *_parm; const Base::StructType *_structType; const Base::FieldType *_f2Type; const Base::PointerType *_pStructType;, \
+        _x, { Base::StructTypeBuilder stb(_x, this); \
+              typedef struct { ctype1 f1; ctype2 f2; ctype3 f3; } cStruct; \
+              stb.setName("MyStruct") \
+                 ->addField("f1", _x->type1, 8*offsetof(cStruct, f1)) \
+                 ->addField("f2", _x->type2, 8*offsetof(cStruct, f2)) \
+                 ->addField("f3", _x->type3, 8*offsetof(cStruct, f3)); \
+              _structType = stb.create(LOC); \
+              _pStructType = PointerTo(LOC, _structType); \
+              _f2Type = _structType->LookupField("f2"); \
+              _parm = DefineParameter("parm", _pStructType); \
+              DefineReturnType(_x->type2); \
+            }, \
+        b, { Value *base = _x->Load(LOC, b, _parm); \
+             Value *f2val_parm = _x->LoadFieldAt(LOC, b, _f2Type, base); \
+             Value *pLocalStruct = _x->CreateLocalStruct(LOC, b, _pStructType); \
+             _x->StoreFieldAt(LOC, b, _f2Type, pLocalStruct, f2val_parm); \
+             Value *f2val_local = _x->LoadFieldAt(LOC, b, _f2Type, pLocalStruct); \
+             _x->Return(LOC, b, f2val_local); })
+
+#define TESTCREATESTRUCT(type1,type2,type3,ctype1,ctype2,ctype3,a,b) \
+    CREATESTRUCTFUNC(type1,type2,type3,ctype1,ctype2,ctype3) \
+    TEST(BaseExtension, createStruct_ ## type1 ## _ ## type2 ## _ ## type3) { \
+        typedef struct { ctype1 f1; ctype2 f2; ctype3 f3; } TheStructType; \
+        typedef ctype2 (FuncProto)(TheStructType *); \
+        COMPILE_FUNC(CreateStruct_ ## type1 ## _ ## type2 ## _ ## type3 ## _Function, FuncProto, f, false); \
+        TheStructType str; \
+        str.f1 = 0; str.f2 = a; str.f3 = 0; \
+         ctype1 w1 = str.f1; EXPECT_EQ(w1,0); \
+         ctype2 w2 = f(&str); EXPECT_EQ(w2, a); \
+         ctype3 w3 = str.f3; EXPECT_EQ(w3,0); \
+        str.f1 = 1; str.f2 = b; str.f3 = 1; \
+         ctype1 x1 = str.f1; EXPECT_EQ(x1,1); \
+         ctype2 x2 = f(&str); EXPECT_EQ(x2, b); \
+         ctype3 x3 = str.f3; EXPECT_EQ(x3,1); \
+        str.f1 = 2; str.f3 = 2; \
+        ctype2 min = str.f2 = std::numeric_limits<ctype2>::min(); \
+         ctype1 y1 = str.f1; EXPECT_EQ(y1,2); \
+         ctype2 y2 = f(&str); EXPECT_EQ(y2, min); \
+         ctype3 y3 = str.f3; EXPECT_EQ(y3,2); \
+        str.f1 = -1; str.f3 = -1; \
+        ctype2 max = str.f2 = std::numeric_limits<ctype2>::max(); \
+         ctype1 z1 = str.f1; EXPECT_EQ(z1,-1); \
+         ctype2 z2 = f(&str); EXPECT_EQ(z2, max); \
+         ctype1 z3 = str.f3; EXPECT_EQ(z3,-1); \
+    }
+
+TESTCREATESTRUCT(Int16,Int8,Int8,int16_t,int8_t,int8_t,3,0)
+TESTCREATESTRUCT(Int32,Int16,Int16,int32_t,int16_t,int16_t,3,0)
+TESTCREATESTRUCT(Int64,Int32,Int32,int64_t,int32_t,int32_t,3,0)
+TESTCREATESTRUCT(Int64,Int64,Int64,int64_t,int64_t,int64_t,3,0)
+TESTCREATESTRUCT(Int32,Float32,Int64,int32_t,float,int64_t,3.0f,0.0f)
+TESTCREATESTRUCT(Int64,Float64,Int32,int64_t,double,int32_t,3.0d,0.0d)
+
+CREATESTRUCTFUNC(Int32,Address,Int32,int32_t,void *,int32_t)
+TEST(BaseExtension, createStruct_Int32_Address_Int32) {
+    typedef struct { int32_t f1; void * f2; int32_t f3; } TheStructType;
+    typedef void * (FuncProto)(TheStructType *);
+    COMPILE_FUNC(CreateStruct_Int32_Address_Int32_Function, FuncProto, f, false);
+    TheStructType str;
+    str.f1 = 0; str.f3 = 0;
+    str.f2 = NULL;
+     int32_t w1 = str.f1; EXPECT_EQ(w1,0);
+     void * w2 = f(&str); EXPECT_EQ((uintptr_t)w2, (uintptr_t)NULL);
+     int32_t w3 = str.f3; EXPECT_EQ(w3,0);
+    str.f1 = 1; str.f3 = 1;
+    str.f2 = (void *)&str;
+     int32_t x1 = str.f1; EXPECT_EQ(x1,1);
+     void * x2 = f(&str); EXPECT_EQ((uintptr_t)x2, (uintptr_t)&str);
+     int32_t x3 = str.f3; EXPECT_EQ(x3,1);
+}
+
+// Test function that returns an index into an array parameter
+#define ARRAYTYPEFUNC(type) \
+    BASE_FUNC(type ## ArrayFunction, "0", #type ".cpp", , \
+        _x, { \
+            DefineReturnType(_x->type); \
+            DefineParameter("array", PointerTo(LOC, _x->type)); \
+            DefineParameter("index", _x->Int32); \
+            }, \
+        b, { \
+           auto arraySym=LookupLocal("array"); \
+           Value * array = _x->Load(LOC, b, arraySym); \
+           auto indexSym=LookupLocal("index"); \
+           Value * index = _x->Load(LOC, b, indexSym); \
+           Value * pElement = _x->IndexAt(LOC, b, array, index); \
+           Value * element = _x->LoadAt(LOC, b, pElement); \
+           _x->Return(LOC, b, element); \
+           })
+
+#define TESTARRAYTYPEFUNC(type,ctype,ai,a,bi,b,mini,maxi) \
+    ARRAYTYPEFUNC(type) \
+    TEST(BaseExtension, create ## type ## ArrayFunction) { \
+        typedef ctype (FuncProto)(ctype *, int32_t); \
+        COMPILE_FUNC(type ## ArrayFunction, FuncProto, f, false); \
+        ctype array[32]; \
+        int32_t i=0; \
+        for (i=0;i < 32;i++) array[i] = -1; \
+        i=ai; array[i] = a; EXPECT_EQ(f(array,i), a) << "Compiled f(array," << i << ") returns " << a; \
+        i=bi; array[i] = b; EXPECT_EQ(f(array,i), b) << "Compiled f(array," << i << ") returns " << b; \
+        ctype min=std::numeric_limits<ctype>::min(); \
+        i=mini; array[i] = min; EXPECT_EQ(f(array,i), min) << "Compiled f(array," << i << ") returns " << min; \
+        ctype max=std::numeric_limits<ctype>::max(); \
+        i=maxi; array[i] = max; EXPECT_EQ(f(array,i), max) << "Compiled f(array," << i << ") returns " << max; \
+    }
+
+TESTARRAYTYPEFUNC(Int8, int8_t, 1, 3, 7, 0, 13, 19)
+TESTARRAYTYPEFUNC(Int16, int16_t, 2, 3, 8, 0, 14, 20)
+TESTARRAYTYPEFUNC(Int32, int32_t, 3, 3, 9, 0, 15, 21)
+TESTARRAYTYPEFUNC(Int64, int64_t, 4, 3, 10, 0, 16, 22)
+TESTARRAYTYPEFUNC(Float32, float, 5, 3.0f, 11, 0.0f, 17, 23)
+TESTARRAYTYPEFUNC(Float64, double, 6, 3.0d, 12, 0.0d, 18, 24)
+
+// Address handled specially
+ARRAYTYPEFUNC(Address)
+TEST(BaseExtension, createAddressArrayFunction) {
+    typedef void * (FuncProto)(void **, int32_t);
+    COMPILE_FUNC(AddressArrayFunction, FuncProto, f, false);
+    void * array[32];
+    int32_t i=0;
+    for (i=0;i < 32;i++) array[i] = (void *)(uintptr_t)-1;
+    i=7; array[i] = NULL; EXPECT_EQ((uintptr_t)f(array,i), (uintptr_t)NULL) << "Compiled f(array," << i << ") returns " << NULL;
+    i=9; array[i] = array; EXPECT_EQ((uintptr_t)f(array,i), (uintptr_t)array) << "Compiled f(array," << i << ") returns " << array;
+    i=11; array[i] = array+20; EXPECT_EQ((uintptr_t)f(array,i), (uintptr_t)(array+20)) << "Compiled f(array," << i << ") returns " << (array+20);
+    i=13; array[i] = array+38; EXPECT_EQ((uintptr_t)f(array,i), (uintptr_t)(array+38)) << "Compiled f(array," << i << ") returns " << (array+38);
+}

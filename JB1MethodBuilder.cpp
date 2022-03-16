@@ -24,6 +24,7 @@
 #include "Config.hpp"
 #include "JB1MethodBuilder.hpp"
 #include "JitBuilder.hpp"
+#include "Literal.hpp"
 #include "Location.hpp"
 #include "Operation.hpp"
 #include "Symbol.hpp"
@@ -339,6 +340,28 @@ JB1MethodBuilder::StoreIndirect(Location *loc, Builder *b, std::string structNam
     omr_b->StoreIndirect(findOrCreateString(structName), findOrCreateString(fieldName), map(pStruct), map(value));
 }
 
+void
+JB1MethodBuilder::CreateLocalArray(Location *loc, Builder *b, Value *result, Literal *numElements, const Type *elementType) {
+    TR::IlBuilder *omr_b = map(b);
+    omr_b->setBCIndex(loc->bcIndex())->SetCurrentIlGenerator();
+    int32_t numElems = numElements->getInteger();
+    registerValue(result, omr_b->CreateLocalArray(numElems, map(elementType)));
+}
+
+void
+JB1MethodBuilder::CreateLocalStruct(Location *loc, Builder *b, Value *result, const Type * structType) {
+    TR::IlBuilder *omr_b = map(b);
+    omr_b->setBCIndex(loc->bcIndex())->SetCurrentIlGenerator();
+    registerValue(result, omr_b->CreateLocalStruct(map(structType)));
+}
+
+void
+JB1MethodBuilder::IndexAt(Location *loc, Builder *b, Value *result, Value *base, Value *index) {
+    TR::IlBuilder *omr_b = map(b);
+    omr_b->setBCIndex(loc->bcIndex())->SetCurrentIlGenerator();
+    TR::IlType *ptrType = map(base->type());
+    registerValue(result, omr_b->IndexAt(ptrType, map(base), map(index)));
+}
 //
 // internal functions
 //

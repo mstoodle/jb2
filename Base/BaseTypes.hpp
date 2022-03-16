@@ -66,6 +66,8 @@ class NumericType : public Type {
 class IntegerType : public NumericType {
     friend class BaseExtension;
 
+    virtual bool isInteger() const { return true; }
+
     protected:
     IntegerType(LOCATION, Extension *ext, std::string name, size_t size)
         : NumericType(PASSLOC, ext, name, size)
@@ -83,6 +85,7 @@ class Int8Type : public IntegerType {
     virtual void printValue(TextWriter &w, const void *p) const;
     virtual void printLiteral(TextWriter &w, const Literal *lv) const;
     virtual bool registerJB1Type(JB1MethodBuilder *j1mb) const;
+    virtual const int64_t getInteger(const Literal *lv) const;
 
     protected:
     Int8Type(LOCATION, Extension *ext) : IntegerType(PASSLOC, ext, "Int8", 8) { }
@@ -99,6 +102,7 @@ class Int16Type : public IntegerType {
     virtual void printValue(TextWriter &w, const void *p) const;
     virtual void printLiteral(TextWriter &w, const Literal *lv) const;
     virtual bool registerJB1Type(JB1MethodBuilder *j1mb) const;
+    virtual const int64_t getInteger(const Literal *lv) const;
 
     protected:
     Int16Type(LOCATION, Extension *ext) : IntegerType(PASSLOC, ext, "Int16", 16) { }
@@ -115,6 +119,7 @@ class Int32Type : public IntegerType {
     virtual void printValue(TextWriter &w, const void *p) const;
     virtual void printLiteral(TextWriter &w, const Literal *lv) const;
     virtual bool registerJB1Type(JB1MethodBuilder *j1mb) const;
+    virtual const int64_t getInteger(const Literal *lv) const;
 
     protected:
     Int32Type(LOCATION, Extension *ext) : IntegerType(PASSLOC, ext, "Int32", 32) { }
@@ -132,6 +137,7 @@ class Int64Type : public IntegerType {
     virtual void printValue(TextWriter &w, const void *p) const;
     virtual void printLiteral(TextWriter &w, const Literal *lv) const;
     virtual bool registerJB1Type(JB1MethodBuilder *j1mb) const;
+    virtual const int64_t getInteger(const Literal *lv) const;
 
     protected:
     Int64Type(LOCATION, Extension *ext) : IntegerType(PASSLOC, ext, "Int64", 64) { }
@@ -139,6 +145,8 @@ class Int64Type : public IntegerType {
 
 class FloatingPointType : public NumericType {
     friend class BaseExtension;
+
+    virtual bool isFloatingPoint() const { return true; }
 
     protected:
     FloatingPointType(LOCATION, Extension *ext, std::string name, size_t size)
@@ -157,6 +165,7 @@ class Float32Type : public FloatingPointType {
     virtual void printValue(TextWriter &w, const void *p) const;
     virtual void printLiteral(TextWriter &w, const Literal *lv) const;
     virtual bool registerJB1Type(JB1MethodBuilder *j1mb) const;
+    virtual const double getFloatingPoint(const Literal *lv) const;
 
     protected:
     Float32Type(LOCATION, Extension *ext) : FloatingPointType(PASSLOC, ext, "Float32", 32) { }
@@ -173,6 +182,7 @@ class Float64Type : public FloatingPointType {
     virtual void printValue(TextWriter &w, const void *p) const;
     virtual void printLiteral(TextWriter &w, const Literal *lv) const;
     virtual bool registerJB1Type(JB1MethodBuilder *j1mb) const;
+    virtual const double getFloatingPoint(const Literal *lv) const;
 
     protected:
     Float64Type(LOCATION, Extension *ext) : FloatingPointType(PASSLOC, ext, "Float64", 64) { }

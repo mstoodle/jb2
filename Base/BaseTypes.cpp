@@ -69,6 +69,11 @@ Int8Type::printLiteral(TextWriter & w, const Literal *lv) const {
    w << name() << "(" << ((int) lv->value<const int8_t>()) << ")";
 }
 
+const int64_t
+Int8Type::getInteger(const Literal *lv) const {
+    return (const int64_t) (lv->value<const int8_t>());
+}
+
 bool
 Int8Type::registerJB1Type(JB1MethodBuilder *j1mb) const {
     j1mb->registerInt8(this);
@@ -96,6 +101,11 @@ Int16Type::printValue(TextWriter &w, const void *p) const
 void
 Int16Type::printLiteral(TextWriter & w, const Literal *lv) const {
    w << name() << "(" << (lv->value<const int16_t>()) << ")";
+}
+
+const int64_t
+Int16Type::getInteger(const Literal *lv) const {
+    return (const int64_t) (lv->value<const int16_t>());
 }
 
 bool
@@ -128,6 +138,11 @@ Int32Type::printLiteral(TextWriter & w, const Literal *lv) const {
    w << name() << "(" << (lv->value<const int32_t>()) << ")";
 }
 
+const int64_t
+Int32Type::getInteger(const Literal *lv) const {
+    return (const int64_t) (lv->value<const int32_t>());
+}
+
 bool
 Int32Type::registerJB1Type(JB1MethodBuilder *j1mb) const {
     j1mb->registerInt32(this);
@@ -156,6 +171,11 @@ Int64Type::printValue(TextWriter &w, const void *p) const
 void
 Int64Type::printLiteral(TextWriter & w, const Literal *lv) const {
    w << name() << "(" << (lv->value<const int64_t>()) << ")";
+}
+
+const int64_t
+Int64Type::getInteger(const Literal *lv) const {
+    return (const int64_t) (lv->value<const int64_t>());
 }
 
 bool
@@ -188,6 +208,11 @@ Float32Type::printLiteral(TextWriter & w, const Literal *lv) const {
    w << name() << "(" << (lv->value<const float>()) << ")";
 }
 
+const double
+Float32Type::getFloatingPoint(const Literal *lv) const {
+    return (const double) (lv->value<const float>());
+}
+
 bool
 Float32Type::registerJB1Type(JB1MethodBuilder *j1mb) const {
     j1mb->registerFloat(this);
@@ -216,6 +241,11 @@ Float64Type::printValue(TextWriter &w, const void *p) const
 void
 Float64Type::printLiteral(TextWriter & w, const Literal *lv) const {
    w << name() << "(" << (lv->value<const double>()) << ")";
+}
+
+const double
+Float64Type::getFloatingPoint(const Literal *lv) const {
+    return (const double) (lv->value<const double>());
 }
 
 bool

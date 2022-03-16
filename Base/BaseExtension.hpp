@@ -128,6 +128,9 @@ class BaseExtension : public Extension {
     const ActionID aStoreField;
     const ActionID aLoadFieldAt;
     const ActionID aStoreFieldAt;
+    const ActionID aCreateLocalArray;
+    const ActionID aCreateLocalStruct;
+    const ActionID aIndexAt;
 
     //
     // Operations
@@ -158,6 +161,9 @@ class BaseExtension : public Extension {
     void StoreField(LOCATION, Builder *b, const FieldType *fieldType, Value *structValue, Value *value);
     Value * LoadFieldAt(LOCATION, Builder *b, const FieldType *fieldType, Value *pStruct);
     void StoreFieldAt(LOCATION, Builder *b, const FieldType *fieldType, Value *pStruct, Value *value);
+    Value * CreateLocalArray(LOCATION, Builder *b, Literal *numElements, const PointerType *pElementType);
+    Value * CreateLocalStruct(LOCATION, Builder *b, const PointerType *pStructType);
+    Value * IndexAt(LOCATION, Builder *b, Value *base, Value *index);
 
     // Pseudo operations
     Location * SourceLocation(LOCATION, Builder *b, std::string func);

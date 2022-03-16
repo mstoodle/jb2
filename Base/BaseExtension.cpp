@@ -29,6 +29,7 @@
 #include "Compilation.hpp"
 #include "Compiler.hpp"
 #include "JB1CodeGenerator.hpp"
+#include "Literal.hpp"
 #include "Location.hpp"
 #include "MemoryOperations.hpp"
 #include "Strategy.hpp"
@@ -74,6 +75,9 @@ BaseExtension::BaseExtension(Compiler *compiler)
     , aStoreField(registerAction(std::string("StoreField")))
     , aLoadFieldAt(registerAction(std::string("LoadFieldAt")))
     , aStoreFieldAt(registerAction(std::string("StoreFieldAt")))
+    , aCreateLocalArray(registerAction(std::string("CreateLocalArray")))
+    , aCreateLocalStruct(registerAction(std::string("CreateLocalStruct")))
+    , aIndexAt(registerAction(std::string("IndexAt")))
     , aReturn(registerAction(std::string("Return"))) {
 
     Strategy *jb1cgStrategy = new Strategy(compiler, "jb1cg");
@@ -180,70 +184,95 @@ BaseExtension::Return(LOCATION, Builder *b, Value *v) {
 //
 
 Value *
-BaseExtension::Load(LOCATION, Builder *b, Symbol * sym)
-   {
-   Value * result = createValue(b, sym->type());
-   addOperation(b, new Op_Load(PASSLOC, this, b, this->aLoad, result, sym));
-   return result;
-   }
+BaseExtension::Load(LOCATION, Builder *b, Symbol * sym) {
+    Value * result = createValue(b, sym->type());
+    addOperation(b, new Op_Load(PASSLOC, this, b, this->aLoad, result, sym));
+    return result;
+}
 
 void
-BaseExtension::Store(LOCATION, Builder *b, Symbol * sym, Value *value)
-   {
-   addOperation(b, new Op_Store(PASSLOC, this, b, this->aLoad, sym, value));
-   }
+BaseExtension::Store(LOCATION, Builder *b, Symbol * sym, Value *value) {
+    addOperation(b, new Op_Store(PASSLOC, this, b, this->aLoad, sym, value));
+}
 
 Value *
-BaseExtension::LoadAt(LOCATION, Builder *b, Value *ptrValue)
-   {
-   assert(ptrValue->type()->isPointer());
-   const Type *baseType = (static_cast<const PointerType *>(ptrValue->type()))->BaseType();
-   Value * result = createValue(b, baseType);
-   addOperation(b, new Op_LoadAt(PASSLOC, this, b, this->aLoadAt, result, ptrValue));
-   return result;
-   }
+BaseExtension::LoadAt(LOCATION, Builder *b, Value *ptrValue) {
+    assert(ptrValue->type()->isPointer());
+    const Type *baseType = (static_cast<const PointerType *>(ptrValue->type()))->BaseType();
+    Value * result = createValue(b, baseType);
+    addOperation(b, new Op_LoadAt(PASSLOC, this, b, this->aLoadAt, result, ptrValue));
+    return result;
+}
 
 void
-BaseExtension::StoreAt(LOCATION, Builder *b, Value *ptrValue, Value *value)
-   {
-   assert(ptrValue->type()->isPointer());
-   const Type *baseType = (static_cast<const PointerType *>(ptrValue->type()))->BaseType();
-   assert(baseType == value->type());
-   addOperation(b, new Op_StoreAt(PASSLOC, this, b, this->aStoreAt, ptrValue, value));
-   }
+BaseExtension::StoreAt(LOCATION, Builder *b, Value *ptrValue, Value *value) {
+    assert(ptrValue->type()->isPointer());
+    const Type *baseType = (static_cast<const PointerType *>(ptrValue->type()))->BaseType();
+    assert(baseType == value->type());
+    addOperation(b, new Op_StoreAt(PASSLOC, this, b, this->aStoreAt, ptrValue, value));
+}
 
 Value *
 BaseExtension::LoadField(LOCATION, Builder *b, const FieldType *fieldType, Value *structValue) {
-   assert(structValue->type()->isStruct());
-   assert(fieldType->owningStruct() == structValue->type());
-   Value * result = createValue(b, fieldType->type());
-   addOperation(b, new Op_LoadField(PASSLOC, this, b, this->aLoadField, result, fieldType, structValue));
-   return result;
+    assert(structValue->type()->isStruct());
+    assert(fieldType->owningStruct() == structValue->type());
+    Value * result = createValue(b, fieldType->type());
+    addOperation(b, new Op_LoadField(PASSLOC, this, b, this->aLoadField, result, fieldType, structValue));
+    return result;
 }
 
 void
 BaseExtension::StoreField(LOCATION, Builder *b, const FieldType *fieldType, Value *structValue, Value *value) {
-   assert(structValue->type()->isStruct());
-   assert(fieldType->owningStruct() == structValue->type());
-   addOperation(b, new Op_StoreField(PASSLOC, this, b, this->aStoreField, fieldType, structValue, value));
+    assert(structValue->type()->isStruct());
+    assert(fieldType->owningStruct() == structValue->type());
+    addOperation(b, new Op_StoreField(PASSLOC, this, b, this->aStoreField, fieldType, structValue, value));
 }
 
 Value *
 BaseExtension::LoadFieldAt(LOCATION, Builder *b, const FieldType *fieldType, Value *pStruct) {
-   assert(pStruct->type()->isPointer());
-   const Type *structType = (static_cast<const PointerType *>(pStruct->type()))->BaseType();
-   assert(fieldType->owningStruct() == structType);
-   Value * result = createValue(b, fieldType->type());
-   addOperation(b, new Op_LoadFieldAt(PASSLOC, this, b, this->aLoadFieldAt, result, fieldType, pStruct));
-   return result;
+    assert(pStruct->type()->isPointer());
+    const Type *structType = (static_cast<const PointerType *>(pStruct->type()))->BaseType();
+    assert(fieldType->owningStruct() == structType);
+    Value * result = createValue(b, fieldType->type());
+    addOperation(b, new Op_LoadFieldAt(PASSLOC, this, b, this->aLoadFieldAt, result, fieldType, pStruct));
+    return result;
 }
 
 void
 BaseExtension::StoreFieldAt(LOCATION, Builder *b, const FieldType *fieldType, Value *pStruct, Value *value) {
-   assert(pStruct->type()->isPointer());
-   const Type *structType = (static_cast<const PointerType *>(pStruct->type()))->BaseType();
-   assert(fieldType->owningStruct() == structType);
-   addOperation(b, new Op_StoreFieldAt(PASSLOC, this, b, this->aStoreFieldAt, fieldType, pStruct, value));
+    assert(pStruct->type()->isPointer());
+    const Type *structType = (static_cast<const PointerType *>(pStruct->type()))->BaseType();
+    assert(fieldType->owningStruct() == structType);
+    addOperation(b, new Op_StoreFieldAt(PASSLOC, this, b, this->aStoreFieldAt, fieldType, pStruct, value));
+}
+
+Value *
+BaseExtension::CreateLocalArray(LOCATION, Builder *b, Literal *numElements, const PointerType *pElementType) {
+   assert(numElements->type()->isInteger());
+   Value * result = createValue(b, pElementType);
+   const Type *elementType = pElementType->BaseType();
+   // assert concrete type
+   addOperation(b, new Op_CreateLocalArray(PASSLOC, this, b, this->aCreateLocalArray, result, numElements, pElementType));
+   return result;
+}
+
+Value *
+BaseExtension::CreateLocalStruct(LOCATION, Builder *b, const PointerType *pStructType) {
+    const Type *baseType = pStructType->BaseType();
+    assert(baseType->isStruct());
+    const StructType *structType = static_cast<const StructType *>(baseType);
+    Value * result = createValue(b, pStructType);
+    addOperation(b, new Op_CreateLocalStruct(PASSLOC, this, b, this->aCreateLocalStruct, result, structType));
+    return result;
+}
+
+Value *
+BaseExtension::IndexAt(LOCATION, Builder *b, Value *base, Value *index) {
+    const Type *pElementType = base->type();
+    assert(pElementType->isPointer());
+    Value *result = createValue(b, pElementType);
+    addOperation(b, new Op_IndexAt(PASSLOC, this, b, aIndexAt, result, base, index));
+    return result;
 }
 
 //
@@ -274,11 +303,6 @@ BaseExtension::SourceLocation(LOCATION, Builder *b, std::string func, std::strin
    return loc;
    }
 
-CompileResult
-BaseExtension::jb1cgCompile(Compilation *comp) {
-   return _compiler->compile(comp, _jb1cgStrategyID);
-}
-
 const FunctionType *
 BaseExtension::DefineFunctionType(LOCATION, std::string name, const Type *returnType, int32_t numParms, const Type **parmTypes) {
    const FunctionType *f = FunctionType::create(PASSLOC, this, name, returnType, numParms, parmTypes);
@@ -286,29 +310,12 @@ BaseExtension::DefineFunctionType(LOCATION, std::string name, const Type *return
    return f;
 }
 
+CompileResult
+BaseExtension::jb1cgCompile(Compilation *comp) {
+   return _compiler->compile(comp, _jb1cgStrategyID);
+}
+
 #if 0
-const PointerType *
-BaseExtension::PointerTo(LOCATION, const Type * baseType)
-   {
-   // don't replicate types
-   std::map<Type *,PointerType *>::iterator found = _pointerTypeFromBaseType.find(baseType);
-   if (found != _pointerTypeFromBaseType.end())
-      {
-      PointerType *t = found->second;
-      return t;
-      }
-
-   // if not found already, then create it
-   PointerType::TypeBuilder builder;
-   builder.setExtension(this);
-   builder.setBaseType(baseType);
-   PointerType * newType = PointerType::create(PASSLOC, &builder);
-   addType(newType);
-   _pointerTypeFromBaseType[baseType] = newType;
-   registerPointerType(newType);
-   return newType;
-   }
-
 Value *
 BuilderBase::CoercePointer(Type * t, Value * v)
    {

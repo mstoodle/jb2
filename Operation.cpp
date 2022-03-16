@@ -83,6 +83,21 @@ Operation::writeFull(TextWriter & w) const {
 }
 
 void
+OperationR0S1V1::write(TextWriter & w) const {
+    w << this->name() << " " << this->_symbol << " " << this->_value << w.endl();
+}
+
+void
+OperationR0V2::write(TextWriter & w) const {
+    w << this->name() << " " << this->_left << " " << this->_right << w.endl();
+}
+
+void
+OperationR0V2T1::write(TextWriter & w) const {
+    w << this->name() << " " << this->_type << " " << this->_base << " " << this->_value << w.endl();
+}
+
+void
 OperationR1L1::write(TextWriter &w) const {
     w << result() << " = " << name() << " " << literal() << w.endl();
 }
@@ -93,8 +108,8 @@ OperationR1S1::write(TextWriter & w) const {
 }
 
 void
-OperationR0S1V1::write(TextWriter & w) const {
-    w << this->name() << " " << this->_symbol << " " << this->_value << w.endl();
+OperationR1T1::write(TextWriter & w) const {
+    w << this->_result << " = " << this->name() << " " << this->_type << w.endl();
 }
 
 void
@@ -103,13 +118,23 @@ OperationR1V1::write(TextWriter & w) const {
 }
 
 void
+OperationR1L1T1::write(TextWriter & w) const {
+    w << this->_result << " = " << this->name() << " " << this->_v << " " << this->_elementType << w.endl();
+}
+
+void
 OperationR1V1T1::write(TextWriter & w) const {
     w << this->_result << " = " << this->name() << " " << this->_type << " " << this->_value << w.endl();
 }
 
 void
-OperationR0V2::write(TextWriter & w) const {
-    w << this->name() << " " << this->_left << " " << this->_right << w.endl();
+OperationR1V2::write(TextWriter & w) const {
+    w << this->_result << " = " << this->name() << " " << this->_left << " " << this->_right << w.endl();
+}
+
+void
+OperationR1V2T1::write(TextWriter & w) const {
+    w << this->_result << " = " << this->name() << " " << this->_type << " " << this->_left << " " << this->_right << w.endl();
 }
 
 #if 0

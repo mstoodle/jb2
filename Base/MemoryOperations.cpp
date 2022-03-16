@@ -50,7 +50,7 @@ Op_Load::Op_Load(LOCATION, Extension *ext, Builder * parent, ActionID aLoad, Val
 
 Operation *
 Op_Load::clone(LOCATION, Builder *b, OperationCloner *cloner) const {
-    return new Op_Load(PASSLOC, this->_ext, b, this->action(), this->_result, this->_symbol);
+    return new Op_Load(PASSLOC, this->_ext, b, this->action(), cloner->result(), cloner->symbol());
 }
 
 void
@@ -68,7 +68,7 @@ Op_Store::Op_Store(LOCATION, Extension *ext, Builder * parent, ActionID aStore, 
 
 Operation *
 Op_Store::clone(LOCATION, Builder *b, OperationCloner *cloner) const {
-    return new Op_Store(PASSLOC, this->_ext, b, this->action(), this->_symbol, this->_value);
+    return new Op_Store(PASSLOC, this->_ext, b, this->action(), cloner->symbol(), cloner->operand());
 }
 
 void
@@ -86,7 +86,7 @@ Op_LoadAt::Op_LoadAt(LOCATION, Extension *ext, Builder * parent, ActionID aLoadA
 
 Operation *
 Op_LoadAt::clone(LOCATION, Builder *b, OperationCloner *cloner) const {
-    return new Op_LoadAt(PASSLOC, this->_ext, b, this->action(), this->_result, this->_value);
+    return new Op_LoadAt(PASSLOC, this->_ext, b, this->action(), this->result(), this->operand());
 }
 
 void
@@ -104,7 +104,7 @@ Op_StoreAt::Op_StoreAt(LOCATION, Extension *ext, Builder * parent, ActionID aSto
 
 Operation *
 Op_StoreAt::clone(LOCATION, Builder *b, OperationCloner *cloner) const {
-    return new Op_StoreAt(PASSLOC, this->_ext, b, this->action(), this->_left, this->_right);
+    return new Op_StoreAt(PASSLOC, this->_ext, b, this->action(), cloner->operand(0), this->operand(1));
 }
 
 void
@@ -122,7 +122,7 @@ Op_LoadField::Op_LoadField(LOCATION, Extension *ext, Builder * parent, ActionID 
 
 Operation *
 Op_LoadField::clone(LOCATION, Builder *b, OperationCloner *cloner) const {
-    return new Op_LoadField(PASSLOC, this->_ext, b, this->action(), this->_result, static_cast<const FieldType *>(_type), this->_value);
+    return new Op_LoadField(PASSLOC, this->_ext, b, this->action(), cloner->result(), static_cast<const FieldType *>(cloner->type()), cloner->operand());
 }
 
 void
@@ -140,7 +140,7 @@ Op_StoreField::Op_StoreField(LOCATION, Extension *ext, Builder * parent, ActionI
 
 Operation *
 Op_StoreField::clone(LOCATION, Builder *b, OperationCloner *cloner) const {
-    return new Op_StoreField(PASSLOC, this->_ext, b, this->action(), static_cast<const FieldType *>(_type), this->_base, this->_value);
+    return new Op_StoreField(PASSLOC, this->_ext, b, this->action(), static_cast<const FieldType *>(cloner->type()), cloner->operand(0), cloner->operand(1));
 }
 
 void
@@ -158,7 +158,7 @@ Op_LoadFieldAt::Op_LoadFieldAt(LOCATION, Extension *ext, Builder * parent, Actio
 
 Operation *
 Op_LoadFieldAt::clone(LOCATION, Builder *b, OperationCloner *cloner) const {
-    return new Op_LoadFieldAt(PASSLOC, this->_ext, b, this->action(), this->_result, static_cast<const FieldType *>(this->_type), this->_value);
+    return new Op_LoadFieldAt(PASSLOC, this->_ext, b, this->action(), cloner->result(), static_cast<const FieldType *>(cloner->type()), cloner->operand());
 }
 
 void
@@ -178,7 +178,7 @@ Op_StoreFieldAt::Op_StoreFieldAt(LOCATION, Extension *ext, Builder * parent, Act
 
 Operation *
 Op_StoreFieldAt::clone(LOCATION, Builder *b, OperationCloner *cloner) const {
-    return new Op_StoreFieldAt(PASSLOC, this->_ext, b, this->action(), static_cast<const FieldType *>(this->_type), this->_base, this->_value);
+    return new Op_StoreFieldAt(PASSLOC, this->_ext, b, this->action(), static_cast<const FieldType *>(cloner->type()), cloner->operand(0), cloner->operand(1));
 }
 
 void
@@ -186,6 +186,56 @@ Op_StoreFieldAt::jbgen(JB1MethodBuilder *j1mb) const {
     const FieldType *fType = static_cast<const FieldType *>(_type);
     const StructType *sType = fType->owningStruct();
     j1mb->StoreIndirect(location(), this->parent(), sType->name(), fType->name(), this->_base, this->_value);
+}
+
+
+//
+// CreateLocalArray
+//
+Operation *
+Op_CreateLocalArray::clone(LOCATION, Builder *b, OperationCloner *cloner) const {
+    const Type *cloneType = cloner->type();
+    assert(cloneType->isPointer());
+    return new Op_CreateLocalArray(PASSLOC, this->_ext, b, this->action(), cloner->result(), cloner->literal(), static_cast<const PointerType *>(cloneType));
+}
+
+void
+Op_CreateLocalArray::jbgen(JB1MethodBuilder *j1mb) const {
+    j1mb->CreateLocalArray(location(), this->parent(), this->result(), this->literal(), this->type());
+}
+
+
+//
+// CreateLocalStruct
+//
+Operation *
+Op_CreateLocalStruct::clone(LOCATION, Builder *b, OperationCloner *cloner) const {
+    Type *cloneType = cloner->type();
+    assert(cloneType->isStruct());
+    return new Op_CreateLocalStruct(PASSLOC, this->_ext, b, this->action(), cloner->result(), static_cast<const StructType *>(cloneType));
+}
+
+void
+Op_CreateLocalStruct::jbgen(JB1MethodBuilder *j1mb) const {
+    j1mb->CreateLocalStruct(location(), this->parent(), this->result(), this->type());
+}
+
+
+//
+// IndexAt
+//
+Op_IndexAt::Op_IndexAt(LOCATION, Extension *ext, Builder * parent, ActionID aIndexAt, Value *result, Value *base, Value *index)
+    : OperationR1V2(PASSLOC, aIndexAt, ext, parent, result, base, index) {
+}
+
+Operation *
+Op_IndexAt::clone(LOCATION, Builder *b, OperationCloner *cloner) const {
+    return new Op_IndexAt(PASSLOC, this->_ext, b, this->action(), cloner->result(), cloner->operand(0), cloner->operand(1));
+}
+
+void
+Op_IndexAt::jbgen(JB1MethodBuilder *j1mb) const {
+    j1mb->IndexAt(location(), this->parent(), this->_result, this->_left, this->_right);
 }
 
 

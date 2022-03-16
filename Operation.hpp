@@ -192,26 +192,25 @@ class OperationR1L1 : public OperationR1 {
     Literal *_v;
 };
 
-class OperationR1L1T1 : public OperationR1L1
-   {
-   public:
-   virtual size_t size() const      { return sizeof(OperationR1L1T1); }
-   virtual int32_t numTypes() const { return 1; }
-   virtual const Type * type(int i=0) const
-      {
-      if (i == 0) return _elementType;
-      return NULL;
-      }
-   virtual TypeIterator TypesBegin() { return TypeIterator(_elementType); }
+class OperationR1L1T1 : public OperationR1L1 {
+public:
+    virtual size_t size() const      { return sizeof(OperationR1L1T1); }
+    virtual int32_t numTypes() const { return 1; }
+    virtual const Type * type(int i=0) const {
+        if (i == 0) return _elementType;
+        return NULL;
+    }
+    virtual TypeIterator TypesBegin() { return TypeIterator(_elementType); }
+    virtual void write(TextWriter & w) const;
 
-   protected:
-   OperationR1L1T1(LOCATION, ActionID a, Extension *ext, Builder * parent, Value * result, Literal *numElements, const Type *elementType)
-      : OperationR1L1(PASSLOC, a, ext, parent, result, numElements)
-      , _elementType(elementType)
-      { }
+protected:
+    OperationR1L1T1(LOCATION, ActionID a, Extension *ext, Builder * parent, Value * result, Literal *numElements, const Type *elementType)
+        : OperationR1L1(PASSLOC, a, ext, parent, result, numElements)
+        , _elementType(elementType)
+        { }
 
-   const Type *_elementType;
-   };
+     const Type *_elementType;
+};
 
 class OperationR1S1 : public OperationR1 {
 public:
@@ -232,27 +231,27 @@ protected:
      Symbol *_symbol;
 };
 
-class OperationR0V1 : public Operation
-   {
-   public:
-   virtual size_t size() const         { return sizeof(OperationR0V1); }
-   virtual int32_t numOperands() const { return 1; }
-   virtual Value * operand(int i=0) const
-      {
-      if (i == 0) return _value;
-      return NULL;
-      }
+class OperationR0V1 : public Operation {
+public:
+    virtual size_t size() const         { return sizeof(OperationR0V1); }
+    virtual int32_t numOperands() const { return 1; }
+    virtual Value * operand(int i=0) const {
+        if (i == 0) return _value;
+        return NULL;
+    }
 
-   virtual ValueIterator OperandsBegin()       { return ValueIterator(_value); }
+    virtual ValueIterator OperandsBegin()       { return ValueIterator(_value); }
 
-   protected:
-   OperationR0V1(LOCATION, ActionID a, Extension *ext, Builder * parent, Value * value)
-      : Operation(PASSLOC, a, ext, parent)
-      , _value(value)
-      { }
+    virtual void write(TextWriter & w) const;
 
-   Value * _value;
-   };
+protected:
+    OperationR0V1(LOCATION, ActionID a, Extension *ext, Builder * parent, Value * value)
+        : Operation(PASSLOC, a, ext, parent)
+        , _value(value)
+        { }
+
+    Value * _value;
+};
 
 class OperationR1V1 : public OperationR1 {
 public:
@@ -325,86 +324,78 @@ protected:
     Value * _right;
 };
 
-class OperationR1V2 : public OperationR1
-   {
-   public:
-   virtual size_t size() const         { return sizeof(OperationR1V2); }
-   virtual int32_t numOperands() const { return 2; }
-   virtual Value * operand(int i=0) const
-      {
-      if (i == 0) return _left;
-      if (i == 1) return _right;
-      return NULL;
-      }
-   virtual Value * getLeft() const  { return _left; }
-   virtual Value * getRight() const { return _right; }
+class OperationR1V2 : public OperationR1 {
+public:
+    virtual size_t size() const         { return sizeof(OperationR1V2); }
+    virtual int32_t numOperands() const { return 2; }
+    virtual Value * operand(int i=0) const {
+        if (i == 0) return _left;
+        if (i == 1) return _right;
+        return NULL;
+    }
+    virtual Value * getLeft() const  { return _left; }
+    virtual Value * getRight() const { return _right; }
 
-   virtual ValueIterator OperandsBegin()       { return ValueIterator(_left, _right); }
+    virtual ValueIterator OperandsBegin()       { return ValueIterator(_left, _right); }
 
-   protected:
-   OperationR1V2(LOCATION, ActionID a, Extension *ext, Builder * parent, Value * result, Value * left, Value * right)
-      : OperationR1(PASSLOC, a, ext, parent, result)
-      , _left(left)
-      , _right(right)
-      { }
+    virtual void write(TextWriter & w) const;
 
-   Value * _left;
-   Value * _right;
-   };
+protected:
+    OperationR1V2(LOCATION, ActionID a, Extension *ext, Builder * parent, Value * result, Value * left, Value * right)
+        : OperationR1(PASSLOC, a, ext, parent, result)
+        , _left(left)
+        , _right(right)
+        { }
 
-class OperationR1V2T1 : public OperationR1V2
-   {
-   public:
-   virtual size_t size() const         { return sizeof(OperationR1V2T1); }
-   virtual int32_t numTypes() const { return 1; }
-   virtual const Type * type(int i=0) const
-      {
-      if (i == 0) return _type;
-      return NULL;
-      }
-   virtual TypeIterator TypesBegin()       { return TypeIterator(_type); }
+    Value * _left;
+    Value * _right;
+};
 
-   virtual int32_t numOperands() const { return 2; }
-   virtual Value *operand(int i=0) const
-      {
-      if (i == 0) return _left;
-      if (i == 1) return _right;
-      return NULL;
-      }
-   virtual Value * getAddress() const  { return _left; }
-   virtual Value * getValue() const    { return _right; }
-   virtual ValueIterator OperandsBegin()       { return ValueIterator(_left, _right); }
+class OperationR1V2T1 : public OperationR1V2 {
+public:
+    virtual size_t size() const         { return sizeof(OperationR1V2T1); }
+    virtual int32_t numTypes() const { return 1; }
+    virtual const Type * type(int i=0) const
+        {
+        if (i == 0) return _type;
+        return NULL;
+    }
+    virtual TypeIterator TypesBegin() { return TypeIterator(_type); }
 
+    virtual Value * getAddress() const { return _left; }
+    virtual Value * getValue() const { return _right; }
 
-   protected:
-   OperationR1V2T1(LOCATION, ActionID a, Extension *ext, Builder * parent, Value * result, const Type * t, Value * addr, Value * v)
-      : OperationR1V2(PASSLOC, a, ext, parent, result, addr, v)
-      , _type(t)
-      { }
+    virtual void write(TextWriter & w) const;
 
-   const Type * _type;
-   };
+protected:
+    OperationR1V2T1(LOCATION, ActionID a, Extension *ext, Builder * parent, Value * result, const Type * t, Value * addr, Value * v)
+        : OperationR1V2(PASSLOC, a, ext, parent, result, addr, v)
+        , _type(t)
+        { }
 
-class OperationR1T1 : public OperationR1
-   {
-   public:
-   virtual size_t size() const         { return sizeof(OperationR1V2T1); }
-   virtual int32_t numTypes() const { return 1; }
-   virtual const Type * type(int i=0) const
-      {
-      if (i == 0) return _type;
-      return NULL;
-      }
-   virtual TypeIterator TypesBegin()       { return TypeIterator(_type); }
+    const Type * _type;
+};
 
-   protected:
-   OperationR1T1(LOCATION, ActionID a, Extension *ext, Builder * parent, Value * result, const Type * t)
-      : OperationR1(PASSLOC, a, ext, parent, result)
-      , _type(t)
-      { }
+class OperationR1T1 : public OperationR1 {
+public:
+    virtual size_t size() const         { return sizeof(OperationR1T1); }
+    virtual int32_t numTypes() const { return 1; }
+    virtual const Type * type(int i=0) const {
+        if (i == 0) return _type;
+        return NULL;
+    }
+    virtual TypeIterator TypesBegin() { return TypeIterator(_type); }
 
-   const Type * _type;
-   };
+    virtual void write(TextWriter & w) const;
+
+protected:
+    OperationR1T1(LOCATION, ActionID a, Extension *ext, Builder * parent, Value * result, const Type * t)
+        : OperationR1(PASSLOC, a, ext, parent, result)
+        , _type(t)
+        { }
+
+    const Type * _type;
+};
 
 class OperationR0S1V1 : public Operation {
 public:
@@ -459,29 +450,29 @@ class OperationR0T1 : public Operation
    const Type *_type;
    };
 
-class OperationR0V2T1 : public OperationR0T1
-   {
-   public:
-   virtual size_t size() const { return sizeof(OperationR0V2T1); }
-   virtual int32_t numOperands() const   { return 2; }
-   virtual Value * operand(int i=0) const
-      {
-      if (i == 0) return _base;
-      if (i == 1) return _value;
-      return NULL;
-      }
-   virtual ValueIterator OperandsBegin()       { return ValueIterator(_base, _value); }
+class OperationR0V2T1 : public OperationR0T1 {
+public:
+    virtual size_t size() const { return sizeof(OperationR0V2T1); }
+    virtual int32_t numOperands() const   { return 2; }
+    virtual Value * operand(int i=0) const {
+        if (i == 0) return _base;
+        if (i == 1) return _value;
+        return NULL;
+    }
+    virtual ValueIterator OperandsBegin()       { return ValueIterator(_base, _value); }
 
-   protected:
-   OperationR0V2T1(LOCATION, ActionID a, Extension *ext, Builder *parent, const Type *type, Value * base, Value * value)
-      : OperationR0T1(PASSLOC, a, ext, parent, type)
-      , _base(base)
-      , _value(value)
-      { }
+    virtual void write(TextWriter & w) const;
 
-   Value *_base;
-   Value *_value;
-   };
+protected:
+    OperationR0V2T1(LOCATION, ActionID a, Extension *ext, Builder *parent, const Type *type, Value * base, Value * value)
+        : OperationR0T1(PASSLOC, a, ext, parent, type)
+        , _base(base)
+        , _value(value)
+        { }
+
+    Value *_base;
+    Value *_value;
+};
 
 class OperationB1 : public Operation
    {

@@ -107,6 +107,9 @@ public:
     void StoreAt(Location *loc, Builder *b, Value *ptrValue, Value *value);
     void LoadIndirect(Location *loc, Builder *b, Value *result, std::string structName, std::string fieldName, Value *pStruct);
     void StoreIndirect(Location *loc, Builder *b, std::string structName, std::string fieldName, Value *pStruct, Value *value);
+    void CreateLocalArray(Location *loc, Builder *b, Value *result, Literal *numElements, const Type *elementType);
+    void CreateLocalStruct(Location *loc, Builder *b, Value *result, const Type * structType);
+    void IndexAt(Location *loc, Builder *b, Value *result, Value *base, Value *index);
 
     void generateFunctionAPI(FunctionBuilder *fb);
 

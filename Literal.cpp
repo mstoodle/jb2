@@ -55,5 +55,17 @@ Literal::write(TextWriter & w) const {
     w << " ]";
 }
 
+const int64_t
+Literal::getInteger() const {
+    assert(_type->isInteger());
+    return _type->getInteger(this);
+}
+
+const double
+Literal::getFloatingPoint() const {
+    assert(_type->isFloatingPoint());
+    return _type->getFloatingPoint(this);
+}
+
 } // namespace JitBuilder
 } // namespace OMR
