@@ -97,6 +97,10 @@ public:
     void ConstDouble(Location *loc, Builder *b, Value *result, const double v);
     void ConstAddress(Location *loc, Builder *b, Value *result, const void *v);
 
+    void Add(Location *log, Builder *b, Value *result, Value *left, Value *right);
+    void Mul(Location *log, Builder *b, Value *result, Value *left, Value *right);
+    void Sub(Location *log, Builder *b, Value *result, Value *left, Value *right);
+
     void EntryPoint(Builder *entryBuilder);
     void Return(Location *loc, Builder *b);
     void Return(Location *loc, Builder *b, Value *value);

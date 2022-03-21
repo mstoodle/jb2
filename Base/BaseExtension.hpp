@@ -116,6 +116,11 @@ class BaseExtension : public Extension {
     const ActionID aConstFloat64;
     const ActionID aConstAddress;
 
+    // Arithmetic actions
+    const ActionID aAdd;
+    const ActionID aMul;
+    const ActionID aSub;
+
     // Control actions
     const ActionID aReturn;
 
@@ -147,6 +152,11 @@ class BaseExtension : public Extension {
     //Deprecated:
     //Value * ConstFloat(LOCATION, Builder *b, float v) { return ConstFloat32(PASSLOC, b, v); } // deprecated
     //Value * ConstDouble(LOCATION, Builder *b, double v) { return ConstFloat64(PASSLOC, b, v); } // deprecated
+
+    // Arithmetic operations
+    Value * Add(LOCATION, Builder *b, Value *left, Value *right);
+    Value * Mul(LOCATION, Builder *b, Value *left, Value *right);
+    Value * Sub(LOCATION, Builder *b, Value *left, Value *right);
 
     // Control operations
     void Return(LOCATION, Builder *b);

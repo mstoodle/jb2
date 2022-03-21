@@ -30,6 +30,8 @@
 #include "TextWriter.hpp"
 
 
+using namespace OMR::JitBuilder;
+
 int main(int argc, char** argv) {
     void *handle = dlopen("libjbcore.so", RTLD_LAZY);
     if (!handle) {
@@ -37,12 +39,15 @@ int main(int argc, char** argv) {
         return -1;
     }
 
-   ::testing::InitGoogleTest(&argc, argv);
-   return RUN_ALL_TESTS();
+    // creating a Compiler here means JIT will be initialized and shutdown only once
+    //  which means all compiled functions can be logged/tracked
+    // otherwise JIT will be initialized and shutdown with each test's Compiler instance
+    //  and verbose/logs are overwritten and recreated for each Compiler instance
+    //  making it much more difficult to log an individual compiled function
+    Compiler c("Global");
+    ::testing::InitGoogleTest(&argc, argv);
+    return RUN_ALL_TESTS();
 }
-
-
-using namespace OMR::JitBuilder;
 
 TEST(BaseExtension, loadExtension) {
     Compiler c("testBase");
@@ -537,7 +542,7 @@ TEST(BaseExtension, createStruct_Int32_Address_Int32) {
      int32_t x3 = str.f3; EXPECT_EQ(x3,1);
 }
 
-// Test function that returns an index into an array parameter
+// Test function that returns an indexed value from an array parameter
 #define ARRAYTYPEFUNC(type) \
     BASE_FUNC(type ## ArrayFunction, "0", #type ".cpp", , \
         _x, { \
@@ -590,4 +595,172 @@ TEST(BaseExtension, createAddressArrayFunction) {
     i=9; array[i] = array; EXPECT_EQ((uintptr_t)f(array,i), (uintptr_t)array) << "Compiled f(array," << i << ") returns " << array;
     i=11; array[i] = array+20; EXPECT_EQ((uintptr_t)f(array,i), (uintptr_t)(array+20)) << "Compiled f(array," << i << ") returns " << (array+20);
     i=13; array[i] = array+38; EXPECT_EQ((uintptr_t)f(array,i), (uintptr_t)(array+38)) << "Compiled f(array," << i << ") returns " << (array+38);
+}
+
+// Test function that returns the sum of two values of a type
+#define ADDTWOTYPEFUNC(leftType,rightType) \
+    BASE_FUNC(leftType ## AddFunction, "0", #leftType ".cpp", , \
+        _x, { \
+            DefineReturnType(_x->leftType); \
+            DefineParameter("left", _x->leftType); \
+            DefineParameter("right", _x->rightType); \
+            }, \
+        b, { \
+           auto leftSym=LookupLocal("left"); \
+           Value * left = _x->Load(LOC, b, leftSym); \
+           auto rightSym=LookupLocal("right"); \
+           Value * right = _x->Load(LOC, b, rightSym); \
+           Value * sum = _x->Add(LOC, b, left, right); \
+           _x->Return(LOC, b, sum); \
+           })
+
+#define ADDTYPEFUNC(type) ADDTWOTYPEFUNC(type,type)
+
+#define TESTADDTYPEFUNC(type,ctype,a1,b1,a2,b2) \
+    ADDTYPEFUNC(type) \
+    TEST(BaseExtension, create ## type ## AddFunction) { \
+        typedef ctype (FuncProto)(ctype, ctype); \
+        COMPILE_FUNC(type ## AddFunction, FuncProto, f, false); \
+        ctype x1=a1; ctype x2=a2; ctype y1=b1; ctype y2=b2; \
+        EXPECT_EQ(f(x1,y1), (ctype)(x1+y1)) << "Compiled f(x1,y1) returns " << (ctype)(x1+y1); \
+        EXPECT_EQ(f(x2,y2), (ctype)(x2+y2)) << "Compiled f(x2,y2) returns " << (ctype)(x2+y2); \
+        ctype min=std::numeric_limits<ctype>::min(); \
+        EXPECT_EQ(f(min,x1), (ctype)(min+x1)) << "Compiled f(min,x1) returns " << (ctype)(min+x1); \
+        EXPECT_EQ(f(min,y1), (ctype)(min+y1)) << "Compiled f(min,y1) returns " << (ctype)(min+y1); \
+        EXPECT_EQ(f(min,x2), (ctype)(min+x2)) << "Compiled f(min,x2) returns " << (ctype)(min+x2); \
+        EXPECT_EQ(f(min,y2), (ctype)(min+y2)) << "Compiled f(min,y2) returns " << (ctype)(min+y2); \
+        ctype max=std::numeric_limits<ctype>::max(); \
+        EXPECT_EQ(f(max,x1), (ctype)(max+x1)) << "Compiled f(max,x1) returns " << (ctype)(max+x1); \
+        EXPECT_EQ(f(max,y1), (ctype)(max+y1)) << "Compiled f(max,y1) returns " << (ctype)(max+y1); \
+        EXPECT_EQ(f(max,x2), (ctype)(max+x2)) << "Compiled f(max,x2) returns " << (ctype)(max+x2); \
+        EXPECT_EQ(f(max,y2), (ctype)(max+y2)) << "Compiled f(max,y2) returns " << (ctype)(max+y2); \
+    }
+
+TESTADDTYPEFUNC(Int8, int8_t, 0, 1, 1, -1)
+TESTADDTYPEFUNC(Int16, int16_t, 0, 1, 1, -1)
+TESTADDTYPEFUNC(Int32, int32_t, 0, 1, 1, -1)
+TESTADDTYPEFUNC(Int64, int64_t, 0, 1, 1, -1)
+TESTADDTYPEFUNC(Float32, float, 0.0f, 1.0f, 1.0f, -1.0f)
+TESTADDTYPEFUNC(Float64, double, 0.0d, 1.0d, 1.0d, -1.0d)
+
+// Address handled specially
+ADDTWOTYPEFUNC(Address,Word)
+TEST(BaseExtension, createAddressAddFunction) {
+    typedef void * (FuncProto)(void *, size_t);
+    COMPILE_FUNC(AddressAddFunction, FuncProto, f, false);
+    void *p[2];
+    EXPECT_EQ((uintptr_t)f(p,0), (uintptr_t)(p+0)) << "Compiled f(p,0) returns " << (p+0);
+    EXPECT_EQ((uintptr_t)f(p,1), (uintptr_t)((uint8_t *)(p)+1)) << "Compiled f(p,1) returns " << (uint8_t *)(p) + 1;
+    EXPECT_EQ((uintptr_t)f(p,sizeof(void*)), (uintptr_t)(p+1)) << "Compiled f(p,sizeof(void*)) returns " << p + 1;
+}
+// Test function that returns the product of two values of a type
+#define MULTWOTYPEFUNC(leftType,rightType) \
+    BASE_FUNC(leftType ## MulFunction, "0", #leftType ".cpp", , \
+        _x, { \
+            DefineReturnType(_x->leftType); \
+            DefineParameter("left", _x->leftType); \
+            DefineParameter("right", _x->rightType); \
+            }, \
+        b, { \
+           auto leftSym=LookupLocal("left"); \
+           Value * left = _x->Load(LOC, b, leftSym); \
+           auto rightSym=LookupLocal("right"); \
+           Value * right = _x->Load(LOC, b, rightSym); \
+           Value * prod = _x->Mul(LOC, b, left, right); \
+           _x->Return(LOC, b, prod); \
+           })
+
+#define MULTYPEFUNC(type) MULTWOTYPEFUNC(type,type)
+
+#define TESTMULTYPEFUNC(type,ctype,a1,b1,a2,b2) \
+    MULTYPEFUNC(type) \
+    TEST(BaseExtension, create ## type ## MulFunction) { \
+        typedef ctype (FuncProto)(ctype, ctype); \
+        COMPILE_FUNC(type ## MulFunction, FuncProto, f, false); \
+        ctype x1=a1; ctype x2=a2; ctype y1=b1; ctype y2=b2; \
+        EXPECT_EQ(f(x1,y1), (ctype)(x1*y1)) << "Compiled f(x1,y1) returns " << (ctype)(x1*y1); \
+        EXPECT_EQ(f(x2,y2), (ctype)(x2*y2)) << "Compiled f(x2,y2) returns " << (ctype)(x2*y2); \
+        ctype min=std::numeric_limits<ctype>::min(); \
+        EXPECT_EQ(f(min,x1), (ctype)(min*x1)) << "Compiled f(min,x1) returns " << (ctype)(min*x1); \
+        EXPECT_EQ(f(min,y1), (ctype)(min*y1)) << "Compiled f(min,y1) returns " << (ctype)(min*y1); \
+        EXPECT_EQ(f(min,x2), (ctype)(min*x2)) << "Compiled f(min,x2) returns " << (ctype)(min*x2); \
+        EXPECT_EQ(f(min,y2), (ctype)(min*y2)) << "Compiled f(min,y2) returns " << (ctype)(min*y2); \
+        ctype max=std::numeric_limits<ctype>::max(); \
+        EXPECT_EQ(f(max,x1), (ctype)(max*x1)) << "Compiled f(max,x1) returns " << (ctype)(max*x1); \
+        EXPECT_EQ(f(max,y1), (ctype)(max*y1)) << "Compiled f(max,y1) returns " << (ctype)(max*y1); \
+        EXPECT_EQ(f(max,x2), (ctype)(max*x2)) << "Compiled f(max,x2) returns " << (ctype)(max*x2); \
+        EXPECT_EQ(f(max,y2), (ctype)(max*y2)) << "Compiled f(max,y2) returns " << (ctype)(max*y2); \
+    }
+
+TESTMULTYPEFUNC(Int8, int8_t, 0, 1, 2, -1)
+TESTMULTYPEFUNC(Int16, int16_t, 0, 1, 2, -1)
+TESTMULTYPEFUNC(Int32, int32_t, 0, 1, 2, -1)
+TESTMULTYPEFUNC(Int64, int64_t, 0, 1, 2, -1)
+TESTMULTYPEFUNC(Float32, float, 0.0f, 2.0f, 1.0f, -1.0f)
+TESTMULTYPEFUNC(Float64, double, 0.0d, 2.0d, 1.0d, -1.0d)
+
+// Test function that returns the difference of two values of a type
+#define SUBTYPEFUNC(returnType,leftType,rightType) \
+    BASE_FUNC(returnType ## _ ## leftType ## _ ## rightType ## _SubFunction, "0", #leftType ".cpp", , \
+        _x, { \
+            DefineReturnType(_x->returnType); \
+            DefineParameter("left", _x->leftType); \
+            DefineParameter("right", _x->rightType); \
+            }, \
+        b, { \
+           auto leftSym=LookupLocal("left"); \
+           Value * left = _x->Load(LOC, b, leftSym); \
+           auto rightSym=LookupLocal("right"); \
+           Value * right = _x->Load(LOC, b, rightSym); \
+           Value * sum = _x->Sub(LOC, b, left, right); \
+           _x->Return(LOC, b, sum); \
+           })
+
+#define TESTSUBTYPEFUNC(type,ctype,a1,b1,a2,b2) \
+    SUBTYPEFUNC(type,type,type) \
+    TEST(BaseExtension, create ## type ## ## type ## type ## SubFunction) { \
+        typedef ctype (FuncProto)(ctype, ctype); \
+        COMPILE_FUNC(type ## _ ## type ## _ ## type ## _SubFunction, FuncProto, f, false); \
+        ctype x1=a1; ctype x2=a2; ctype y1=b1; ctype y2=b2; \
+        EXPECT_EQ(f(x1,y1), (ctype)(x1-y1)) << "Compiled f(" << x1 << "," << y1 << ") returns " << (ctype)(x1-y1); \
+        EXPECT_EQ(f(x2,y2), (ctype)(x2-y2)) << "Compiled f(" << x2 << "," << y2 << ") returns " << (ctype)(x2-y2); \
+        ctype min=std::numeric_limits<ctype>::min(); \
+        EXPECT_EQ(f(min,x1), (ctype)(min-x1)) << "Compiled f(" << min << "," << x1 << ") returns " << (ctype)(min-x1); \
+        EXPECT_EQ(f(min,y1), (ctype)(min-y1)) << "Compiled f(" << min << "," << y1 << ") returns " << (ctype)(min-y1); \
+        EXPECT_EQ(f(min,x2), (ctype)(min-x2)) << "Compiled f(" << min << "," << x2 << ") returns " << (ctype)(min-x2); \
+        EXPECT_EQ(f(min,y2), (ctype)(min-y2)) << "Compiled f(" << min << "," << y2 << ") returns " << (ctype)(min-y2); \
+        ctype max=std::numeric_limits<ctype>::max(); \
+        EXPECT_EQ(f(max,x1), (ctype)(max-x1)) << "Compiled f(" << max << "," << x1 << ") returns " << (ctype)(max-x1); \
+        EXPECT_EQ(f(max,y1), (ctype)(max-y1)) << "Compiled f(" << max << "," << y1 << ") returns " << (ctype)(max-y1); \
+        EXPECT_EQ(f(max,x2), (ctype)(max-x2)) << "Compiled f(" << max << "," << x2 << ") returns " << (ctype)(max-x2); \
+        EXPECT_EQ(f(max,y2), (ctype)(max-y2)) << "Compiled f(" << max << "," << y2 << ") returns " << (ctype)(max-y2); \
+    }
+
+TESTSUBTYPEFUNC(Int8, int8_t, 0, 1, 1, -1)
+TESTSUBTYPEFUNC(Int16, int16_t, 0, 1, 1, -1)
+TESTSUBTYPEFUNC(Int32, int32_t, 0, 1, 1, -1)
+TESTSUBTYPEFUNC(Int64, int64_t, 0, 1, 1, -1)
+TESTSUBTYPEFUNC(Float32, float, 0.0f, 1.0f, 1.0f, -1.0f)
+TESTSUBTYPEFUNC(Float64, double, 0.0d, 1.0d, 1.0d, -1.0d)
+
+SUBTYPEFUNC(Address,Address,Word)
+TEST(BaseExtension, createAddressAddressWordSubFunction) {
+    typedef void * (FuncProto)(void *, size_t );
+    COMPILE_FUNC(Address_Address_Word_SubFunction, FuncProto, f, false);
+    void *p[3]; size_t x;
+    x=0;              EXPECT_EQ((uintptr_t)f(p,x), (uintptr_t)p) << "Compiled f(" << p << "," << x << ") returns " << p;
+    x=sizeof(void *); EXPECT_EQ((uintptr_t)f(p+1,x), (uintptr_t)p) << "Compiled f(" << p+1 << "," << sizeof(void*) << ") returns " << p;
+    x=2*sizeof(void*);EXPECT_EQ((uintptr_t)f(p+2,x), (uintptr_t)p) << "Compiled f(" << p+2 << "," << 2*sizeof(void*) << ") returns " << p;
+    x=sizeof(void*);  EXPECT_EQ((uintptr_t)f(p+2,x), (uintptr_t)(p+1)) << "Compiled f(" << p+2 << "," << sizeof(void*) << ") returns " << p+1;
+}
+
+SUBTYPEFUNC(Word,Address,Address)
+TEST(BaseExtension, createWordAddressSubFunction) {
+    typedef size_t (FuncProto)(void *, void *);
+    COMPILE_FUNC(Word_Address_Address_SubFunction, FuncProto, f, false);
+    void *p[3]; size_t x;
+    x=0;               EXPECT_EQ(f(p,p), x) << "Compiled f(p,0) returns " << 0;
+    x=sizeof(void*);   EXPECT_EQ(f(p+1,p), x) << "Compiled f(p+1,p) returns " << (uint8_t*)(p+1)-(uint8_t*)p;
+    x=2*sizeof(void*); EXPECT_EQ(f(p+2,p), x) << "Compiled f(p+2,p) returns " << (uint8_t*)(p+2)-(uint8_t *)p;
+    x=sizeof(void*);   EXPECT_EQ(f(p+2,p+1), x) << "Compiled f(p+2,p+1) returns " << (uint8_t*)(p+2)-(uint8_t *)(p+1);
 }

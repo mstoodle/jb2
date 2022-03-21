@@ -19,6 +19,7 @@
  * SPDX-License-Identifier: EPL-2.0 OR Apache-2.0 OR GPL-2.0 WITH Classpath-exception-2.0 OR LicenseRef-GPL-2.0 WITH Assembly-exception
  *******************************************************************************/
 
+#include "ArithmeticOperations.hpp"
 #include "BaseExtension.hpp"
 #include "BaseOperations.hpp"
 #include "BaseSymbols.hpp"
@@ -67,6 +68,9 @@ BaseExtension::BaseExtension(Compiler *compiler)
     , aConstFloat32(registerAction(std::string("ConstFloat32")))
     , aConstFloat64(registerAction(std::string("ConstFloat64")))
     , aConstAddress(registerAction(std::string("ConstAddress")))
+    , aAdd(registerAction(std::string("Add")))
+    , aMul(registerAction(std::string("Mul")))
+    , aSub(registerAction(std::string("Sub")))
     , aLoad(registerAction(std::string("Load")))
     , aStore(registerAction(std::string("Store")))
     , aLoadAt(registerAction(std::string("LoadAt")))
@@ -164,6 +168,88 @@ BaseExtension::ConstAddress(LOCATION, Builder *b, void * v)
    addOperation(b, new Op_ConstAddress(PASSLOC, this, b, this->aConstAddress, result, lv));
    return result;
    }
+
+
+//
+// Arithmetic operations
+//
+Value *
+BaseExtension::Add(LOCATION, Builder *b, Value *left, Value *right) {
+    bool valid = false;
+    const Type *lType = left->type();
+    const Type *rType = right->type();
+    if (lType == Address)
+        valid = (rType == Word);
+    else
+        valid = (lType == rType);
+    #if 0
+    if (!valid && haveTypeCheckers())
+        valid = checkTypes(aAdd, left, right);
+    #endif
+
+    if (!valid)
+        assert(0);
+
+    Value *result = createValue(b, left->type());
+    addOperation(b, new Op_Add(PASSLOC, this, b, aAdd, result, left, right));
+    return result;
+}
+
+Value *
+BaseExtension::Mul(LOCATION, Builder *b, Value *left, Value *right) {
+    bool valid = false;
+    const Type *lType = left->type();
+    const Type *rType = right->type();
+    if (lType == Address)
+        valid = (rType == Word);
+    else
+        valid = (lType == rType);
+    #if 0
+    if (!valid && haveTypeCheckers())
+        valid = checkTypes(aMul, left, right);
+    #endif
+
+    if (!valid)
+        assert(0);
+
+    Value *result = createValue(b, left->type());
+    addOperation(b, new Op_Mul(PASSLOC, this, b, aMul, result, left, right));
+    return result;
+}
+
+Value *
+BaseExtension::Sub(LOCATION, Builder *b, Value *left, Value *right) {
+    bool valid = false;
+    const Type *lType = left->type();
+    const Type *rType = right->type();
+    const Type *returnType=NULL;
+    if (lType == Address) {
+        if (rType == Word) {
+            valid = true;
+            returnType = Address;
+        }
+        else if (rType == Address) {
+           valid = true;
+           returnType = Word;
+        }
+    }
+    else {
+        valid = (lType == rType);
+        returnType = lType;
+    }
+
+    #if 0
+    if (!valid && haveTypeCheckers())
+        valid = checkTypes(aAdd, left, right);
+    #endif
+
+    if (!valid)
+        assert(0);
+
+    Value *result = createValue(b, left->type());
+    addOperation(b, new Op_Sub(PASSLOC, this, b, aSub, result, left, right));
+    return result;
+}
 
 //
 // Control operations

@@ -6,15 +6,16 @@ LIBBASE=lib$(BASE).so
 
 all: $(LIBBASE)
 
-BASE_OBJECTS = BaseExtension.o \
-	       BaseSymbols.o \
-	       BaseTypes.o \
-	       ConstOperations.o \
-	       ControlOperations.o \
+BASE_OBJECTS = ArithmeticOperations.o \
+               BaseExtension.o \
+               BaseSymbols.o \
+               BaseTypes.o \
+               ConstOperations.o \
+               ControlOperations.o \
                Function.o \
                FunctionCompilation.o \
-	       MemoryOperations.o \
-	       NativeCallableContext.o
+               MemoryOperations.o \
+               NativeCallableContext.o
 
 #	       BaseOperations.o \
 

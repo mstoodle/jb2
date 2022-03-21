@@ -276,6 +276,27 @@ JB1MethodBuilder::ConstAddress(Location *loc, Builder *b, Value *result, const v
 }
 
 void
+JB1MethodBuilder::Add(Location *loc, Builder *b, Value *result, Value *left, Value *right) {
+    TR::IlBuilder *omr_b = map(b);
+    omr_b->setBCIndex(loc->bcIndex())->SetCurrentIlGenerator();
+    registerValue(result, omr_b->Add(map(left), map(right)));
+}
+
+void
+JB1MethodBuilder::Mul(Location *loc, Builder *b, Value *result, Value *left, Value *right) {
+    TR::IlBuilder *omr_b = map(b);
+    omr_b->setBCIndex(loc->bcIndex())->SetCurrentIlGenerator();
+    registerValue(result, omr_b->Mul(map(left), map(right)));
+}
+
+void
+JB1MethodBuilder::Sub(Location *loc, Builder *b, Value *result, Value *left, Value *right) {
+    TR::IlBuilder *omr_b = map(b);
+    omr_b->setBCIndex(loc->bcIndex())->SetCurrentIlGenerator();
+    registerValue(result, omr_b->Sub(map(left), map(right)));
+}
+
+void
 JB1MethodBuilder::EntryPoint(Builder *entryBuilder) {
     TR::IlBuilder *omr_b = map(entryBuilder);
     _mb->AppendBuilder(omr_b);
