@@ -29,6 +29,7 @@
 #include "ControlOperations.hpp"
 #include "Compilation.hpp"
 #include "Compiler.hpp"
+#include "Context.hpp"
 #include "JB1CodeGenerator.hpp"
 #include "Literal.hpp"
 #include "Location.hpp"
@@ -61,13 +62,7 @@ BaseExtension::BaseExtension(Compiler *compiler)
     , Float64(registerType<Float64Type>(new Float64Type(LOC, this)))
     , Address(registerType<AddressType>(new AddressType(LOC, this)))
     , Word(compiler->platformWordSize() == 64 ? (IntegerType *)this->Int64 : (IntegerType *)this->Int32)
-    , aConstInt8(registerAction(std::string("ConstInt8")))
-    , aConstInt16(registerAction(std::string("ConstInt16")))
-    , aConstInt32(registerAction(std::string("ConstInt32")))
-    , aConstInt64(registerAction(std::string("ConstInt64")))
-    , aConstFloat32(registerAction(std::string("ConstFloat32")))
-    , aConstFloat64(registerAction(std::string("ConstFloat64")))
-    , aConstAddress(registerAction(std::string("ConstAddress")))
+    , aConst(registerAction(std::string("ConstInt8")))
     , aAdd(registerAction(std::string("Add")))
     , aMul(registerAction(std::string("Mul")))
     , aSub(registerAction(std::string("Sub")))
@@ -82,6 +77,7 @@ BaseExtension::BaseExtension(Compiler *compiler)
     , aCreateLocalArray(registerAction(std::string("CreateLocalArray")))
     , aCreateLocalStruct(registerAction(std::string("CreateLocalStruct")))
     , aIndexAt(registerAction(std::string("IndexAt")))
+    , aForLoopUp(registerAction(std::string("ForLoopUp")))
     , aReturn(registerAction(std::string("Return"))) {
 
     Strategy *jb1cgStrategy = new Strategy(compiler, "jb1cg");
@@ -99,7 +95,7 @@ BaseExtension::~BaseExtension() {
     delete Int16;
     delete Int8;
     delete NoType;
-    // delete pointer types?
+    // what about other types!?
 }
 
 //
@@ -107,65 +103,10 @@ BaseExtension::~BaseExtension() {
 //
 
 Value *
-BaseExtension::ConstInt8(LOCATION, Builder *b, int8_t v)
+BaseExtension::Const(LOCATION, Builder *b, Literal * lv)
    {
-   Value * result = createValue(b, this->Int8);
-   Literal *lv = this->Int8->literal(PASSLOC, b->comp(), v);
-   addOperation(b, new Op_ConstInt8(PASSLOC, this, b, this->aConstInt8, result, lv));
-   return result;
-   }
-
-Value *
-BaseExtension::ConstInt16(LOCATION, Builder *b, int16_t v)
-   {
-   Value * result = createValue(b, this->Int16);
-   Literal *lv = this->Int16->literal(PASSLOC, b->comp(), v);
-   addOperation(b, new Op_ConstInt16(PASSLOC, this, b, this->aConstInt16, result, lv));
-   return result;
-   }
-
-Value *
-BaseExtension::ConstInt32(LOCATION, Builder *b, int32_t v)
-   {
-   Value * result = createValue(b, this->Int32);
-   Literal *lv = this->Int32->literal(PASSLOC, b->comp(), v);
-   addOperation(b, new Op_ConstInt32(PASSLOC, this, b, this->aConstInt32, result, lv));
-   return result;
-   }
-
-Value *
-BaseExtension::ConstInt64(LOCATION, Builder *b, int64_t v)
-   {
-   Value * result = createValue(b, this->Int64);
-   Literal *lv = this->Int64->literal(PASSLOC, b->comp(), v);
-   addOperation(b, new Op_ConstInt64(PASSLOC, this, b, this->aConstInt64, result, lv));
-   return result;
-   }
-
-Value *
-BaseExtension::ConstFloat32(LOCATION, Builder *b, float v)
-   {
-   Value * result = createValue(b, this->Float32);
-   Literal *lv = this->Float32->literal(PASSLOC, b->comp(), v);
-   addOperation(b, new Op_ConstFloat32(PASSLOC, this, b, this->aConstFloat32, result, lv));
-   return result;
-   }
-
-Value *
-BaseExtension::ConstFloat64(LOCATION, Builder *b, double v)
-   {
-   Value * result = createValue(b, this->Float64);
-   Literal *lv = this->Float64->literal(PASSLOC, b->comp(), v);
-   addOperation(b, new Op_ConstFloat64(PASSLOC, this, b, this->aConstFloat64, result, lv));
-   return result;
-   }
-
-Value *
-BaseExtension::ConstAddress(LOCATION, Builder *b, void * v)
-   {
-   Value * result = createValue(b, this->Address);
-   Literal *lv = this->Address->literal(PASSLOC, b->comp(), v);
-   addOperation(b, new Op_ConstAddress(PASSLOC, this, b, this->aConstAddress, result, lv));
+   Value * result = createValue(b, lv->type());
+   addOperation(b, new Op_Const(PASSLOC, this, b, this->aConst, result, lv));
    return result;
    }
 
@@ -255,6 +196,22 @@ BaseExtension::Sub(LOCATION, Builder *b, Value *left, Value *right) {
 // Control operations
 //
 
+ForLoopBuilder *
+BaseExtension::ForLoopUp(LOCATION, Builder *b, LocalSymbol *loopVariable,
+                         Value *initial, Value *final, Value *bump) {
+    assert(loopVariable->type()->isInteger() || loopVariable->type()->isFloatingPoint());
+    assert(loopVariable->type() == initial->type());
+    assert(loopVariable->type() == final->type());
+    assert(loopVariable->type() == bump->type());
+    ForLoopBuilder *loopBuilder = new ForLoopBuilder();
+    loopBuilder->setLoopVariable(loopVariable)
+               ->setInitialValue(initial)
+               ->setFinalValue(final)
+               ->setBumpValue(bump);
+    addOperation(b, new Op_ForLoopUp(PASSLOC, this, b, this->aForLoopUp, loopBuilder));
+    return loopBuilder;
+}
+
 void
 BaseExtension::Return(LOCATION, Builder *b) {
     addOperation(b, new Op_Return(PASSLOC, this, b, this->aReturn));
@@ -278,7 +235,7 @@ BaseExtension::Load(LOCATION, Builder *b, Symbol * sym) {
 
 void
 BaseExtension::Store(LOCATION, Builder *b, Symbol * sym, Value *value) {
-    addOperation(b, new Op_Store(PASSLOC, this, b, this->aLoad, sym, value));
+    addOperation(b, new Op_Store(PASSLOC, this, b, this->aStore, sym, value));
 }
 
 Value *
@@ -364,7 +321,6 @@ BaseExtension::IndexAt(LOCATION, Builder *b, Value *base, Value *index) {
 //
 // Pseudo operations
 //
-
 Location *
 BaseExtension::SourceLocation(LOCATION, Builder *b, std::string func)
    {
@@ -382,12 +338,95 @@ BaseExtension::SourceLocation(LOCATION, Builder *b, std::string func, std::strin
    }
 
 Location *
-BaseExtension::SourceLocation(LOCATION, Builder *b, std::string func, std::string lineNumber, int32_t bcIndex)
+BaseExtension::SourceLocation(LOCATION, Builder *b, std::string func, std::string lineNumber, int32_t bcIndex) {
+    Location *loc = new Location(b->comp(), func, lineNumber, bcIndex);
+    b->setLocation(loc);
+    return loc;
+}
+
+Value *
+BaseExtension::ConstInt8(LOCATION, Builder *b, int8_t v)
    {
-   Location *loc = new Location(b->comp(), func, lineNumber, bcIndex);
-   b->setLocation(loc);
-   return loc;
+   Literal *lv = this->Int8->literal(PASSLOC, b->comp(), v);
+   return Const(PASSLOC, b, lv);
    }
+
+Value *
+BaseExtension::ConstInt16(LOCATION, Builder *b, int16_t v)
+   {
+   Literal *lv = this->Int16->literal(PASSLOC, b->comp(), v);
+   return Const(PASSLOC, b, lv);
+   }
+
+Value *
+BaseExtension::ConstInt32(LOCATION, Builder *b, int32_t v)
+   {
+   Literal *lv = this->Int32->literal(PASSLOC, b->comp(), v);
+   return Const(PASSLOC, b, lv);
+   }
+
+Value *
+BaseExtension::ConstInt64(LOCATION, Builder *b, int64_t v)
+   {
+   Literal *lv = this->Int64->literal(PASSLOC, b->comp(), v);
+   return Const(PASSLOC, b, lv);
+   }
+
+Value *
+BaseExtension::ConstFloat32(LOCATION, Builder *b, float v)
+   {
+   Literal *lv = this->Float32->literal(PASSLOC, b->comp(), v);
+   return Const(PASSLOC, b, lv);
+   }
+
+Value *
+BaseExtension::ConstFloat64(LOCATION, Builder *b, double v)
+   {
+   Literal *lv = this->Float64->literal(PASSLOC, b->comp(), v);
+   return Const(PASSLOC, b, lv);
+   }
+
+Value *
+BaseExtension::ConstAddress(LOCATION, Builder *b, void * v)
+   {
+   Literal *lv = this->Address->literal(PASSLOC, b->comp(), v);
+   return Const(PASSLOC, b, lv);
+   }
+
+Value *
+BaseExtension::Zero(LOCATION, Compilation *comp, Builder *b, const Type *type) {
+   Literal *zero = type->zero(PASSLOC, comp);
+   assert(zero);
+   return Const(PASSLOC, b, zero);
+}
+
+Value *
+BaseExtension::One(LOCATION, Compilation *comp, Builder *b, const Type *type) {
+   Literal *one = type->identity(PASSLOC, comp);
+   assert(one);
+   return Const(PASSLOC, b, one);
+}
+
+void
+BaseExtension::Increment(LOCATION, Builder *b, Symbol *sym, Value *bump) {
+    Value *oldValue = Load(PASSLOC, b, sym);
+    Value *newValue = Add(PASSLOC, b, oldValue, bump);
+    Store(PASSLOC, b, sym, newValue);
+}
+
+void
+BaseExtension::Increment(LOCATION, Compilation *comp, Builder *b, LocalSymbol *sym) {
+   Value *oldValue = Load(PASSLOC, b, sym);
+   Value *newValue = Add(PASSLOC, b, oldValue, One(PASSLOC, comp, b, sym->type()));
+   Store(PASSLOC, b, sym, newValue);
+}
+
+const PointerType *
+BaseExtension::PointerTo(LOCATION, FunctionCompilation *comp, const Type *baseType) {
+    PointerTypeBuilder pb(this, comp);
+    pb.setBaseType(baseType);
+    return pb.create(PASSLOC);
+}
 
 const FunctionType *
 BaseExtension::DefineFunctionType(LOCATION, std::string name, const Type *returnType, int32_t numParms, const Type **parmTypes) {

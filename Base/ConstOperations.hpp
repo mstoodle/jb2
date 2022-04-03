@@ -33,79 +33,14 @@ class TextWriter;
 
 namespace Base {
 
-//
-// classes for Const operations that can be directly instantiated
-//
-
-class Op_ConstInt8 : public OperationR1L1
+class Op_Const : public OperationR1L1
     {
     friend class BaseExtension;
     public:
     virtual Operation * clone(LOCATION, Builder *b, OperationCloner *cloner) const;
     virtual void jbgen(JB1MethodBuilder *j1mb) const;
     protected:
-    Op_ConstInt8(LOCATION, Extension *ext, Builder * parent, ActionID aConstInt8, Value *result, Literal *lv);
-    };
-
-class Op_ConstInt16 : public OperationR1L1
-    {
-    friend class BaseExtension;
-    public:
-    virtual Operation * clone(LOCATION, Builder *b, OperationCloner *cloner) const;
-    virtual void jbgen(JB1MethodBuilder *j1mb) const;
-    protected:
-    Op_ConstInt16(LOCATION, Extension *ext, Builder * parent, ActionID aConstInt16, Value * result, Literal *lv);
-    };
-
-
-class Op_ConstInt32 : public OperationR1L1
-    {
-    friend class BaseExtension;
-    public:
-    virtual Operation * clone(LOCATION, Builder *b, OperationCloner *cloner) const;
-    virtual void jbgen(JB1MethodBuilder *j1mb) const;
-    protected:
-    Op_ConstInt32(LOCATION, Extension *ext, Builder * parent, ActionID aConstInt32, Value * result, Literal *lv);
-    };
-
-class Op_ConstInt64 : public OperationR1L1
-    {
-    friend class BaseExtension;
-    public:
-    virtual Operation * clone(LOCATION, Builder *b, OperationCloner *cloner) const;
-    virtual void jbgen(JB1MethodBuilder *j1mb) const;
-    protected:
-    Op_ConstInt64(LOCATION, Extension *ext, Builder * parent, ActionID aConstInt64, Value * result, Literal *lv);
-    };
-
-class Op_ConstFloat32 : public OperationR1L1
-    {
-    friend class BaseExtension;
-    public:
-    virtual Operation * clone(LOCATION, Builder *b, OperationCloner *cloner) const;
-    virtual void jbgen(JB1MethodBuilder *j1mb) const;
-    protected:
-    Op_ConstFloat32(LOCATION, Extension *ext, Builder * parent, ActionID aConstFloat32, Value * result, Literal *lv);
-    };
-
-class Op_ConstFloat64 : public OperationR1L1
-    {
-    friend class BaseExtension;
-    public:
-    virtual Operation * clone(LOCATION, Builder *b, OperationCloner *cloner) const;
-    virtual void jbgen(JB1MethodBuilder *j1mb) const;
-    protected:
-    Op_ConstFloat64(LOCATION, Extension *ext, Builder * parent, ActionID aConstFloat64, Value * result, Literal *lv);
-    };
-
-class Op_ConstAddress : public OperationR1L1
-    {
-    friend class BaseExtension;
-    public:
-    virtual Operation * clone(LOCATION, Builder *b, OperationCloner *cloner) const;
-    virtual void jbgen(JB1MethodBuilder *j1mb) const;
-    protected:
-    Op_ConstAddress(LOCATION, Extension *ext, Builder * parent, ActionID aConstAddress, Value * result, Literal *lv);
+    Op_Const(LOCATION, Extension *ext, Builder * parent, ActionID aConst, Value *result, Literal *lv);
     };
 
 } // namespace Base

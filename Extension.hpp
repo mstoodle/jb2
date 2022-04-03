@@ -21,6 +21,7 @@
 
 #include <string>
 #include <vector>
+#include "CreateLoc.hpp"
 #include "IDs.hpp"
 
 namespace OMR
@@ -30,6 +31,7 @@ namespace JitBuilder
 
 class Builder;
 class Compiler;
+class Context;
 class Operation;
 class Pass;
 class SemanticVersion;
@@ -49,6 +51,9 @@ public:
     std::string name() const { return _name; }
 
     const std::string actionName(ActionID a) const;
+
+    Builder *OrphanBuilder(LOCATION, Builder *parent, Context *context=NULL, std::string name="");
+    Builder *BoundBuilder(LOCATION, Builder *parent, Operation *parentOp, std::string name="");
 
 protected:
 

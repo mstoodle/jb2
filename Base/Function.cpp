@@ -184,9 +184,7 @@ Function::internalDefineFunction(LOCATION,
 
 const PointerType *
 Function::PointerTo(LOCATION, const Type *baseType) {
-    PointerTypeBuilder pb(this->_ext, this);
-    pb.setBaseType(baseType);
-    return pb.create(PASSLOC);
+    return this->_ext->PointerTo(PASSLOC, _comp, baseType);
 }
 
 LocalSymbolIterator

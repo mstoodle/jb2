@@ -48,8 +48,6 @@ TextWriter &
 operator<<(TextWriter &w, const Builder *b)
    {
    w << "B" << b->id();
-   if (b->name().length() > 0)
-   w << " \""" \"" << b->name() << "\"";
    return w;
    }
 
@@ -75,14 +73,6 @@ operator<< (TextWriter &w, const LiteralDictionary *ld)
    {
    return w << "L" << ld->id();
    }
-
-#if 0
-TextWriter &
-operator<< (TextWriter &w, FunctionBuilder *fb)
-   {
-   return w << "F" << fb->id();
-   }
-#endif
 
 TextWriter &
 operator<< (TextWriter &w, const Operation *op)
@@ -147,62 +137,54 @@ OMR::JitBuilder::TextWriter::visitPostCompilation(Compilation * comp)
    }
 
 void
-OMR::JitBuilder::TextWriter::visitBuilderPreOps(Builder * b)
-   {
-   // empty (Label) builders aren't printed independently
-   if (b->numOperations() > 0)
-      {
-      TextWriter &w = *this;
+OMR::JitBuilder::TextWriter::visitBuilderPreOps(Builder * b) {
+    TextWriter &w = *this;
 
-      w.indent() << "[ Builder " << b << w.endl();;
-      w.indentIn();
+    w.indent() << "[ Builder " << b;
+    if (b->name().length() > 0)
+        w << " \"" << b->name() << "\"";
+    w << w.endl();
+    w.indentIn();
 
-      if (b->parent())
-         w.indent() << "[ parent " << b->parent() << " ]" << w.endl();
-      else
-         w.indent() << "[ parent NULL ]" << w.endl();
+    if (b->parent())
+        w.indent() << "[ parent " << b->parent() << " ]" << w.endl();
+    else
+        w.indent() << "[ parent NULL ]" << w.endl();
 
-      if (b->numChildren() > 0)
-         {
-         w.indent() << "[ children" << w.endl();
-         w.indentIn();
-         for (BuilderIterator bIt = b->ChildrenBegin(); bIt != b->ChildrenEnd(); bIt++)
-            {
-            Builder *child = *bIt;
-            w.indent() << "[ " << child << " ]" << w.endl();
-            }
+    if (b->numChildren() > 0) {
+        w.indent() << "[ children" << w.endl();
+        w.indentIn();
+        for (BuilderIterator bIt = b->ChildrenBegin(); bIt != b->ChildrenEnd(); bIt++) {
+             Builder *child = *bIt;
+             w.indent() << "[ " << child << " ]" << w.endl();
+         }
          w.indentOut();
          w.indent() << "]" << w.endl();
-         }
+    }
 
-      if (b->isBound())
-         w.indent() << "[ bound " << b->boundToOperation() << " ]" << w.endl();
-      //else
-      //   w.indent() << "[ unbound ]" << w.endl();
+    if (b->isBound())
+        w.indent() << "[ bound " << b->boundToOperation() << " ]" << w.endl();
+    else
+        w.indent() << "[ notBound ]" << w.endl();
 
-      if (b->isTarget())
-         w.indent() << "[ isTarget ]" << w.endl();
-      //else
-      //   w.indent() << "[ notTarget ]" << w.endl();
+    if (b->isTarget())
+        w.indent() << "[ isTarget ]" << w.endl();
+    else
+        w.indent() << "[ notTarget ]" << w.endl();
 
-      w.indent() << "[ operations" << w.endl();
-      w.indentIn();
-      }
-   }
+    w.indent() << "[ operations" << w.endl();
+    w.indentIn();
+}
 
 void
-OMR::JitBuilder::TextWriter::visitBuilderPostOps(Builder * b)
-   {
-   if (b->numOperations() > 0)
-      {
-      TextWriter &w = *this;
+OMR::JitBuilder::TextWriter::visitBuilderPostOps(Builder * b) {
+    TextWriter &w = *this;
 
-      w.indentOut();
-      w.indent() << "]" << w.endl(); // operations
-      w.indentOut();
-      w.indent() << "]" << w.endl(); // builder
-      }
-   }
+    w.indentOut();
+    w.indent() << "]" << w.endl(); // operations
+    w.indentOut();
+    w.indent() << "]" << w.endl(); // builder
+}
 
 void
 OMR::JitBuilder::TextWriter::printTypePrefix(Type * type, bool indent)

@@ -68,7 +68,7 @@ public:
     void registerFloat(const Type * t);
     void registerDouble(const Type * t);
     void registerAddress(const Type * t);
-    void registerBuilder(Builder * b);
+    void registerBuilder(Builder * b, TR::IlBuilder *omr_b = NULL);
     void registerPointer(const Type *ptrType, const Type *baseType);
     void registerStruct(const Type *type);
     void registerField(std::string structName, std::string fieldName, const Type *type, size_t offset);
@@ -102,6 +102,7 @@ public:
     void Sub(Location *log, Builder *b, Value *result, Value *left, Value *right);
 
     void EntryPoint(Builder *entryBuilder);
+    void ForLoopUp(Location *loc, Builder *b, Symbol *loopVariable, Value *initial, Value *final, Value *bump, Builder *loopBody, Builder *loopBreak, Builder *loopContinue);
     void Return(Location *loc, Builder *b);
     void Return(Location *loc, Builder *b, Value *value);
 

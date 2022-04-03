@@ -40,6 +40,63 @@ namespace OMR {
 namespace JitBuilder {
 namespace Base {
 
+#define A_UNLESS_B(A,B) (((B) != NULL) ? (B) : (A))
+
+//
+// ForLoopUp
+//
+Op_ForLoopUp::Op_ForLoopUp(LOCATION, Extension *ext, Builder * parent, ActionID aForLoopUp, ForLoopBuilder *loopBuilder)
+    : Operation(PASSLOC, aForLoopUp, ext, parent)
+    , _loopVariable(loopBuilder->loopVariable())
+    , _initial(loopBuilder->initialValue())
+    , _final(loopBuilder->finalValue())
+    , _bump(loopBuilder->bumpValue())
+    , _loopBody(A_UNLESS_B(ext->BoundBuilder(PASSLOC, parent, this, std::string("loopBody")), loopBuilder->loopBody()))
+    , _loopBreak(A_UNLESS_B(ext->BoundBuilder(PASSLOC, parent, this, std::string("loopBreak")), loopBuilder->loopBreak()))
+    , _loopContinue(A_UNLESS_B(ext->BoundBuilder(PASSLOC, parent, this, std::string("loopContinue")), loopBuilder->loopContinue())) {
+
+    if (loopBuilder->loopBody() == NULL)
+        loopBuilder->setLoopBody(_loopBody);
+    _loopBody->setBound(this);
+
+    if (loopBuilder->loopBreak() == NULL)
+        loopBuilder->setLoopBreak(_loopBreak);
+    _loopBreak->setBound(this);
+
+    if (loopBuilder->loopContinue() == NULL)
+        loopBuilder->setLoopContinue(_loopContinue);
+    _loopContinue->setBound(this);
+}
+
+Operation *
+Op_ForLoopUp::clone(LOCATION, Builder *b, OperationCloner *cloner) const {
+    ForLoopBuilder loopBuilder;
+    loopBuilder.setLoopVariable(static_cast<LocalSymbol *>(cloner->symbol()))
+              ->setInitialValue(cloner->operand(0))
+              ->setFinalValue(cloner->operand(1))
+              ->setBumpValue(cloner->operand(2))
+              ->setLoopBody(cloner->builder(0))
+              ->setLoopBreak(cloner->builder(1))
+              ->setLoopContinue(cloner->builder(2));
+    return new Op_ForLoopUp(PASSLOC, this->_ext, b, this->action(), &loopBuilder);
+   }
+
+void
+Op_ForLoopUp::write(TextWriter & w) const {
+    w << name() << " " << this->_loopVariable << " : " << this->_initial << " to " << this->_final << " by " << this->_bump << " body " << this->_loopBody;
+    if (this->_loopBreak)
+        w << " loopBreak " << this->_loopBreak;
+    if (this->_loopContinue)
+        w << " loopContinue " << this->_loopContinue;
+    w << w.endl();
+}
+
+void
+Op_ForLoopUp::jbgen(JB1MethodBuilder *j1mb) const {
+    j1mb->ForLoopUp(location(), parent(), this->_loopVariable, this->_initial, this->_final, this->_bump, this->_loopBody, this->_loopBreak, this->_loopContinue);
+}
+
+
 //
 // Return
 //

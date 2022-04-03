@@ -35,6 +35,7 @@ namespace OMR {
 namespace JitBuilder {
 
 class Compilation;
+class Context;
 class FieldType;
 class FunctionType;
 class Literal;
@@ -63,6 +64,10 @@ class FieldType;
 class StructType;
 class UnionType;
 class FunctionType;
+
+class ForLoopBuilder;
+class FunctionCompilation;
+class LocalSymbol;
 
 class BaseExtension : public Extension {
     friend class PointerTypeBuilder;
@@ -97,6 +102,8 @@ class BaseExtension : public Extension {
     const AddressType *Address;
     const IntegerType *Word;
 
+    const PointerType *PointerTo(LOCATION, FunctionCompilation *comp, const Type *baseType);
+
     #if 0
     const FunctionType * DefineFunctionType(LOCATION, FunctionTypeBuilder *builder);
     #endif
@@ -108,13 +115,7 @@ class BaseExtension : public Extension {
     //
 
     // Const actions
-    const ActionID aConstInt8;
-    const ActionID aConstInt16;
-    const ActionID aConstInt32;
-    const ActionID aConstInt64;
-    const ActionID aConstFloat32;
-    const ActionID aConstFloat64;
-    const ActionID aConstAddress;
+    const ActionID aConst;
 
     // Arithmetic actions
     const ActionID aAdd;
@@ -122,6 +123,7 @@ class BaseExtension : public Extension {
     const ActionID aSub;
 
     // Control actions
+    const ActionID aForLoopUp;
     const ActionID aReturn;
 
     // Memory actions
@@ -142,16 +144,7 @@ class BaseExtension : public Extension {
     //
 
     // Constant operations
-    Value * ConstInt8(LOCATION, Builder *b, int8_t v);
-    Value * ConstInt16(LOCATION, Builder *b, int16_t v);
-    Value * ConstInt32(LOCATION, Builder *b, int32_t v);
-    Value * ConstInt64(LOCATION, Builder *b, int64_t v);
-    Value * ConstFloat32(LOCATION, Builder *b, float v);
-    Value * ConstFloat64(LOCATION, Builder *b, double v);
-    Value * ConstAddress(LOCATION, Builder *b, void *v);
-    //Deprecated:
-    //Value * ConstFloat(LOCATION, Builder *b, float v) { return ConstFloat32(PASSLOC, b, v); } // deprecated
-    //Value * ConstDouble(LOCATION, Builder *b, double v) { return ConstFloat64(PASSLOC, b, v); } // deprecated
+    Value * Const(LOCATION, Builder *, Literal *literal);
 
     // Arithmetic operations
     Value * Add(LOCATION, Builder *b, Value *left, Value *right);
@@ -159,6 +152,7 @@ class BaseExtension : public Extension {
     Value * Sub(LOCATION, Builder *b, Value *left, Value *right);
 
     // Control operations
+    ForLoopBuilder *ForLoopUp(LOCATION, Builder *b, LocalSymbol *loopVariable, Value *initial, Value *final, Value *bump);
     void Return(LOCATION, Builder *b);
     void Return(LOCATION, Builder *b, Value *v);
 
@@ -176,13 +170,28 @@ class BaseExtension : public Extension {
     Value * IndexAt(LOCATION, Builder *b, Value *base, Value *index);
 
     // Pseudo operations
+    void Increment(LOCATION, Builder *b, Symbol *sym, Value *bump);
     Location * SourceLocation(LOCATION, Builder *b, std::string func);
     Location * SourceLocation(LOCATION, Builder *b, std::string func, std::string lineNumber);
     Location * SourceLocation(LOCATION, Builder *b, std::string func, std::string lineNumber, int32_t bcIndex);
+    Value * ConstInt8(LOCATION, Builder *b, int8_t v);
+    Value * ConstInt16(LOCATION, Builder *b, int16_t v);
+    Value * ConstInt32(LOCATION, Builder *b, int32_t v);
+    Value * ConstInt64(LOCATION, Builder *b, int64_t v);
+    Value * ConstFloat32(LOCATION, Builder *b, float v);
+    Value * ConstFloat64(LOCATION, Builder *b, double v);
+    Value * ConstAddress(LOCATION, Builder *b, void *v);
+    //Deprecated:
+    //Value * ConstFloat(LOCATION, Builder *b, float v) { return ConstFloat32(PASSLOC, b, v); } // deprecated
+    //Value * ConstDouble(LOCATION, Builder *b, double v) { return ConstFloat64(PASSLOC, b, v); } // deprecated
+    Value * Zero(LOCATION, Compilation *comp, Builder *b, const Type *type);
+    Value * One(LOCATION, Compilation *comp, Builder *b, const Type *type);
+    void Increment(LOCATION, Compilation *comp, Builder *b, LocalSymbol *sym);
 
     CompileResult jb1cgCompile(Compilation *comp);
 
     protected:
+
     StrategyID _jb1cgStrategyID;
 
     static const SemanticVersion version;

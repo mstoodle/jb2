@@ -25,6 +25,7 @@
 #include "gtest/gtest.h"
 #include "Compiler.hpp"
 #include "base/BaseExtension.hpp"
+#include "base/ControlOperations.hpp"
 #include "base/Function.hpp"
 #include "base/FunctionCompilation.hpp"
 #include "TextWriter.hpp"
@@ -542,6 +543,51 @@ TEST(BaseExtension, createStruct_Int32_Address_Int32) {
      int32_t x3 = str.f3; EXPECT_EQ(x3,1);
 }
 
+typedef struct MyRecursiveStruct {
+    int x;
+    struct MyRecursiveStruct *next;
+} MyRecursiveStruct;
+
+void
+MyRecursiveStructHelper(const Base::StructType *sType, Base::StructTypeBuilder *builder) {
+    Base::BaseExtension *ext = builder->extension();
+    builder->addField("x", ext->Int32, 8*offsetof(MyRecursiveStruct, x))
+           ->addField("next", ext->PointerTo(LOC, builder->comp(), sType), 8*offsetof(MyRecursiveStruct, next));
+}
+
+BASE_FUNC(CreateRecursiveStructFunction, "0", "CreateRecursiveStruct.cpp", \
+    Base::ParameterSymbol *_parm; \
+    const Base::StructType *_structType; \
+    const Base::FieldType *_xType; \
+    const Base::FieldType *_nextType; \
+    const Base::PointerType *_pStructType; \
+    , \
+    _x, { Base::StructTypeBuilder stb(_x, this); \
+          stb.setName("MyRecursiveStruct") \
+             ->setHelper(&MyRecursiveStructHelper); \
+          _structType = stb.create(LOC); \
+          _pStructType = PointerTo(LOC, _structType); \
+          _parm = DefineParameter("parm", _pStructType); \
+          _nextType = _structType->LookupField("next"); \
+          _xType = _structType->LookupField("x"); \
+          DefineReturnType(_x->Int32); \
+        }, \
+    b, { Value *base = _x->Load(LOC, b, _parm); \
+         Value *nextval = _x->LoadFieldAt(LOC, b, _nextType, base); \
+         Value *nextnextval = _x->LoadFieldAt(LOC, b, _nextType, nextval); \
+         Value *nextnextxval = _x->LoadFieldAt(LOC, b, _xType, nextnextval); \
+         _x->Return(LOC, b, nextnextxval); })
+
+TEST(BaseExtension, createRecursiveStructFunction) {
+    typedef int32_t (FuncProto)(MyRecursiveStruct *);
+    COMPILE_FUNC(CreateRecursiveStructFunction, FuncProto, f, false);
+    int32_t value = 3;
+    MyRecursiveStruct third = {value, NULL};
+    MyRecursiveStruct second = {-2, &third};
+    MyRecursiveStruct first = {-1, &second};
+    EXPECT_EQ(f(&first), value);
+}
+
 // Test function that returns an indexed value from an array parameter
 #define ARRAYTYPEFUNC(type) \
     BASE_FUNC(type ## ArrayFunction, "0", #type ".cpp", , \
@@ -764,3 +810,50 @@ TEST(BaseExtension, createWordAddressSubFunction) {
     x=2*sizeof(void*); EXPECT_EQ(f(p+2,p), x) << "Compiled f(p+2,p) returns " << (uint8_t*)(p+2)-(uint8_t *)p;
     x=sizeof(void*);   EXPECT_EQ(f(p+2,p+1), x) << "Compiled f(p+2,p+1) returns " << (uint8_t*)(p+2)-(uint8_t *)(p+1);
 }
+
+// Test function that implements a for loop
+#define FORLOOPTYPEFUNC(iterType) \
+    BASE_FUNC(iterType ## _ForLoopFunction, "0", #iterType "ForLoop.cpp", , \
+        _x, { \
+            DefineReturnType(_x->Word); \
+            DefineParameter("initial", _x->iterType); \
+            DefineParameter("final", _x->iterType); \
+            DefineParameter("bump", _x->iterType); \
+            DefineLocal("i", _x->iterType); \
+            DefineLocal("counter", _x->Word); \
+            }, \
+        b, { \
+           auto counterSym=LookupLocal("counter"); \
+           _x->Store(LOC, b, counterSym, _x->Zero(LOC, _comp, b, counterSym->type())); \
+           auto iterVarSym = LookupLocal("i"); \
+           auto initialSym=LookupLocal("initial"); \
+           Value * initial = _x->Load(LOC, b, initialSym); \
+           auto finalSym=LookupLocal("final"); \
+           Value * final = _x->Load(LOC, b, finalSym); \
+           auto bumpSym=LookupLocal("bump"); \
+           Value * bump = _x->Load(LOC, b, bumpSym); \
+           Base::ForLoopBuilder *loop = _x->ForLoopUp(LOC, b, iterVarSym, initial, final, bump); { \
+               Builder *loopBody = loop->loopBody(); \
+               _x->Increment(LOC, _comp, loopBody, counterSym); \
+           } \
+           _x->Return(LOC, b, _x->Load(LOC, b, counterSym)); \
+           })
+
+#define TESTFORLOOPTYPEFUNC(type,ctype) \
+    FORLOOPTYPEFUNC(Int32) \
+    TEST(BaseExtension, create ## type ## ForLoopFunction) { \
+        typedef size_t (FuncProto)(ctype, ctype, ctype); \
+        COMPILE_FUNC(type ## _ForLoopFunction, FuncProto, f, true); \
+        EXPECT_EQ(f(0,100,1), 100) << "ForLoopUp(0,100,1) counts 100 iterations"; \
+        EXPECT_EQ(f(0,100,2), 50) << "ForLoopUp(0,100,2) counts 50 iterations"; \
+        EXPECT_EQ(f(0,100,3), 34) << "ForLoopUp(0,100,3) counts 34 iterations"; \
+        EXPECT_EQ(f(1,100,1), 99) << "ForLoopUp(1,100,1) counts 99 iterations"; \
+        EXPECT_EQ(f(1,100,3), 33) << "ForLoopUp(1,100,3) counts 33 iterations"; \
+        EXPECT_EQ(f(-100,100,1), 200) << "ForLoopUp(-100,100,1) counts 200 iterations"; \
+        EXPECT_EQ(f(100,-100,1), 0) << "ForLoopUp(100,-100,1) counts 0 iterations"; \
+        EXPECT_EQ(f(100,-100,5), 0) << "ForLoopUp(100,-100,5) counts 0 iterations"; \
+        EXPECT_EQ(f(0,0,1), 0) << "ForLoopUp(0,0,1) counts 0 iterations"; \
+        EXPECT_EQ(f(-100,-1,1), 99) << "ForLoopUp(-100,-1,1) counts 99 iterations"; \
+    }
+
+TESTFORLOOPTYPEFUNC(Int32,int32_t)

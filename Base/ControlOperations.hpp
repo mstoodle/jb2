@@ -22,12 +22,115 @@
 #ifndef CONTROLOPERATIONS_INCL
 #define CONTROLOPERATIONS_INCL
 
-#include "Literal.hpp"
 #include "Operation.hpp"
+#include "BaseSymbols.hpp"
 
 namespace OMR {
 namespace JitBuilder {
+
 namespace Base {
+
+class BaseExtension;
+class Op_ForLoopUp;
+class LocalSymbol;
+
+class ForLoopBuilder {
+    friend class BaseExtension;
+    friend class Op_ForLoopUp;
+public:
+    ForLoopBuilder()
+        : _loopVariable(NULL)
+        , _initial(NULL)
+        , _final(NULL)
+        , _bump(NULL)
+        , _loopBody(NULL)
+        , _loopBreak(NULL)
+        , _loopContinue(NULL) {
+    }
+
+    LocalSymbol * loopVariable() const { return _loopVariable; }
+    Value *initialValue() const { return _initial; }
+    Value *finalValue() const { return _final; }
+    Value *bumpValue() const { return _bump; }
+    Builder *loopBody() const { return _loopBody; }
+    Builder *loopBreak() const { return _loopBreak; }
+    Builder *loopContinue()const { return _loopContinue; }
+
+private:
+    ForLoopBuilder *setLoopVariable(LocalSymbol *s) { _loopVariable = s; return this; }
+    ForLoopBuilder *setInitialValue(Value *v) { _initial = v; return this; }
+    ForLoopBuilder *setFinalValue(Value *v) { _final = v; return this; }
+    ForLoopBuilder *setBumpValue(Value *v) { _bump = v; return this; }
+    ForLoopBuilder *setLoopBody(Builder *b) { _loopBody = b; return this; }
+    ForLoopBuilder *setLoopBreak(Builder *b) { _loopBreak = b; return this; }
+    ForLoopBuilder *setLoopContinue(Builder *b) { _loopContinue = b; return this; }
+
+    LocalSymbol * _loopVariable;
+    Value * _initial;
+    Value * _final;
+    Value * _bump;
+    Builder * _loopBody;
+    Builder * _loopBreak;
+    Builder * _loopContinue;
+};
+
+class Op_ForLoopUp : public Operation {
+    friend class BaseExtension;
+    public:
+    virtual Operation * clone(LOCATION, Builder *b, OperationCloner *cloner) const;
+    virtual void write(TextWriter &w) const;
+    virtual void jbgen(JB1MethodBuilder *j1mb) const;
+
+    virtual int32_t numSymbols() const { return 1; }
+    virtual Symbol * symbol(int32_t i=0) const {
+        if (i == 0) return _loopVariable;
+        return NULL;
+    }
+    virtual SymbolIterator SymbolsBegin() {
+        return SymbolIterator(_loopVariable);
+    }
+
+    virtual int32_t numOperands() const { return 3; }
+    virtual Value * operand(int32_t i=0) const {
+        if (i == 0) return _initial;
+        else if (i == 1) return _final;
+        else if (i == 2) return _bump;
+        return NULL;
+    }
+    virtual ValueIterator OperandsBegin() {
+        return ValueIterator(_initial, _final, _bump);
+    }
+
+    virtual int32_t numBuilders() const {
+        return 1 + (_loopBreak != NULL ? 1 : 0) + (_loopContinue != NULL) ? 1 : 0;
+    }
+    virtual Builder * builder(int32_t i=0) const {
+        if (i == 0) return _loopBody;
+        else if (i == 1) return _loopBreak;
+        else if (i == 2) return _loopContinue;
+        return NULL;
+    }
+    virtual BuilderIterator BuildersBegin() {
+        if (_loopBreak) {
+            if (_loopContinue) {
+                return BuilderIterator(_loopBody, _loopBreak, _loopContinue);
+            }
+            return BuilderIterator(_loopBody, _loopBreak);
+        }
+        return BuilderIterator(_loopBody);
+    }
+
+    protected:
+    Op_ForLoopUp(LOCATION, Extension *ext, Builder * parent, ActionID aForLoopUp, ForLoopBuilder *loopBuilder);
+
+    LocalSymbol *_loopVariable;
+    Value * _initial;
+    Value * _final;
+    Value * _bump;
+    Builder *_loopBody;
+    Builder *_loopBreak; // can be NULL
+    Builder *_loopContinue; // can be NULL
+    };
 
 // eventually generalize to handle multiple return values but not needed yet
 class Op_Return : public Operation {
@@ -57,7 +160,7 @@ class Op_Return : public Operation {
     Op_Return(LOCATION, Extension *ext, Builder * parent, ActionID aReturn);
     Op_Return(LOCATION, Extension *ext, Builder * parent, ActionID aReturn, Value * v);
     Value * _value;
-    }
+    };
 
 #if 0
 class Op_CoercePointer : public OperationR1V1T1

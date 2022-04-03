@@ -72,5 +72,15 @@ Extension::addOperation(Builder *b, Operation *op) {
     b->add(op);
 }
 
+Builder *
+Extension::BoundBuilder(LOCATION, Builder *parent, Operation *parentOp, std::string name) {
+    return new Builder(parent, parentOp, name);
+}
+
+Builder *
+Extension::OrphanBuilder(LOCATION, Builder *parent, Context *context, std::string name) {
+    return new Builder(parent, context, name);
+}
+
 } // namespace JitBuilder
 } // namespace OMR

@@ -43,6 +43,7 @@ class Compilation;
 class Compiler;
 class Extension;
 class JB1MethodBuilder;
+class Location;
 class TextWriter;
 class Type;
 class TypeDictionary;
@@ -111,6 +112,10 @@ public:
     // creates a Literal of this Type from the raw LiteralBytes
     Literal * literal(LOCATION, Compilation *comp, const LiteralBytes *value) const;
 
+    // for Types that can, return a zero or "one" literal (NULL means it doesn't exist for this Type)
+    virtual Literal *zero(LOCATION, Compilation *comp) const { return NULL; }
+    virtual Literal *identity(LOCATION, Compilation *comp) const { return NULL; }
+
     // returning NULL from the next function means that values of this Type cannot be broken down further
     virtual const Type *layout() const { return _layout; }
 
@@ -119,6 +124,11 @@ public:
 
     // register this Type's corresponding JB1 type(s) in the JB1MethodBuilder
     virtual bool registerJB1Type(JB1MethodBuilder *j1mb) const { return true; }
+    
+    // create a JB1 Const operation for a Literal of this Type
+    virtual void createJB1ConstOp(Location *loc, JB1MethodBuilder *j1mb, Builder *b, Value *result, Literal *lv) const {
+        assert(0); return; // default must be to assert
+    }
 
 protected:
     friend class Extension;

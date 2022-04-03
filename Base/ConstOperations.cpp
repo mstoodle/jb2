@@ -39,127 +39,20 @@ namespace JitBuilder {
 namespace Base {
 
 //
-// ConstInt8
+// Const
 //
-Op_ConstInt8::Op_ConstInt8(LOCATION, Extension *ext, Builder * parent, ActionID aConstInt8, Value * result, Literal *lv)
-    : OperationR1L1(PASSLOC, aConstInt8, ext, parent, result, lv) {
+Op_Const::Op_Const(LOCATION, Extension *ext, Builder * parent, ActionID aConst, Value * result, Literal *lv)
+    : OperationR1L1(PASSLOC, aConst, ext, parent, result, lv) {
 }
 
 Operation *
-Op_ConstInt8::clone(LOCATION, Builder *b, OperationCloner *cloner) const {
-    return new Op_ConstInt8(PASSLOC, this->_ext, b, this->action(), cloner->result(), cloner->literal());
+Op_Const::clone(LOCATION, Builder *b, OperationCloner *cloner) const {
+    return new Op_Const(PASSLOC, this->_ext, b, this->action(), cloner->result(), cloner->literal());
 }
 
 void
-Op_ConstInt8::jbgen(JB1MethodBuilder *j1mb) const {
-    j1mb->ConstInt8(location(), parent(), result(), literal()->value<const int8_t>());
-}
-
-//
-// ConstInt16
-//
-Op_ConstInt16::Op_ConstInt16(LOCATION, Extension *ext, Builder * parent, ActionID aConstInt16, Value * result, Literal *lv)
-    : OperationR1L1(PASSLOC, aConstInt16, ext, parent, result, lv) {
-}
-
-Operation *
-Op_ConstInt16::clone(LOCATION, Builder *b, OperationCloner *cloner) const {
-    return new Op_ConstInt16(PASSLOC, this->_ext, b, this->action(), cloner->result(), cloner->literal());
-}
-
-void
-Op_ConstInt16::jbgen(JB1MethodBuilder *j1mb) const {
-    j1mb->ConstInt16(location(), parent(), result(), literal()->value<const int16_t>());
-}
-
-
-//
-// ConstInt32
-//
-Op_ConstInt32::Op_ConstInt32(LOCATION, Extension *ext, Builder * parent, ActionID aConstInt32, Value * result, Literal *lv)
-    : OperationR1L1(PASSLOC, aConstInt32, ext, parent, result, lv) {
-}
-
-Operation *
-Op_ConstInt32::clone(LOCATION, Builder *b, OperationCloner *cloner) const {
-    return new Op_ConstInt32(PASSLOC, this->_ext, b, this->action(), cloner->result(), cloner->literal());
-}
-
-void
-Op_ConstInt32::jbgen(JB1MethodBuilder *j1mb) const {
-    j1mb->ConstInt32(location(), parent(), result(), literal()->value<const int32_t>());
-}
-
-
-//
-// ConstInt64
-//
-Op_ConstInt64::Op_ConstInt64(LOCATION, Extension *ext, Builder * parent, ActionID aConstInt64, Value * result, Literal *lv)
-    : OperationR1L1(PASSLOC, aConstInt64, ext, parent, result, lv) {
-}
-
-Operation *
-Op_ConstInt64::clone(LOCATION, Builder *b, OperationCloner *cloner) const {
-    return new Op_ConstInt64(PASSLOC, this->_ext, b, this->action(), cloner->result(), cloner->literal());
-}
-
-void
-Op_ConstInt64::jbgen(JB1MethodBuilder *j1mb) const {
-    j1mb->ConstInt64(location(), parent(), result(), literal()->value<const int64_t>());
-}
-
-
-//
-// ConstFloat32
-//
-Op_ConstFloat32::Op_ConstFloat32(LOCATION, Extension *ext, Builder * parent, ActionID aConstFloat32, Value * result, Literal *lv)
-    : OperationR1L1(PASSLOC, aConstFloat32, ext, parent, result, lv) {
-}
-
-Operation *
-Op_ConstFloat32::clone(LOCATION, Builder *b, OperationCloner *cloner) const {
-    return new Op_ConstFloat32(PASSLOC, this->_ext, b, this->action(), cloner->result(), cloner->literal());
-}
-
-void
-Op_ConstFloat32::jbgen(JB1MethodBuilder *j1mb) const {
-    j1mb->ConstFloat(location(), parent(), result(), literal()->value<const float>());
-}
-
-
-//
-// ConstFloat64
-//
-Op_ConstFloat64::Op_ConstFloat64(LOCATION, Extension *ext, Builder * parent, ActionID aConstFloat64, Value * result, Literal *lv)
-   : OperationR1L1(PASSLOC, aConstFloat64, ext, parent, result, lv) {
-}
-
-Operation *
-Op_ConstFloat64::clone(LOCATION, Builder *b, OperationCloner *cloner) const {
-    return new Op_ConstFloat64(PASSLOC, this->_ext, b, this->action(), cloner->result(), cloner->literal());
-}
-
-void
-Op_ConstFloat64::jbgen(JB1MethodBuilder *j1mb) const {
-    j1mb->ConstDouble(location(), parent(), result(), literal()->value<const double>());
-}
-
-
-//
-// ConstAddress
-//
-Op_ConstAddress::Op_ConstAddress(LOCATION, Extension *ext, Builder * parent, ActionID aConstAddress, Value * result, Literal *lv)
-    : OperationR1L1(PASSLOC, aConstAddress, ext, parent, result, lv) {
-}
-
-Operation *
-Op_ConstAddress::clone(LOCATION, Builder *b, OperationCloner *cloner) const {
-    return new Op_ConstAddress(PASSLOC, this->_ext, b, this->action(), cloner->result(), cloner->literal());
-}
-
-void
-Op_ConstAddress::jbgen(JB1MethodBuilder *j1mb) const {
-    j1mb->ConstAddress(location(), parent(), result(), literal()->value<void * const>());
+Op_Const::jbgen(JB1MethodBuilder *j1mb) const {
+    literal()->type()->createJB1ConstOp(location(), j1mb, parent(), result(), literal());
 }
 
 

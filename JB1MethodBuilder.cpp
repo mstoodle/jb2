@@ -170,10 +170,11 @@ JB1MethodBuilder::closeStruct(std::string structName) {
 }
 
 void
-JB1MethodBuilder::registerBuilder(Builder * b) {
+JB1MethodBuilder::registerBuilder(Builder * b, TR::IlBuilder *omr_b) {
     if (_builders.find(b->id()) != _builders.end())
         return;
-    TR::IlBuilder *omr_b = _mb->OrphanBuilder();
+    if (omr_b == NULL)
+        omr_b = _mb->OrphanBuilder();
     _builders[b->id()] = omr_b;
 }
 
@@ -302,6 +303,19 @@ JB1MethodBuilder::EntryPoint(Builder *entryBuilder) {
     _mb->AppendBuilder(omr_b);
 }
 
+void
+JB1MethodBuilder::ForLoopUp(Location *loc, Builder *b, Symbol *loopVariable, Value *initial, Value *final, Value *bump, Builder *loopBody, Builder *loopBreak, Builder *loopContinue) {
+    TR::IlBuilder *omr_b = map(b);
+    omr_b->setBCIndex(loc->bcIndex())->SetCurrentIlGenerator();
+    TR::IlBuilder *omr_loopBody = map(loopBody);
+    TR::IlBuilder *omr_loopBreak = NULL;
+    TR::IlBuilder *omr_loopContinue = NULL;
+    omr_b->ForLoop(true, findOrCreateString(loopVariable->name()), &omr_loopBody, &omr_loopBreak, &omr_loopContinue, map(initial), map(final), map(bump));
+    if (loopBreak != NULL)
+        registerBuilder(loopBreak, omr_loopBreak);
+    if (loopContinue != NULL)
+        registerBuilder(loopContinue, omr_loopContinue);
+}
 void
 JB1MethodBuilder::Return(Location *loc, Builder *b) {
     TR::IlBuilder *omr_b = map(b);

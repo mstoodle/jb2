@@ -47,12 +47,6 @@ class TypeDictionary;
 typedef std::vector<Operation *> OperationVector;
 typedef OperationVector::iterator OperationIterator;
 
-enum MustMayCant {
-    Must=0,
-    May=1,
-    Cant=2
-};
-
 class Builder
     {
     friend class Extension;
@@ -150,7 +144,7 @@ public:
     TypeDictionary * dict() const;
     Builder * parent() const                            { return _parent; }
 
-    Context * context();
+    Context * context() const                           { return _context; }
 
     int32_t numChildren() const                         { return _children.size(); }
     BuilderIterator ChildrenBegin()                     { return BuilderIterator(_children); }
@@ -161,14 +155,9 @@ public:
     OperationIterator OperationsBegin()                 { return _operations.begin(); }
     OperationIterator OperationsEnd()                   { return _operations.end(); }
 
-    MustMayCant boundness() const                       { return _boundness; }
-    Builder * setBoundness(MustMayCant v);
-    void checkBoundness(bool v) const;
-
     bool isBound() const                                { return _isBound; }
-    Builder * setBound(bool v, Operation * boundToOp=NULL);
-    Builder * setBound(Operation * boundToOp);
     Operation * boundToOperation()                      { assert(_isBound); return _boundToOperation; }
+    Builder * setBound(Operation *op)                   { _isBound = true; _boundToOperation = op; return this; }
 
     bool isTarget() const                               { return _isTarget; }
     Builder * setTarget(bool v=true);
@@ -184,7 +173,8 @@ public:
 
     protected:
     Builder(Compilation *comp, Context *context=NULL, std::string name="");
-    Builder(Builder * parent, Context *context=NULL, std::string name="");
+    Builder(Builder *parent, Context *context=NULL, std::string name="");
+    Builder(Builder *parent, Operation *boundToOp, std::string name="");
 
 #if 0
     void creationError(Action a, std::string msg);
@@ -218,7 +208,6 @@ public:
     bool                   _isTarget;
     bool                   _isBound;
     bool                   _controlReachesEnd;
-    MustMayCant            _boundness;
     };
 
 } // namespace JitBuilder

@@ -80,6 +80,11 @@ Int8Type::registerJB1Type(JB1MethodBuilder *j1mb) const {
     return true;
 }
 
+void
+Int8Type::createJB1ConstOp(Location *loc, JB1MethodBuilder *j1mb, Builder *b, Value *result, Literal *lv) const {
+    j1mb->ConstInt8(loc, b, result, lv->value<const int8_t>());
+}
+
 Literal *
 Int16Type::literal(LOCATION, Compilation *comp, const int16_t value) const {
     int16_t *pValue = new int16_t;
@@ -112,6 +117,11 @@ bool
 Int16Type::registerJB1Type(JB1MethodBuilder *j1mb) const {
     j1mb->registerInt16(this);
     return true;
+}
+
+void
+Int16Type::createJB1ConstOp(Location *loc, JB1MethodBuilder *j1mb, Builder *b, Value *result, Literal *lv) const {
+    j1mb->ConstInt16(loc, b, result, lv->value<const int16_t>());
 }
 
 
@@ -149,6 +159,11 @@ Int32Type::registerJB1Type(JB1MethodBuilder *j1mb) const {
     return true;
 }
 
+void
+Int32Type::createJB1ConstOp(Location *loc, JB1MethodBuilder *j1mb, Builder *b, Value *result, Literal *lv) const {
+    j1mb->ConstInt32(loc, b, result, lv->value<const int32_t>());
+}
+
 
 Literal *
 Int64Type::literal(LOCATION, Compilation *comp, const int64_t value) const {
@@ -182,6 +197,11 @@ bool
 Int64Type::registerJB1Type(JB1MethodBuilder *j1mb) const {
     j1mb->registerInt64(this);
     return true;
+}
+
+void
+Int64Type::createJB1ConstOp(Location *loc, JB1MethodBuilder *j1mb, Builder *b, Value *result, Literal *lv) const {
+    j1mb->ConstInt64(loc, b, result, lv->value<const int64_t>());
 }
 
 
@@ -219,6 +239,11 @@ Float32Type::registerJB1Type(JB1MethodBuilder *j1mb) const {
     return true;
 }
 
+void
+Float32Type::createJB1ConstOp(Location *loc, JB1MethodBuilder *j1mb, Builder *b, Value *result, Literal *lv) const {
+    j1mb->ConstFloat(loc, b, result, lv->value<const float>());
+}
+
 
 Literal *
 Float64Type::literal(LOCATION, Compilation *comp, const double value) const {
@@ -252,6 +277,11 @@ bool
 Float64Type::registerJB1Type(JB1MethodBuilder *j1mb) const {
     j1mb->registerDouble(this);
     return true;
+}
+
+void
+Float64Type::createJB1ConstOp(Location *loc, JB1MethodBuilder *j1mb, Builder *b, Value *result, Literal *lv) const {
+    j1mb->ConstDouble(loc, b, result, lv->value<const double>());
 }
 
 
@@ -292,12 +322,16 @@ AddressType::registerJB1Type(JB1MethodBuilder *j1mb) const {
     return true;
 }
 
+void
+AddressType::createJB1ConstOp(Location *loc, JB1MethodBuilder *j1mb, Builder *b, Value *result, Literal *lv) const {
+    j1mb->ConstAddress(loc, b, result, lv->value<void * const>());
+}
 
-PointerTypeBuilder::PointerTypeBuilder(BaseExtension *ext, Function *func)
+
+PointerTypeBuilder::PointerTypeBuilder(BaseExtension *ext, FunctionCompilation *comp)
     : _ext(ext)
-    , _func(func)
-    , _comp(func->comp())
-    , _dict(_comp->dict())
+    , _comp(comp)
+    , _dict(comp->dict())
     , _baseType(NULL)
     , _helper(NULL) {
 }

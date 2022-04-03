@@ -41,8 +41,7 @@ Builder::Builder(Compilation * comp, Context *context, std::string name)
     , _boundToOperation(NULL)
     , _isTarget(false)
     , _isBound(false)
-    , _controlReachesEnd(true)
-    , _boundness(May) {
+    , _controlReachesEnd(true) {
 }
 
 Builder::Builder(Builder *parent, Context *context, std::string name)
@@ -56,8 +55,22 @@ Builder::Builder(Builder *parent, Context *context, std::string name)
     , _boundToOperation(NULL)
     , _isTarget(false)
     , _isBound(false)
-    , _controlReachesEnd(true)
-    , _boundness(May) {
+    , _controlReachesEnd(true) {
+    parent->addChild(this);
+}
+
+Builder::Builder(Builder *parent, Operation *boundToOp, std::string name)
+    : _id(parent->_comp->getBuilderID())
+    , _comp(parent->_comp)
+    , _name(name)
+    , _parent(parent)
+    , _context(parent->context())
+    , _successor(NULL)
+    , _currentLocation(parent->location())
+    , _boundToOperation(boundToOp)
+    , _isTarget(false)
+    , _isBound(true)
+    , _controlReachesEnd(true) {
     parent->addChild(this);
 }
 
