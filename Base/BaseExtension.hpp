@@ -65,6 +65,7 @@ class StructType;
 class UnionType;
 class FunctionType;
 
+class BaseExtensionChecker;
 class ForLoopBuilder;
 class FunctionCompilation;
 class LocalSymbol;
@@ -100,7 +101,7 @@ class BaseExtension : public Extension {
     const Float32Type *Float32;
     const Float64Type *Float64;
     const AddressType *Address;
-    const IntegerType *Word;
+    const Type *Word;
 
     const PointerType *PointerTo(LOCATION, FunctionCompilation *comp, const Type *baseType);
 
@@ -191,10 +192,28 @@ class BaseExtension : public Extension {
     CompileResult jb1cgCompile(Compilation *comp);
 
     protected:
-
     StrategyID _jb1cgStrategyID;
+    std::vector<BaseExtensionChecker *> _checkers;
 
     static const SemanticVersion version;
+};
+
+class BaseExtensionChecker {
+public:
+    BaseExtensionChecker(BaseExtension *base)
+        : _base(base) {
+    }
+
+    virtual bool validateAdd(LOCATION, Builder *b, Value *left, Value *right);
+    virtual bool validateMul(LOCATION, Builder *b, Value *left, Value *right);
+    virtual bool validateSub(LOCATION, Builder *b, Value *left, Value *right);
+
+protected:
+    virtual void failValidateAdd(LOCATION, Builder *b, Value *left, Value *right);
+    virtual void failValidateMul(LOCATION, Builder *b, Value *left, Value *right);
+    virtual void failValidateSub(LOCATION, Builder *b, Value *left, Value *right);
+
+    BaseExtension *_base;
 };
 
 } // namespace Base

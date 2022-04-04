@@ -42,8 +42,14 @@ typedef std::vector<Symbol *> SymbolVector;
 
 typedef enum CompileResult {
     CompileSuccessful=0,
-    CompileFailed=-1,
-    CompileFail_UnknownStrategyID=-2,
+    CompileNotStarted=1,
+    CompileFailed=2,
+    CompileFail_UnknownStrategyID=3,
+    CompileFail_IlGen=4,
+    CompileFail_BadInputTypesAdd=5,
+    CompileFail_BadInputTypesMul=6,
+    CompileFail_BadInputTypesSub=7,
+    NumCompileResultCodes
 } CompileResult;
 
 } // namespace JitBuilder

@@ -22,6 +22,7 @@
 #ifndef COMPILER_INCL
 #define COMPILER_INCL
 
+#include <exception>
 #include <list>
 #include <map>
 #include <stdint.h>
@@ -29,6 +30,7 @@
 #include <vector>
 #include "Flags.hpp"
 #include "IDs.hpp"
+#include "CreateLoc.hpp"
 #include "typedefs.hpp"
 
 namespace OMR
@@ -46,6 +48,31 @@ class SemanticVersion;
 class Strategy;
 class Type;
 class TypeDictionary;
+
+class CompilationException : public std::exception {
+public:
+    CompilationException(LOCATION, CompileResult result=CompileNotStarted)
+        : std::exception()
+        , _result(result)
+        , _location(PASSLOC)
+        , _message(std::string("CompilationException")) {
+    }
+
+    CompilationException & setMessage(std::string str)     { _message =            str ; return *this; }
+    CompilationException & setMessageLine(std::string str) { _message = addNewLine(str); return *this; }
+
+    CompilationException & appendMessage(std::string str)     { _message.append(           str ); return *this; }
+    CompilationException & appendMessageLine(std::string str) { _message.append(addNewLine(str)); return *this; }
+
+    std::string location()     { return            _location.to_string() ; }
+    std::string locationLine() { return addNewLine(_location.to_string()); }
+
+    CompileResult _result;
+    CreateLocation _location;
+    std::string _message;
+protected:
+    std::string addNewLine(std::string s) { return s + std::string("\n"); }
+};
 
 class Compiler {
     friend class Extension;

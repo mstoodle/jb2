@@ -57,11 +57,29 @@ Type::literal(LOCATION, Compilation *comp, const LiteralBytes *value) const {
     return comp->registerLiteral(PASSLOC, this, value);
 }
 
+std::string
+Type::base_string() const {
+    std::string s;
+    s.append("type t").append(std::to_string(this->id())).append(" ");
+    s.append(std::to_string(this->size())).append(" ");
+    s.append(this->name()).append(" ");
+    return s;
+}
+
 void
 Type::writeType(TextWriter &w) const {
-   w.indent() << "[ type " << this << " " << size() << " " << name() << " ";
-   writeSpecificType(w);
+    w.indent() << "[ " << this->to_string() ;
+    writeSpecificType(w);
     w << "]" << w.endl();
+}
+
+std::string
+Type::to_string() const {
+    std::string s;
+    s.append(base_string()).append("primitiveType");
+    if (_layout)
+        s.append(" layout t").append(std::to_string(_layout->id())).append(" ").append(_layout->name());
+    return s;
 }
 
 void

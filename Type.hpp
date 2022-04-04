@@ -100,6 +100,8 @@ public:
     virtual bool isInteger() const { return false; }
     virtual bool isFloatingPoint() const { return false; }
 
+    std::string base_string() const;
+    virtual std::string to_string() const;
     void writeType(TextWriter & w) const;
     virtual void writeSpecificType(TextWriter &w) const;
     virtual void printValue(TextWriter & w, const void *p) const { }

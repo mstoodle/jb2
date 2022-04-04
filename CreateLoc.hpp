@@ -23,6 +23,7 @@
 #define CREATELOC_INCL
 
 #include <stdint.h>
+#include <string>
 
 #define LOCATION const char *loc_fileName, uint32_t loc_lineNumber, const char *loc_function
 #define LOC_FILE loc_fileName
@@ -41,6 +42,8 @@ class CreateLocation {
        , _lineNumber(LOC_LINE)
        , _functionName(LOC_FUNC)
     { }
+
+    std::string to_string() { return std::string(_functionName).append(" in ").append(_fileName).append(":L").append(std::to_string(_lineNumber)); }
 
     protected:
     const char *_fileName;

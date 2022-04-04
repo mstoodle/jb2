@@ -107,6 +107,15 @@ TEST(BaseExtension, checkVersionFail) {
     FuncProto *f = func.nativeEntry<FuncProto *>(); \
     assert(f)
 
+#define COMPILE_FUNC_TO_FAIL(FuncClass, expectedFailureCode, DO_LOGGING) \
+    Compiler c("testBase"); \
+    Base::BaseExtension *ext = c.loadExtension<Base::BaseExtension>(); \
+    FuncClass func(&c, ext); \
+    Base::FunctionCompilation *comp = func.comp(); \
+    TextWriter logger(comp, std::cout, std::string("    ")); \
+    TextWriter *log = (DO_LOGGING) ? &logger : NULL; \
+    CompileResult result = func.Compile(log); \
+    EXPECT_EQ((int)result, (int)expectedFailureCode) << "Function compilation expected to fail";
 
 // Test function that returns a constant value
 #define CONSTFUNC(type,seq,v) \
@@ -644,8 +653,8 @@ TEST(BaseExtension, createAddressArrayFunction) {
 }
 
 // Test function that returns the sum of two values of a type
-#define ADDTWOTYPEFUNC(leftType,rightType) \
-    BASE_FUNC(leftType ## AddFunction, "0", #leftType ".cpp", , \
+#define ADDTWOTYPEFUNC(leftType,rightType,suffix) \
+    BASE_FUNC(leftType ## _ ## rightType ## _AddFunction ## suffix, "0", #leftType "_" #rightType ".cpp", , \
         _x, { \
             DefineReturnType(_x->leftType); \
             DefineParameter("left", _x->leftType); \
@@ -660,13 +669,13 @@ TEST(BaseExtension, createAddressArrayFunction) {
            _x->Return(LOC, b, sum); \
            })
 
-#define ADDTYPEFUNC(type) ADDTWOTYPEFUNC(type,type)
+#define ADDTYPEFUNC(type) ADDTWOTYPEFUNC(type,type,)
 
 #define TESTADDTYPEFUNC(type,ctype,a1,b1,a2,b2) \
     ADDTYPEFUNC(type) \
     TEST(BaseExtension, create ## type ## AddFunction) { \
         typedef ctype (FuncProto)(ctype, ctype); \
-        COMPILE_FUNC(type ## AddFunction, FuncProto, f, false); \
+        COMPILE_FUNC(type ## _ ## type ## _AddFunction, FuncProto, f, false); \
         ctype x1=a1; ctype x2=a2; ctype y1=b1; ctype y2=b2; \
         EXPECT_EQ(f(x1,y1), (ctype)(x1+y1)) << "Compiled f(x1,y1) returns " << (ctype)(x1+y1); \
         EXPECT_EQ(f(x2,y2), (ctype)(x2+y2)) << "Compiled f(x2,y2) returns " << (ctype)(x2+y2); \
@@ -690,18 +699,54 @@ TESTADDTYPEFUNC(Float32, float, 0.0f, 1.0f, 1.0f, -1.0f)
 TESTADDTYPEFUNC(Float64, double, 0.0d, 1.0d, 1.0d, -1.0d)
 
 // Address handled specially
-ADDTWOTYPEFUNC(Address,Word)
+ADDTWOTYPEFUNC(Address,Word,)
 TEST(BaseExtension, createAddressAddFunction) {
     typedef void * (FuncProto)(void *, size_t);
-    COMPILE_FUNC(AddressAddFunction, FuncProto, f, false);
+    COMPILE_FUNC(Address_Word_AddFunction, FuncProto, f, false);
     void *p[2];
     EXPECT_EQ((uintptr_t)f(p,0), (uintptr_t)(p+0)) << "Compiled f(p,0) returns " << (p+0);
     EXPECT_EQ((uintptr_t)f(p,1), (uintptr_t)((uint8_t *)(p)+1)) << "Compiled f(p,1) returns " << (uint8_t *)(p) + 1;
     EXPECT_EQ((uintptr_t)f(p,sizeof(void*)), (uintptr_t)(p+1)) << "Compiled f(p,sizeof(void*)) returns " << p + 1;
 }
+
+#define TESTADDTYPESINVALID(leftType,rightType) \
+    ADDTWOTYPEFUNC(leftType,rightType,Validity) \
+    TEST(BaseExtension, testAddTypesInvalid_ ## leftType ## rightType ) { \
+        COMPILE_FUNC_TO_FAIL(leftType ## _ ## rightType ## _AddFunctionValidity , CompileFail_BadInputTypesAdd, false); \
+    }
+
+#define TESTBADADDTYPES(leftType,bad1,bad2,bad3,bad4,bad5) \
+    TESTADDTYPESINVALID(leftType,bad1); \
+    TESTADDTYPESINVALID(leftType,bad2); \
+    TESTADDTYPESINVALID(leftType,bad3); \
+    TESTADDTYPESINVALID(leftType,bad4); \
+    TESTADDTYPESINVALID(leftType,bad5);
+
+TESTBADADDTYPES(Int8,Int16,Int32,Int64,Float32,Float64)
+TESTBADADDTYPES(Int16,Int8,Int32,Int64,Float32,Float64)
+TESTBADADDTYPES(Int32,Int8,Int16,Int64,Float32,Float64)
+TESTBADADDTYPES(Int64,Int8,Int16,Int32,Float32,Float64)
+TESTADDTYPESINVALID(Address,Int8);
+TESTADDTYPESINVALID(Int8,Address);
+TESTADDTYPESINVALID(Address,Int16);
+TESTADDTYPESINVALID(Int16,Address);
+#if PLATFORM_32BIT
+    TESTADDTYPESINVALID(Address,Int64);
+    TESTADDTYPESINVALID(Int64,Address);
+#else
+    TESTADDTYPESINVALID(Address,Int32);
+    TESTADDTYPESINVALID(Int32,Address);
+#endif
+TESTADDTYPESINVALID(Address,Float32);
+TESTADDTYPESINVALID(Float32,Address);
+TESTADDTYPESINVALID(Address,Float64);
+TESTADDTYPESINVALID(Float64,Address);
+TESTBADADDTYPES(Float32,Int8,Int16,Int32,Int64,Float64)
+TESTBADADDTYPES(Float64,Int8,Int16,Int32,Int64,Float32)
+
 // Test function that returns the product of two values of a type
-#define MULTWOTYPEFUNC(leftType,rightType) \
-    BASE_FUNC(leftType ## MulFunction, "0", #leftType ".cpp", , \
+#define MULTWOTYPEFUNC(leftType,rightType,suffix) \
+    BASE_FUNC(leftType ## _ ## rightType ## _MulFunction ## suffix, "0", #leftType "_" #rightType ".cpp", , \
         _x, { \
             DefineReturnType(_x->leftType); \
             DefineParameter("left", _x->leftType); \
@@ -716,13 +761,13 @@ TEST(BaseExtension, createAddressAddFunction) {
            _x->Return(LOC, b, prod); \
            })
 
-#define MULTYPEFUNC(type) MULTWOTYPEFUNC(type,type)
+#define MULTYPEFUNC(type) MULTWOTYPEFUNC(type,type,)
 
 #define TESTMULTYPEFUNC(type,ctype,a1,b1,a2,b2) \
     MULTYPEFUNC(type) \
-    TEST(BaseExtension, create ## type ## MulFunction) { \
+    TEST(BaseExtension, create ## type ## _ ## type ## _MulFunction) { \
         typedef ctype (FuncProto)(ctype, ctype); \
-        COMPILE_FUNC(type ## MulFunction, FuncProto, f, false); \
+        COMPILE_FUNC(type ## _ ## type ## _MulFunction, FuncProto, f, false); \
         ctype x1=a1; ctype x2=a2; ctype y1=b1; ctype y2=b2; \
         EXPECT_EQ(f(x1,y1), (ctype)(x1*y1)) << "Compiled f(x1,y1) returns " << (ctype)(x1*y1); \
         EXPECT_EQ(f(x2,y2), (ctype)(x2*y2)) << "Compiled f(x2,y2) returns " << (ctype)(x2*y2); \
@@ -745,9 +790,32 @@ TESTMULTYPEFUNC(Int64, int64_t, 0, 1, 2, -1)
 TESTMULTYPEFUNC(Float32, float, 0.0f, 2.0f, 1.0f, -1.0f)
 TESTMULTYPEFUNC(Float64, double, 0.0d, 2.0d, 1.0d, -1.0d)
 
+#define TESTMULTYPESINVALID(leftType,rightType) \
+    MULTWOTYPEFUNC(leftType,rightType,Validity) \
+    TEST(BaseExtension, testMulTypesInvalid_ ## leftType ## rightType ) { \
+        COMPILE_FUNC_TO_FAIL(leftType ## _ ## rightType ## _MulFunctionValidity , CompileFail_BadInputTypesMul, false); \
+    }
+
+#define TESTBADMULTYPES(leftType,bad1,bad2,bad3,bad4,bad5,bad6) \
+    TESTMULTYPESINVALID(leftType,bad1); \
+    TESTMULTYPESINVALID(leftType,bad2); \
+    TESTMULTYPESINVALID(leftType,bad3); \
+    TESTMULTYPESINVALID(leftType,bad4); \
+    TESTMULTYPESINVALID(leftType,bad5); \
+    TESTMULTYPESINVALID(leftType,bad6);
+
+TESTBADMULTYPES(Int8,Int16,Int32,Int64,Float32,Float64,Address)
+TESTBADMULTYPES(Int16,Int8,Int32,Int64,Float32,Float64,Address)
+TESTBADMULTYPES(Int32,Int8,Int16,Int64,Float32,Float64,Address)
+TESTBADMULTYPES(Int64,Int8,Int16,Int32,Float32,Float64,Address)
+TESTBADMULTYPES(Float32,Int8,Int16,Int32,Int64,Float64,Address)
+TESTBADMULTYPES(Float64,Int8,Int16,Int32,Int64,Float32,Address)
+TESTBADMULTYPES(Address,Int8,Int16,Int32,Int64,Float32,Float64)
+TESTMULTYPESINVALID(Address,Address);
+
 // Test function that returns the difference of two values of a type
-#define SUBTYPEFUNC(returnType,leftType,rightType) \
-    BASE_FUNC(returnType ## _ ## leftType ## _ ## rightType ## _SubFunction, "0", #leftType ".cpp", , \
+#define SUBTYPEFUNC(returnType,leftType,rightType,suffix) \
+    BASE_FUNC(returnType ## _ ## leftType ## _ ## rightType ## _SubFunction ## suffix, "0", #returnType "_" #leftType "_" #rightType ".cpp", , \
         _x, { \
             DefineReturnType(_x->returnType); \
             DefineParameter("left", _x->leftType); \
@@ -763,7 +831,7 @@ TESTMULTYPEFUNC(Float64, double, 0.0d, 2.0d, 1.0d, -1.0d)
            })
 
 #define TESTSUBTYPEFUNC(type,ctype,a1,b1,a2,b2) \
-    SUBTYPEFUNC(type,type,type) \
+    SUBTYPEFUNC(type,type,type,) \
     TEST(BaseExtension, create ## type ## ## type ## type ## SubFunction) { \
         typedef ctype (FuncProto)(ctype, ctype); \
         COMPILE_FUNC(type ## _ ## type ## _ ## type ## _SubFunction, FuncProto, f, false); \
@@ -789,7 +857,7 @@ TESTSUBTYPEFUNC(Int64, int64_t, 0, 1, 1, -1)
 TESTSUBTYPEFUNC(Float32, float, 0.0f, 1.0f, 1.0f, -1.0f)
 TESTSUBTYPEFUNC(Float64, double, 0.0d, 1.0d, 1.0d, -1.0d)
 
-SUBTYPEFUNC(Address,Address,Word)
+SUBTYPEFUNC(Address,Address,Word,)
 TEST(BaseExtension, createAddressAddressWordSubFunction) {
     typedef void * (FuncProto)(void *, size_t );
     COMPILE_FUNC(Address_Address_Word_SubFunction, FuncProto, f, false);
@@ -800,7 +868,7 @@ TEST(BaseExtension, createAddressAddressWordSubFunction) {
     x=sizeof(void*);  EXPECT_EQ((uintptr_t)f(p+2,x), (uintptr_t)(p+1)) << "Compiled f(" << p+2 << "," << sizeof(void*) << ") returns " << p+1;
 }
 
-SUBTYPEFUNC(Word,Address,Address)
+SUBTYPEFUNC(Word,Address,Address,)
 TEST(BaseExtension, createWordAddressSubFunction) {
     typedef size_t (FuncProto)(void *, void *);
     COMPILE_FUNC(Word_Address_Address_SubFunction, FuncProto, f, false);
@@ -810,6 +878,41 @@ TEST(BaseExtension, createWordAddressSubFunction) {
     x=2*sizeof(void*); EXPECT_EQ(f(p+2,p), x) << "Compiled f(p+2,p) returns " << (uint8_t*)(p+2)-(uint8_t *)p;
     x=sizeof(void*);   EXPECT_EQ(f(p+2,p+1), x) << "Compiled f(p+2,p+1) returns " << (uint8_t*)(p+2)-(uint8_t *)(p+1);
 }
+
+#define TESTSUBTYPESINVALID(returnType,leftType,rightType) \
+    SUBTYPEFUNC(returnType,leftType,rightType,Validity) \
+    TEST(BaseExtension, testSubTypesInvalid_ ## leftType ## rightType ) { \
+        COMPILE_FUNC_TO_FAIL(returnType ## _ ## leftType ## _ ## rightType ## _SubFunctionValidity , CompileFail_BadInputTypesSub, false); \
+    }
+
+#define TESTBADSUBTYPES(returnType,leftType,bad1,bad2,bad3,bad4,bad5) \
+    TESTSUBTYPESINVALID(returnType,leftType,bad1); \
+    TESTSUBTYPESINVALID(returnType,leftType,bad2); \
+    TESTSUBTYPESINVALID(returnType,leftType,bad3); \
+    TESTSUBTYPESINVALID(returnType,leftType,bad4); \
+    TESTSUBTYPESINVALID(returnType,leftType,bad5);
+
+TESTBADSUBTYPES(Int8,Int8,Int16,Int32,Int64,Float32,Float64)
+TESTBADSUBTYPES(Int16,Int16,Int8,Int32,Int64,Float32,Float64)
+TESTBADSUBTYPES(Int32,Int32,Int8,Int16,Int64,Float32,Float64)
+TESTBADSUBTYPES(Int64,Int64,Int8,Int16,Int32,Float32,Float64)
+TESTSUBTYPESINVALID(Address,Address,Int8);
+TESTSUBTYPESINVALID(Address,Int8,Address);
+TESTSUBTYPESINVALID(Address,Address,Int16);
+TESTSUBTYPESINVALID(Address,Int16,Address);
+#if PLATFORM_32BIT
+    TESTSUBTYPESINVALID(Address,Address,Int64);
+    TESTSUBTYPESINVALID(Address,Int64,Address);
+#else
+    TESTSUBTYPESINVALID(Address,Address,Int32);
+    TESTSUBTYPESINVALID(Address,Int32,Address);
+#endif
+TESTSUBTYPESINVALID(Address,Address,Float32);
+TESTSUBTYPESINVALID(Address,Float32,Address);
+TESTSUBTYPESINVALID(Address,Address,Float64);
+TESTSUBTYPESINVALID(Address,Float64,Address);
+TESTBADSUBTYPES(Float32,Float32,Int8,Int16,Int32,Int64,Float64)
+TESTBADSUBTYPES(Float64,Float64,Int8,Int16,Int32,Int64,Float32)
 
 // Test function that implements a for loop
 #define FORLOOPTYPEFUNC(iterType) \
@@ -843,7 +946,7 @@ TEST(BaseExtension, createWordAddressSubFunction) {
     FORLOOPTYPEFUNC(Int32) \
     TEST(BaseExtension, create ## type ## ForLoopFunction) { \
         typedef size_t (FuncProto)(ctype, ctype, ctype); \
-        COMPILE_FUNC(type ## _ForLoopFunction, FuncProto, f, true); \
+        COMPILE_FUNC(type ## _ForLoopFunction, FuncProto, f, false); \
         EXPECT_EQ(f(0,100,1), 100) << "ForLoopUp(0,100,1) counts 100 iterations"; \
         EXPECT_EQ(f(0,100,2), 50) << "ForLoopUp(0,100,2) counts 50 iterations"; \
         EXPECT_EQ(f(0,100,3), 34) << "ForLoopUp(0,100,3) counts 34 iterations"; \

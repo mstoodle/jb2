@@ -76,11 +76,6 @@ FunctionCompilation::write(TextWriter &w) const {
     _func->write(w);
 }
 
-bool
-FunctionCompilation::ilBuilt() const {
-    return _func->ilBuilt();
-}
-
 void
 FunctionCompilation::constructJB1Function(JB1MethodBuilder *j1mb) {
     _func->constructJB1Function(j1mb);
@@ -99,6 +94,11 @@ FunctionCompilation::setNativeEntryPoint(void *entry, int i) {
 bool
 FunctionCompilation::buildIL() {
     return _func->buildIL();
+}
+
+bool
+FunctionCompilation::ilBuilt() const {
+    return _func->ilBuilt();
 }
 
 } // namespace FunctionCompilation

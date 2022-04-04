@@ -61,7 +61,7 @@ BaseExtension::BaseExtension(Compiler *compiler)
     , Float32(registerType<Float32Type>(new Float32Type(LOC, this)))
     , Float64(registerType<Float64Type>(new Float64Type(LOC, this)))
     , Address(registerType<AddressType>(new AddressType(LOC, this)))
-    , Word(compiler->platformWordSize() == 64 ? (IntegerType *)this->Int64 : (IntegerType *)this->Int32)
+    , Word(compiler->platformWordSize() == 64 ? static_cast<const Type *>(this->Int64) : static_cast<const Type *>(this->Int32))
     , aConst(registerAction(std::string("ConstInt8")))
     , aAdd(registerAction(std::string("Add")))
     , aMul(registerAction(std::string("Mul")))
@@ -84,6 +84,8 @@ BaseExtension::BaseExtension(Compiler *compiler)
     Pass *jb1cg = new JB1CodeGenerator(compiler);
     jb1cgStrategy->addPass(jb1cg);
     _jb1cgStrategyID = jb1cgStrategy->id();
+
+    _checkers.push_back(new BaseExtensionChecker(this));
 }
 
 BaseExtension::~BaseExtension() {
@@ -114,78 +116,172 @@ BaseExtension::Const(LOCATION, Builder *b, Literal * lv)
 //
 // Arithmetic operations
 //
-Value *
-BaseExtension::Add(LOCATION, Builder *b, Value *left, Value *right) {
-    bool valid = false;
+bool
+BaseExtensionChecker::validateAdd(LOCATION, Builder *b, Value *left, Value *right) {
     const Type *lType = left->type();
     const Type *rType = right->type();
-    if (lType == Address)
-        valid = (rType == Word);
-    else
-        valid = (lType == rType);
-    #if 0
-    if (!valid && haveTypeCheckers())
-        valid = checkTypes(aAdd, left, right);
-    #endif
 
-    if (!valid)
-        assert(0);
+    const Type *Address = _base->Address;
+    const Type *Word = _base->Word;
+
+    if (lType == Address) {
+        if (rType != Word)
+            failValidateAdd(PASSLOC, b, left, right);
+        return true;
+    }
+
+    if (rType == Address) {
+        if (lType != Word)
+            failValidateAdd(PASSLOC, b, left, right);
+        return true;
+    }
+
+    if (lType == _base->Int8
+     || lType == _base->Int16
+     || lType == _base->Int32
+     || lType == _base->Int64
+     || lType == _base->Float32
+     || lType == _base->Float64) {
+        if (rType != lType)
+            failValidateAdd(PASSLOC, b, left, right);
+        return true;
+    }
+
+    return false;
+}
+
+void
+BaseExtensionChecker::failValidateAdd(LOCATION, Builder *b, Value *left, Value *right) {
+    CompilationException e(PASSLOC);
+    e._result = CompileFail_BadInputTypesAdd;
+    const Type *lType = left->type();
+    const Type *rType = right->type();
+    e.setMessageLine(std::string("Add: invalid input types"))
+     .appendMessageLine(std::string("    left ").append(lType->to_string()))
+     .appendMessageLine(std::string("   right ").append(rType->to_string()))
+     .appendMessageLine(std::string("Left and right types are expected to be the same for integer types (Int8,Int16,Int32,Int64,Float32,Float64)"))
+     .appendMessageLine(std::string("If left/right type is Address then the right/left (respectively) type must be Word"));
+    throw e;
+}
+
+Value *
+BaseExtension::Add(LOCATION, Builder *b, Value *left, Value *right) {
+    for (auto it = _checkers.begin(); it != _checkers.end(); it++) {
+        BaseExtensionChecker *checker = *it;
+        if (checker->validateAdd(PASSLOC, b, left, right))
+            break;
+    }
+
+    if (right->type() == Address) { // reverse left and right
+        Value *save = left;
+        left = right;
+        right = save;
+    }
 
     Value *result = createValue(b, left->type());
     addOperation(b, new Op_Add(PASSLOC, this, b, aAdd, result, left, right));
     return result;
 }
 
-Value *
-BaseExtension::Mul(LOCATION, Builder *b, Value *left, Value *right) {
-    bool valid = false;
+bool
+BaseExtensionChecker::validateMul(LOCATION, Builder *b, Value *left, Value *right) {
     const Type *lType = left->type();
     const Type *rType = right->type();
-    if (lType == Address)
-        valid = (rType == Word);
-    else
-        valid = (lType == rType);
-    #if 0
-    if (!valid && haveTypeCheckers())
-        valid = checkTypes(aMul, left, right);
-    #endif
 
-    if (!valid)
-        assert(0);
+    if (lType == _base->Address || rType == _base->Address)
+        failValidateMul(PASSLOC, b, left, right);
+
+    if (lType == _base->Int8
+     || lType == _base->Int16
+     || lType == _base->Int32
+     || lType == _base->Int64
+     || lType == _base->Float32
+     || lType == _base->Float64) {
+        if (rType != lType)
+            failValidateMul(PASSLOC, b, left, right);
+        return true;
+    }
+
+    return false;
+}
+
+void
+BaseExtensionChecker::failValidateMul(LOCATION, Builder *b, Value *left, Value *right) {
+    CompilationException e(PASSLOC);
+    e._result = CompileFail_BadInputTypesMul;
+    const Type *lType = left->type();
+    const Type *rType = right->type();
+    e.setMessageLine(std::string("Mul: invalid input types"))
+     .appendMessageLine(std::string("    left ").append(lType->to_string()))
+     .appendMessageLine(std::string("   right ").append(rType->to_string()))
+     .appendMessageLine(std::string("Left and right types are expected to be the same for integer types (Int8,Int16,Int32,Int64,Float32,Float64)"))
+     .appendMessageLine(std::string("Address types cannot be used"));
+    throw e;
+}
+
+Value *
+BaseExtension::Mul(LOCATION, Builder *b, Value *left, Value *right) {
+    for (auto it = _checkers.begin(); it != _checkers.end(); it++) {
+        BaseExtensionChecker *checker = *it;
+        if (checker->validateMul(PASSLOC, b, left, right))
+            break;
+    }
 
     Value *result = createValue(b, left->type());
     addOperation(b, new Op_Mul(PASSLOC, this, b, aMul, result, left, right));
     return result;
 }
 
-Value *
-BaseExtension::Sub(LOCATION, Builder *b, Value *left, Value *right) {
-    bool valid = false;
+bool
+BaseExtensionChecker::validateSub(LOCATION, Builder *b, Value *left, Value *right) {
     const Type *lType = left->type();
     const Type *rType = right->type();
-    const Type *returnType=NULL;
+
+    const Type *Address = _base->Address;
     if (lType == Address) {
-        if (rType == Word) {
-            valid = true;
-            returnType = Address;
-        }
-        else if (rType == Address) {
-           valid = true;
-           returnType = Word;
-        }
-    }
-    else {
-        valid = (lType == rType);
-        returnType = lType;
+        if (rType != Address && rType != _base->Word)
+            failValidateSub(PASSLOC, b, left, right);
+        return true;
     }
 
-    #if 0
-    if (!valid && haveTypeCheckers())
-        valid = checkTypes(aAdd, left, right);
-    #endif
+    if (rType == Address) // lType cannot be Address
+        failValidateSub(PASSLOC, b, left, right);
 
-    if (!valid)
-        assert(0);
+    if (lType == _base->Int8
+     || lType == _base->Int16
+     || lType == _base->Int32
+     || lType == _base->Int64
+     || lType == _base->Float32
+     || lType == _base->Float64) {
+        if (rType != lType)
+            failValidateSub(PASSLOC, b, left, right);
+        return true;
+    }
+
+    return false;
+}
+
+void
+BaseExtensionChecker::failValidateSub(LOCATION, Builder *b, Value *left, Value *right) {
+    CompilationException e(PASSLOC);
+    e._result = CompileFail_BadInputTypesSub;
+    const Type *lType = left->type();
+    const Type *rType = right->type();
+    e.setMessageLine(std::string("Sub: invalid input types"))
+     .appendMessageLine(std::string("    left ").append(lType->to_string()))
+     .appendMessageLine(std::string("   right ").append(rType->to_string()))
+     .appendMessageLine(std::string("Left and right types are expected to be the same for integer types (Int8,Int16,Int32,Int64,Float32,Float64)"))
+     .appendMessageLine(std::string("If left type is Address then the right type must be either Address or Word"));
+    throw e;
+}
+
+Value *
+BaseExtension::Sub(LOCATION, Builder *b, Value *left, Value *right) {
+    for (auto it = _checkers.begin(); it != _checkers.end(); it++) {
+        BaseExtensionChecker *checker = *it;
+        if (checker->validateSub(PASSLOC, b, left, right))
+            break;
+    }
 
     Value *result = createValue(b, left->type());
     addOperation(b, new Op_Sub(PASSLOC, this, b, aSub, result, left, right));

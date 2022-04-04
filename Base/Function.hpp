@@ -22,6 +22,7 @@
 #ifndef FUNCTION_INCL
 #define FUNCTION_INCL
 
+#include <exception>
 #include <string>
 #include <vector>
 
@@ -32,6 +33,7 @@
 #include "BaseTypes.hpp"
 #include "Builder.hpp"
 #include "Config.hpp"
+#include "IDs.hpp"
 #include "Iterator.hpp"
 #include "typedefs.hpp"
 
@@ -110,10 +112,11 @@ public:
     bool ilBuilt() const { return _ilBuilt; }
 
     virtual bool buildIL() {
+        _ilBuilt = true;
         return true;
     }
 
-    CompileResult Compile(TextWriter *logger=NULL);
+    CompileResult Compile(TextWriter *logger=NULL, StrategyID strategy=NoStrategy);
 
     template<typename T>
     T nativeEntry(int i=0) const {

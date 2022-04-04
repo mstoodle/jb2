@@ -332,25 +332,15 @@ Function::jbgenProlog(JB1MethodBuilder *j1mb) {
 }
 
 CompileResult
-Function::Compile(TextWriter *logger) {
+Function::Compile(TextWriter *logger, StrategyID strategy) {
     _comp->setLogger(logger);
-    bool success = constructIL();
-    if (!success)
-        return CompileFailed;
-
-    return _ext->jb1cgCompile(_comp);
+    if (strategy == NoStrategy)
+        return _ext->jb1cgCompile(_comp);
+    else
+        return _compiler->compile(_comp, strategy);
 }
 
 #if 0
-void *
-Function::internalCompile(int32_t *returnCode)
-   {
-   FunctionCompilation comp(this);
-   _entryPoint = NULL;
-   *returnCode = compileFunction(this, &_entryPoint);
-   return _entryPoint;
-   }
-
 void *
 Function::internalDebugger(int32_t *returnCode)
    {

@@ -20,6 +20,7 @@
  *******************************************************************************/
 
 #include <dlfcn.h>
+#include "Compilation.hpp"
 #include "Compiler.hpp"
 #include "Config.hpp"
 #include "Extension.hpp"
@@ -179,11 +180,27 @@ Compiler::lookupStrategy(StrategyID id) {
 
 CompileResult
 Compiler::compile(Compilation *comp, StrategyID strategyID) {
-    Strategy *st = lookupStrategy(strategyID);
-    if (!st)
-        return CompileFail_UnknownStrategyID;
+    try {
+        bool success = comp->buildIL();
+        if (!success)
+            return CompileFail_IlGen;
 
-    return st->perform(comp);
+        if (strategyID == NoStrategy)
+            return CompileSuccessful;
+
+        Strategy *st = lookupStrategy(strategyID);
+        if (!st)
+            return CompileFail_UnknownStrategyID;
+
+        return st->perform(comp);
+    } catch (CompilationException e) {
+        // only if config.verboseErrors()?
+        std::cerr << "Location: " << e.locationLine();
+        std::cerr << e._message;
+        return e._result;
+    }
+
+    return CompileSuccessful;
 }
 
 } // namespace JitBuilder
