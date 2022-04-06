@@ -69,8 +69,7 @@ Type::base_string() const {
 void
 Type::writeType(TextWriter &w) const {
     w.indent() << "[ " << this->to_string() ;
-    writeSpecificType(w);
-    w << "]" << w.endl();
+    w << " ]" << w.endl();
 }
 
 std::string
@@ -80,13 +79,6 @@ Type::to_string() const {
     if (_layout)
         s.append(" layout t").append(std::to_string(_layout->id())).append(" ").append(_layout->name());
     return s;
-}
-
-void
-Type::writeSpecificType(TextWriter &w) const {
-    w << "primitiveType";
-    if (_layout)
-        w << " layout " << _layout;
 }
 
 } // namespace JitBuilder

@@ -259,7 +259,7 @@ class PointerType : public Type {
 
     Literal *literal(LOCATION, Compilation *comp, const void * value) const;
     virtual bool literalsAreEqual(const LiteralBytes *l1, const LiteralBytes *l2) const;
-    virtual void writeSpecificType(TextWriter &w) const;
+    virtual std::string to_string() const;
     virtual void printValue(TextWriter &w, const void *p) const;
     virtual void printLiteral(TextWriter &w, const Literal *lv) const;
     virtual bool registerJB1Type(JB1MethodBuilder *j1mb) const;
@@ -286,7 +286,7 @@ class FieldType : public Type {
 
     Literal *literal(LOCATION, Compilation *comp, const LiteralBytes * structValue) const { return NULL; };
     virtual bool literalsAreEqual(const LiteralBytes *l1, const LiteralBytes *l2) const { return false; }
-    virtual void writeSpecificType(TextWriter &w) const;
+    virtual std::string to_string() const;
     virtual void printValue(TextWriter &w, const void *p) const { }
     virtual void printLiteral(TextWriter &w, const Literal *lv) const { }
     virtual bool registerJB1Type(JB1MethodBuilder *j1mb) const;
@@ -371,7 +371,7 @@ class StructType : public Type {
 
     Literal *literal(LOCATION, Compilation *comp, const LiteralBytes * structValue) const;
     virtual bool literalsAreEqual(const LiteralBytes *l1, const LiteralBytes *l2) const;
-    virtual void writeSpecificType(TextWriter &w) const;
+    virtual std::string to_string() const;
     virtual void printValue(TextWriter &w, const void *p) const;
     virtual void printLiteral(TextWriter &w, const Literal *lv) const;
     virtual bool registerJB1Type(JB1MethodBuilder *j1mb) const;

@@ -367,9 +367,10 @@ PointerType::literalsAreEqual(const LiteralBytes *l1, const LiteralBytes *l2) co
     return (*reinterpret_cast<void * const *>(l1)) == (*reinterpret_cast<void * const *>(l2));
 }
 
-void
-PointerType::writeSpecificType(TextWriter &w) const {
-    w << "pointerType ";
+std::string
+PointerType::to_string() const {
+    std::string s = Type::base_string();
+    return s.append(std::string("pointerType base t")).append(std::to_string(_baseType->id()));
 }
 
 void
@@ -400,9 +401,14 @@ FieldType::FieldType(LOCATION, TypeDictionary *dict, const StructType *structTyp
     , _offset(offset) {
 }
 
-void
-FieldType::writeSpecificType(TextWriter & w) const {
-    w << "FieldType " << _name << " size " << _type->size() << " " << _type << "@" << _offset << " ";
+std::string
+FieldType::to_string() const {
+    std::string s = Type::base_string();
+    s.append(std::string("fieldType ")).append(_name);
+    s.append(std::string(" size ")).append(std::to_string(_type->size()));
+    s.append(std::string(" t")).append(std::to_string(_type->id()));
+    s.append(std::string("@")).append(std::to_string(_offset));
+    return s;
 }
 
 bool
@@ -478,13 +484,17 @@ StructType::addField(LOCATION, TypeDictionary *dict, std::string name, const Typ
     return field;
 }
 
-void
-StructType::writeSpecificType(TextWriter &w) const {
-    w << "structType size " << size();
+std::string
+StructType::to_string() const {
+    std::string s = Type::base_string();
+    s.append(std::string("structType ")).append(_name);
+    s.append(std::string(" size ")).append(std::to_string(size()));
     for (auto it = FieldsBegin(); it != FieldsEnd(); it++) {
         auto field = it->second;
-        w << " " << field << "@" << field->offset();
+        s.append(std::string(" t")).append(std::to_string(field->id()));
+        s.append(std::string("@")).append(std::to_string(field->offset()));
     }
+    return s;
 }
 
 Literal *

@@ -103,7 +103,6 @@ public:
     std::string base_string() const;
     virtual std::string to_string() const;
     void writeType(TextWriter & w) const;
-    virtual void writeSpecificType(TextWriter &w) const;
     virtual void printValue(TextWriter & w, const void *p) const { }
     virtual void printLiteral(TextWriter & w, const Literal *lv) const { }
     virtual bool literalsAreEqual(const LiteralBytes *lv1, const LiteralBytes *lv2) const { return false; }
