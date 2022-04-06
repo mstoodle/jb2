@@ -915,13 +915,15 @@ TESTBADSUBTYPES(Float32,Float32,Int8,Int16,Int32,Int64,Float64)
 TESTBADSUBTYPES(Float64,Float64,Int8,Int16,Int32,Int64,Float32)
 
 // Test function that implements a for loop
-#define FORLOOPTYPEFUNC(iterType) \
-    BASE_FUNC(iterType ## _ForLoopFunction, "0", #iterType "ForLoop.cpp", , \
+#define FORLOOPFUNCNAME(iterType,initialType,finalType,bumpType,suffix) iterType ## _ ## initialType ## _ ## finalType ## _ ## bumpType ## _ForLoopFunction ## suffix
+
+#define FORLOOPFUNC(iterType,initialType,finalType,bumpType,suffix) \
+    BASE_FUNC(FORLOOPFUNCNAME(iterType,initialType,finalType,bumpType,suffix), "0", "ForLoop.cpp", , \
         _x, { \
             DefineReturnType(_x->Word); \
-            DefineParameter("initial", _x->iterType); \
-            DefineParameter("final", _x->iterType); \
-            DefineParameter("bump", _x->iterType); \
+            DefineParameter("initial", _x->initialType); \
+            DefineParameter("final", _x->finalType); \
+            DefineParameter("bump", _x->bumpType); \
             DefineLocal("i", _x->iterType); \
             DefineLocal("counter", _x->Word); \
             }, \
@@ -942,11 +944,14 @@ TESTBADSUBTYPES(Float64,Float64,Int8,Int16,Int32,Int64,Float32)
            _x->Return(LOC, b, _x->Load(LOC, b, counterSym)); \
            })
 
+#define FORLOOPTYPEFUNCNAME(iterType) FORLOOPFUNCNAME(iterType,iterType,iterType,iterType,)
+#define FORLOOPTYPEFUNC(iterType) FORLOOPFUNC(iterType,iterType,iterType,iterType,)
+
 #define TESTFORLOOPTYPEFUNC(type,ctype) \
     FORLOOPTYPEFUNC(Int32) \
     TEST(BaseExtension, create ## type ## ForLoopFunction) { \
         typedef size_t (FuncProto)(ctype, ctype, ctype); \
-        COMPILE_FUNC(type ## _ForLoopFunction, FuncProto, f, false); \
+        COMPILE_FUNC(FORLOOPTYPEFUNCNAME(type), FuncProto, f, false); \
         EXPECT_EQ(f(0,100,1), 100) << "ForLoopUp(0,100,1) counts 100 iterations"; \
         EXPECT_EQ(f(0,100,2), 50) << "ForLoopUp(0,100,2) counts 50 iterations"; \
         EXPECT_EQ(f(0,100,3), 34) << "ForLoopUp(0,100,3) counts 34 iterations"; \
@@ -960,3 +965,15 @@ TESTBADSUBTYPES(Float64,Float64,Int8,Int16,Int32,Int64,Float32)
     }
 
 TESTFORLOOPTYPEFUNC(Int32,int32_t)
+
+#define TESTINVALIDFORLOOP(iterType,initialType,finalType,bumpType) \
+    FORLOOPFUNC(iterType,initialType,finalType,bumpType,Validity) \
+    TEST(BaseExtension, testForLoopUpTypesInvalid_ ## iterType ## _ ## initialType ## _ ## finalType ## _ ## bumpType ) { \
+        COMPILE_FUNC_TO_FAIL(FORLOOPFUNCNAME(iterType,initialType,finalType,bumpType,Validity), CompileFail_BadInputTypesForLoopUp, false); \
+    }
+
+TESTINVALIDFORLOOP(Int8,Int32,Int32,Int32)
+TESTINVALIDFORLOOP(Int32,Int16,Int32,Int32)
+TESTINVALIDFORLOOP(Int32,Int64,Int32,Int32)
+TESTINVALIDFORLOOP(Int32,Int32,Float32,Int32)
+TESTINVALIDFORLOOP(Int32,Int32,Int32,Float64)

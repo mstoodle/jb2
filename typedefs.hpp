@@ -49,6 +49,7 @@ typedef enum CompileResult {
     CompileFail_BadInputTypesAdd=5,
     CompileFail_BadInputTypesMul=6,
     CompileFail_BadInputTypesSub=7,
+    CompileFail_BadInputTypesForLoopUp=8,
     NumCompileResultCodes
 } CompileResult;
 

@@ -292,13 +292,45 @@ BaseExtension::Sub(LOCATION, Builder *b, Value *left, Value *right) {
 // Control operations
 //
 
+bool
+BaseExtensionChecker::validateForLoopUp(LOCATION, Builder *b, LocalSymbol *loopVariable, Value *initial, Value *final, Value *bump) {
+    if (loopVariable->type() != _base->Int32) // ->isInteger())
+        failValidateForLoopUp(PASSLOC, b, loopVariable, initial, final, bump);
+
+    if (initial->type() != loopVariable->type())
+        failValidateForLoopUp(PASSLOC, b, loopVariable, initial, final, bump);
+
+    if (final->type() != loopVariable->type())
+        failValidateForLoopUp(PASSLOC, b, loopVariable, initial, final, bump);
+
+    if (bump->type() != loopVariable->type())
+        failValidateForLoopUp(PASSLOC, b, loopVariable, initial, final, bump);
+
+    return true;
+}
+
+void
+BaseExtensionChecker::failValidateForLoopUp(LOCATION, Builder *b, LocalSymbol *loopVariable, Value *initial, Value *final, Value *bump) {
+    CompilationException e(PASSLOC);
+    e._result = CompileFail_BadInputTypesForLoopUp;
+    e.setMessageLine(std::string("ForLoopUp: invalid input types"))
+     .appendMessageLine(std::string("  loop var s").append(std::to_string(loopVariable->id())).append(" ").append(loopVariable->name()).append(" ").append(loopVariable->type()->to_string()))
+     .appendMessageLine(std::string("   initial v").append(std::to_string(initial->id())).append(" ").append(initial->type()->to_string()))
+     .appendMessageLine(std::string("     final v").append(std::to_string(final->id())).append(" ").append(final->type()->to_string()))
+     .appendMessageLine(std::string("      bump v").append(std::to_string(final->id())).append(" ").append(bump->type()->to_string()))
+     .appendMessageLine(std::string("Loop variable must be Int32, and the types of initial, final, and bump must be same as the loop variable's type"));
+    throw e;
+}
+
 ForLoopBuilder *
 BaseExtension::ForLoopUp(LOCATION, Builder *b, LocalSymbol *loopVariable,
                          Value *initial, Value *final, Value *bump) {
-    assert(loopVariable->type()->isInteger() || loopVariable->type()->isFloatingPoint());
-    assert(loopVariable->type() == initial->type());
-    assert(loopVariable->type() == final->type());
-    assert(loopVariable->type() == bump->type());
+    for (auto it = _checkers.begin(); it != _checkers.end(); it++) {
+        BaseExtensionChecker *checker = *it;
+        if (checker->validateForLoopUp(PASSLOC, b, loopVariable, initial, final, bump))
+            break;
+    }
+
     ForLoopBuilder *loopBuilder = new ForLoopBuilder();
     loopBuilder->setLoopVariable(loopVariable)
                ->setInitialValue(initial)

@@ -207,11 +207,13 @@ public:
     virtual bool validateAdd(LOCATION, Builder *b, Value *left, Value *right);
     virtual bool validateMul(LOCATION, Builder *b, Value *left, Value *right);
     virtual bool validateSub(LOCATION, Builder *b, Value *left, Value *right);
+    virtual bool validateForLoopUp(LOCATION, Builder *b, LocalSymbol *loopVariable, Value *initial, Value *final, Value *bump);
 
 protected:
     virtual void failValidateAdd(LOCATION, Builder *b, Value *left, Value *right);
     virtual void failValidateMul(LOCATION, Builder *b, Value *left, Value *right);
     virtual void failValidateSub(LOCATION, Builder *b, Value *left, Value *right);
+    virtual void failValidateForLoopUp(LOCATION, Builder *b, LocalSymbol *loopVariable, Value *initial, Value *final, Value *bump);
 
     BaseExtension *_base;
 };
