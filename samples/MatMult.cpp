@@ -39,10 +39,11 @@
 #define DO_LOGGING true
 
 
-MatMult::MatMult(Compiler * compiler, Base::BaseExtension *base)
+MatMult::MatMult(Compiler * compiler, Base::BaseExtension *base, const Type *elementType)
     : Base::Function(compiler)
     , _base(base)
-    , pFloat64(base->PointerTo(LOC, _comp, base->Float64)) {
+    , _elementType(elementType)
+    , _pElementType(base->PointerTo(LOC, _comp, elementType)) {
 
     DefineLine(LINETOSTR(__LINE__));
     DefineFile(__FILE__);
@@ -50,14 +51,14 @@ MatMult::MatMult(Compiler * compiler, Base::BaseExtension *base)
     DefineName("matmult");
 
     // C = A * B, all NxN matrices
-    _symC = DefineParameter("C", pFloat64);
-    _symA = DefineParameter("A", pFloat64);
-    _symB = DefineParameter("B", pFloat64);
+    _symC = DefineParameter("C", _pElementType);
+    _symA = DefineParameter("A", _pElementType);
+    _symB = DefineParameter("B", _pElementType);
     _symN = DefineParameter("N", base->Int32);
 
     DefineReturnType(base->NoType);
 
-    _symSum = DefineLocal("sum", base->Float64);
+    _symSum = DefineLocal("sum", elementType);
 }
 
 void
@@ -115,7 +116,7 @@ MatMult::buildIL() {
             Builder *jbody = jloop->loopBody();
             Value *j = _base->Load(LOC, jbody, jloop->loopVariable());
 
-            _base->Store(LOC, jbody, _symSum, _base->Zero(LOC, _comp, jbody, _base->Float64));
+            _base->Store(LOC, jbody, _symSum, _base->Zero(LOC, _comp, jbody, _elementType));
             Base::LocalSymbol *symk = DefineLocal("k", _base->Int32);
             kloop = _base->ForLoopUp(LOC, jbody, symk, zero, N, one); {
                 Builder *kbody = kloop->loopBody();
@@ -186,8 +187,8 @@ main(int argc, char *argv[]) {
         }
     }
 
-    printf("Step 5: construct MatMult function\n");
-    MatMult func(&c, base);
+    printf("Step 5: construct MatMult function for Float64 matrices\n");
+    MatMult func(&c, base, base->Float64);
     //fund.config()
                   //->setReportMemory();
                   //->setTraceBuildIL()

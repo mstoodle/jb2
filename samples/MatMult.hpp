@@ -33,12 +33,13 @@ using namespace OMR::JitBuilder;
 
 class MatMult : public Base::Function {
     public:
-    MatMult(Compiler *compiler, Base::BaseExtension *base);
+    MatMult(Compiler *compiler, Base::BaseExtension *base, const Type *elementType);
     virtual bool buildIL();
 
     protected:
     Base::BaseExtension *_base;
-    const Type *pFloat64;
+    const Type *_elementType;
+    const Type *_pElementType;
     Base::ParameterSymbol *_symA;
     Base::ParameterSymbol *_symB;
     Base::ParameterSymbol *_symC;
