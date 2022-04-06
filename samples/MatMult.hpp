@@ -27,7 +27,11 @@
 #include "Base/BaseExtension.hpp"
 #include "Base/Function.hpp"
 
-typedef void (MatMultFunctionType)(double *, double *, double *, int32_t);
+typedef void (DoubleMatMultFunctionType)(double *, double *, double *, int32_t);
+#if 0
+typedef void (ComplexFloatMatMultFunctionType)(std::complex<double> *, std::complex<double> *, std::complex<double> *, int32_t);
+typedef void (ComplexDoubleMatMultFunctionType)(std::complex<float> *, std::complex<float> *, std::complex<float> *, int32_t);
+#endif
 
 using namespace OMR::JitBuilder;
 

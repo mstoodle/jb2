@@ -141,43 +141,24 @@ MatMult::buildIL() {
 
 
 
+template <typename T>
 void
-printMatrix(double *M, int32_t N, const char *name) {
+printMatrix(T *M, int32_t N, const char *name, const char *fmt) {
     printf("%s = [\n", name);
+    char firstLineFmt[20], laterLinesFmt[20];
+    sprintf(firstLineFmt, "      [ %s", fmt);
+    sprintf(laterLinesFmt, ", %s", fmt);
     for (int32_t i=0;i < N;i++) {
-        printf("      [ %lf", M[i*N]);
+        printf(firstLineFmt , M[i*N]);
         for (int32_t j=1;j < N;j++)
-            printf(", %lf", M[i * N + j]);
+            printf(laterLinesFmt, M[i * N + j]);
         printf(" ],\n");
     }
     printf("    ]\n\n");
 }
 
-int
-main(int argc, char *argv[]) {
-    printf("Step 1: Load libjbcore.so\n");
-    void *handle = dlopen("libjbcore.so", RTLD_LAZY);
-    if (!handle) {
-        fputs(dlerror(), stderr);
-        return -1;
-    }
-
-    printf("Step 2: create a Compiler object\n");
-    Compiler c("Matrix Multiple Sample Compiler");
-
-    printf("Step 3: Load base extension into Copiler\n");
-    Base::BaseExtension *base = c.loadExtension<Base::BaseExtension>("base");
-    if (base == NULL) {
-        printf("Base extension could not be loaded!\n");
-        return -2;
-    }
-
-    printf("Step 4: initialize matrices\n");
-    const int32_t N=4;
-    double A[N*N];
-    double B[N*N];
-    double C[N*N];
-    double D[N*N];
+void
+initMatrices_double(double *A, double *B, double *C, double *D, int32_t N) {
     for (int32_t i=0;i < N;i++) {
         for (int32_t j=0;j < N;j++) {
             A[i*N+j] = 1.0;
@@ -186,9 +167,23 @@ main(int argc, char *argv[]) {
             D[i*N+j] = 0.0;
         }
     }
+}
+
+template <typename T, typename MatMultFunctionType>
+int
+testMultiply(Base::BaseExtension *base, const Type *JBType, const char *fmt, void (initFunction)(T *, T *, T *, T *, int32_t)) {
+    Compiler *c = base->compiler();
+
+    printf("Step 4: initialize matrices\n");
+    const int32_t N=4;
+    T A[N*N];
+    T B[N*N];
+    T C[N*N];
+    T D[N*N];
+    initFunction(A, B, C, D, N);
 
     printf("Step 5: construct MatMult function for Float64 matrices\n");
-    MatMult func(&c, base, base->Float64);
+    MatMult func(c, base, JBType);
     //fund.config()
                   //->setReportMemory();
                   //->setTraceBuildIL()
@@ -212,9 +207,35 @@ main(int argc, char *argv[]) {
     printf("Step 8: invoke MatMult compiled code\n");
     test(C, A, B, N);
 
-    printMatrix(A, N, "A");
-    printMatrix(B, N, "B");
-    printMatrix(C, N, "C");
+    printMatrix<T>(A, N, "A", "%lf");
+    printMatrix<T>(B, N, "B", "%lf");
+    printMatrix<T>(C, N, "C", "%lf");
 
+    return 0;
+}
+    
+int
+main() {
+    printf("Step 1: Load libjbcore.so\n");
+    void *handle = dlopen("libjbcore.so", RTLD_LAZY);
+    if (!handle) {
+        fputs(dlerror(), stderr);
+        return -1;
+    }
+
+    {
+        printf("Step 2: create a Compiler object\n");
+        Compiler c("Matrix Multiple Sample Compiler");
+
+        printf("Step 3: Load base extension into Compiler\n");
+        Base::BaseExtension *base = c.loadExtension<Base::BaseExtension>("base");
+        if (base == NULL) {
+            printf("Base extension could not be loaded!\n");
+            return -2;
+        }
+
+        testMultiply<double,DoubleMatMultFunctionType>(base, base->Float64, "%lf", initMatrices_double);
+    }
     printf("Compiler freed and JIT unloaded automatically when scope ends!\n");
+    return 0;
 }
