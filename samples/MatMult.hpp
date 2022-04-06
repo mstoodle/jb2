@@ -27,6 +27,7 @@
 #include "Base/BaseExtension.hpp"
 #include "Base/Function.hpp"
 
+typedef void (FloatMatMultFunctionType)(float *, float *, float *, int32_t);
 typedef void (DoubleMatMultFunctionType)(double *, double *, double *, int32_t);
 #if 0
 typedef void (ComplexFloatMatMultFunctionType)(std::complex<double> *, std::complex<double> *, std::complex<double> *, int32_t);

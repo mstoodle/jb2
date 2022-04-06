@@ -158,13 +158,25 @@ printMatrix(T *M, int32_t N, const char *name, const char *fmt) {
 }
 
 void
-initMatrices_double(double *A, double *B, double *C, double *D, int32_t N) {
+initMatrices_float(float *A, float *B, float *C, float *D, int32_t N) {
     for (int32_t i=0;i < N;i++) {
         for (int32_t j=0;j < N;j++) {
             A[i*N+j] = 1.0;
-            B[i*N+j] = (double)i+(double)j;
+            B[i*N+j] = (float)i+(float)j;
             C[i*N+j] = 0.0;
             D[i*N+j] = 0.0;
+        }
+    }
+}
+
+void
+initMatrices_double(double *A, double *B, double *C, double *D, int32_t N) {
+    for (int32_t i=0;i < N;i++) {
+        for (int32_t j=0;j < N;j++) {
+            A[i*N+j] = 1.0d;
+            B[i*N+j] = (double)i+(double)j;
+            C[i*N+j] = 0.0d;
+            D[i*N+j] = 0.0d;
         }
     }
 }
@@ -234,6 +246,10 @@ main() {
             return -2;
         }
 
+        printf("Code sample: multiply 32-bit floating point matrices (C float type)");
+        testMultiply<float,FloatMatMultFunctionType>(base, base->Float32, "%f", initMatrices_float);
+
+        printf("Code sample: multiply 64-bit floating point matrices (C double type)");
         testMultiply<double,DoubleMatMultFunctionType>(base, base->Float64, "%lf", initMatrices_double);
     }
     printf("Compiler freed and JIT unloaded automatically when scope ends!\n");
