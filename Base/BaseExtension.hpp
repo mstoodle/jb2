@@ -140,6 +140,17 @@ class BaseExtension : public Extension {
     const ActionID aCreateLocalStruct;
     const ActionID aIndexAt;
 
+
+    //
+    // CompilerReturnCodes
+    //
+
+    const CompilerReturnCode CompileFail_BadInputTypes_Add;
+    const CompilerReturnCode CompileFail_BadInputTypes_Mul;
+    const CompilerReturnCode CompileFail_BadInputTypes_Sub;
+    const CompilerReturnCode CompileFail_BadInputTypes_ForLoopUp;
+
+
     //
     // Operations
     //
@@ -189,7 +200,7 @@ class BaseExtension : public Extension {
     Value * One(LOCATION, Compilation *comp, Builder *b, const Type *type);
     void Increment(LOCATION, Compilation *comp, Builder *b, LocalSymbol *sym);
 
-    CompileResult jb1cgCompile(Compilation *comp);
+    CompilerReturnCode jb1cgCompile(Compilation *comp);
 
     protected:
     StrategyID _jb1cgStrategyID;

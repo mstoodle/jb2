@@ -58,6 +58,7 @@ public:
 protected:
 
     ActionID registerAction(std::string name);
+    CompilerReturnCode registerReturnCode(std::string name);
     PassID addPass(Pass *pass); 
 
     template<typename T>

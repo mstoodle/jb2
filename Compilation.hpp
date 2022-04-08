@@ -56,12 +56,6 @@ class Compilation {
     friend class Visitor;
 
     public:
-    enum CompileResultCode {
-          Success=0
-        , FailureFatal=-1
-        , FailureInvalidStrategy=-2
-    };
-
     Compilation(Compiler *compiler, TypeDictionary *dict, Config *localConfig=NULL);
     virtual ~Compilation();
 
@@ -91,7 +85,7 @@ class Compilation {
     BuilderIterator buildersBegin() { return BuilderIterator(_builders); }
     BuilderIterator buildersEnd() { return endBuilderIterator; }
 
-    virtual CompileResultCode compile(std::string strategy) { return FailureFatal; }
+    virtual CompilerReturnCode compile(std::string strategy);
     void setLogger(TextWriter * logger) { _logger = logger; }
     TextWriter * logger(bool enabled=true) const { return enabled ? _logger : NULL; }
     virtual void write(TextWriter &w) const;

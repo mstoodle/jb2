@@ -42,7 +42,7 @@ Strategy::addPass(Pass *pass) {
     return this;
 }
 
-CompileResult
+CompilerReturnCode
 Strategy::perform(Compilation *comp) {
     for (auto it = _passes.begin(); it != _passes.end(); it++) {
         Pass *pass = *it;
@@ -53,9 +53,9 @@ Strategy::perform(Compilation *comp) {
             log.print(comp);
         }
 
-        CompileResult rc = pass->perform(comp);
+        CompilerReturnCode rc = pass->perform(comp);
 
-        if (rc != CompileSuccessful) {
+        if (rc != _compiler->CompileSuccessful) {
             if (comp->logger()) {
                 TextWriter &log = *comp->logger();
                 log << "Final IL" << log.endl();
@@ -69,7 +69,7 @@ Strategy::perform(Compilation *comp) {
         log << "Final IL" << log.endl();
         log.print(comp);
     }
-    return CompileSuccessful;
+    return _compiler->CompileSuccessful;
 }
 
 } // namespace JitBuilder

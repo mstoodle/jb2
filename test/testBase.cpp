@@ -102,8 +102,8 @@ TEST(BaseExtension, checkVersionFail) {
     Base::FunctionCompilation *comp = func.comp(); \
     TextWriter logger(comp, std::cout, std::string("    ")); \
     TextWriter *log = (DO_LOGGING) ? &logger : NULL; \
-    CompileResult result = func.Compile(log); \
-    EXPECT_EQ((int)result, (int)CompileSuccessful) << "Compiled function ok"; \
+    CompilerReturnCode result = func.Compile(log); \
+    EXPECT_EQ((int)result, (int)c.CompileSuccessful) << "Compiled function ok"; \
     FuncProto *f = func.nativeEntry<FuncProto *>(); \
     assert(f)
 
@@ -114,7 +114,7 @@ TEST(BaseExtension, checkVersionFail) {
     Base::FunctionCompilation *comp = func.comp(); \
     TextWriter logger(comp, std::cout, std::string("    ")); \
     TextWriter *log = (DO_LOGGING) ? &logger : NULL; \
-    CompileResult result = func.Compile(log); \
+    CompilerReturnCode result = func.Compile(log); \
     EXPECT_EQ((int)result, (int)expectedFailureCode) << "Function compilation expected to fail";
 
 // Test function that returns a constant value
@@ -712,7 +712,7 @@ TEST(BaseExtension, createAddressAddFunction) {
 #define TESTADDTYPESINVALID(leftType,rightType) \
     ADDTWOTYPEFUNC(leftType,rightType,Validity) \
     TEST(BaseExtension, testAddTypesInvalid_ ## leftType ## rightType ) { \
-        COMPILE_FUNC_TO_FAIL(leftType ## _ ## rightType ## _AddFunctionValidity , CompileFail_BadInputTypesAdd, false); \
+        COMPILE_FUNC_TO_FAIL(leftType ## _ ## rightType ## _AddFunctionValidity , ext->CompileFail_BadInputTypes_Add, false); \
     }
 
 #define TESTBADADDTYPES(leftType,bad1,bad2,bad3,bad4,bad5) \
@@ -793,7 +793,7 @@ TESTMULTYPEFUNC(Float64, double, 0.0d, 2.0d, 1.0d, -1.0d)
 #define TESTMULTYPESINVALID(leftType,rightType) \
     MULTWOTYPEFUNC(leftType,rightType,Validity) \
     TEST(BaseExtension, testMulTypesInvalid_ ## leftType ## rightType ) { \
-        COMPILE_FUNC_TO_FAIL(leftType ## _ ## rightType ## _MulFunctionValidity , CompileFail_BadInputTypesMul, false); \
+        COMPILE_FUNC_TO_FAIL(leftType ## _ ## rightType ## _MulFunctionValidity , ext->CompileFail_BadInputTypes_Mul, false); \
     }
 
 #define TESTBADMULTYPES(leftType,bad1,bad2,bad3,bad4,bad5,bad6) \
@@ -882,7 +882,7 @@ TEST(BaseExtension, createWordAddressSubFunction) {
 #define TESTSUBTYPESINVALID(returnType,leftType,rightType) \
     SUBTYPEFUNC(returnType,leftType,rightType,Validity) \
     TEST(BaseExtension, testSubTypesInvalid_ ## leftType ## rightType ) { \
-        COMPILE_FUNC_TO_FAIL(returnType ## _ ## leftType ## _ ## rightType ## _SubFunctionValidity , CompileFail_BadInputTypesSub, false); \
+        COMPILE_FUNC_TO_FAIL(returnType ## _ ## leftType ## _ ## rightType ## _SubFunctionValidity , ext->CompileFail_BadInputTypes_Sub, false); \
     }
 
 #define TESTBADSUBTYPES(returnType,leftType,bad1,bad2,bad3,bad4,bad5) \
@@ -969,7 +969,7 @@ TESTFORLOOPTYPEFUNC(Int32,int32_t)
 #define TESTINVALIDFORLOOP(iterType,initialType,finalType,bumpType) \
     FORLOOPFUNC(iterType,initialType,finalType,bumpType,Validity) \
     TEST(BaseExtension, testForLoopUpTypesInvalid_ ## iterType ## _ ## initialType ## _ ## finalType ## _ ## bumpType ) { \
-        COMPILE_FUNC_TO_FAIL(FORLOOPFUNCNAME(iterType,initialType,finalType,bumpType,Validity), CompileFail_BadInputTypesForLoopUp, false); \
+        COMPILE_FUNC_TO_FAIL(FORLOOPFUNCNAME(iterType,initialType,finalType,bumpType,Validity), ext->CompileFail_BadInputTypes_ForLoopUp, false); \
     }
 
 TESTINVALIDFORLOOP(Int8,Int32,Int32,Int32)

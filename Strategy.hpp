@@ -50,7 +50,7 @@ class Strategy {
     StrategyID id() const { return _id; }
     std::string name() const { return _name; }
 
-    virtual CompileResult perform(Compilation *comp);
+    virtual CompilerReturnCode perform(Compilation *comp);
     virtual void allocateData() { }
     
     protected:

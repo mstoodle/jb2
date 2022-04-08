@@ -116,7 +116,7 @@ public:
         return true;
     }
 
-    CompileResult Compile(TextWriter *logger=NULL, StrategyID strategy=NoStrategy);
+    CompilerReturnCode Compile(TextWriter *logger=NULL, StrategyID strategy=NoStrategy);
 
     template<typename T>
     T nativeEntry(int i=0) const {

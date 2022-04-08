@@ -21,6 +21,7 @@
 
 #include "Builder.hpp"
 #include "Compilation.hpp"
+#include "Compiler.hpp"
 #include "Config.hpp"
 #include "JB1CodeGenerator.hpp"
 #include "JB1MethodBuilder.hpp"
@@ -46,7 +47,7 @@ JB1CodeGenerator::JB1CodeGenerator(Compiler *compiler)
     setTraceEnabled(false);
 }
 
-CompileResult
+CompilerReturnCode
 JB1CodeGenerator::perform(Compilation *comp) {
 
     class CompileMethodBuilder : public TR::MethodBuilder {
@@ -94,9 +95,9 @@ JB1CodeGenerator::perform(Compilation *comp) {
     _j1mb = NULL;
     setTraceEnabled(false);
     if (compileReturnCode != 0)
-        return CompileFailed;
+        return comp->compiler()->CompileFailed;
     comp->setNativeEntryPoint(entryPoint, 0);
-    return CompileSuccessful;
+    return comp->compiler()->CompileSuccessful;
 }
 
 void

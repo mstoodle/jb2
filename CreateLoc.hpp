@@ -43,7 +43,7 @@ class CreateLocation {
        , _functionName(LOC_FUNC)
     { }
 
-    std::string to_string() { return std::string(_functionName).append(" in ").append(_fileName).append(":L").append(std::to_string(_lineNumber)); }
+    std::string to_string() const { return std::string(_functionName).append(" in ").append(_fileName).append(":L").append(std::to_string(_lineNumber)); }
 
     protected:
     const char *_fileName;

@@ -40,19 +40,6 @@ typedef std::vector<Literal *> LiteralVector;
 class Symbol;
 typedef std::vector<Symbol *> SymbolVector;
 
-typedef enum CompileResult {
-    CompileSuccessful=0,
-    CompileNotStarted=1,
-    CompileFailed=2,
-    CompileFail_UnknownStrategyID=3,
-    CompileFail_IlGen=4,
-    CompileFail_BadInputTypesAdd=5,
-    CompileFail_BadInputTypesMul=6,
-    CompileFail_BadInputTypesSub=7,
-    CompileFail_BadInputTypesForLoopUp=8,
-    NumCompileResultCodes
-} CompileResult;
-
 } // namespace JitBuilder
 } // namespace OMR
 

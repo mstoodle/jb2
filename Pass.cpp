@@ -35,5 +35,10 @@ Pass::Pass(Compiler *compiler, std::string name)
     _id = compiler->addPass(this);
 }
 
+CompilerReturnCode
+Pass::perform(Compilation *comp) {
+    return _compiler->CompileSuccessful;
+}
+
 } // namespace JitBuilder
 } // namespace OMR

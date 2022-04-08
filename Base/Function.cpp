@@ -331,7 +331,7 @@ Function::jbgenProlog(JB1MethodBuilder *j1mb) {
     j1mb->EntryPoint(_entryPoints[0]);
 }
 
-CompileResult
+CompilerReturnCode
 Function::Compile(TextWriter *logger, StrategyID strategy) {
     _comp->setLogger(logger);
     if (strategy == NoStrategy)

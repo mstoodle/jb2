@@ -40,6 +40,9 @@ const CompilationID NoCompilation=0;
 typedef uint64_t CompilerID;
 const CompilerID NoCompiler=0;
 
+typedef uint64_t CompilerReturnCode;
+// uses every value
+
 typedef uint64_t ContextID;
 const ContextID NoContext=0;
 

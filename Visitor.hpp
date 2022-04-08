@@ -40,12 +40,7 @@ class Visitor : public Pass {
     public:
     Visitor(Compiler *compiler, std::string name="", bool visitAppendedBuilders=false);
 
-    virtual CompileResult perform(Compilation *comp) {
-        start(comp);
-        if (_aborted)
-            return CompileFailed;
-        return CompileSuccessful;
-    }
+    virtual CompilerReturnCode perform(Compilation *comp);
 
     virtual void start(Compilation *comp);
     virtual void start(Builder * b);

@@ -99,5 +99,11 @@ Compilation::write(TextWriter &w) const {
    ld->write(w);
 }
 
+CompilerReturnCode
+Compilation::compile(std::string strategy) {
+    // debatable but let's call this an error
+    return _compiler->CompileFailed;
+}
+
 } // namespace JitBuilder
 } // namespace OMR

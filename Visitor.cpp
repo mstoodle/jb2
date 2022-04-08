@@ -21,6 +21,7 @@
 
 #include "Builder.hpp"
 #include "Compilation.hpp"
+#include "Compiler.hpp"
 #include "Operation.hpp"
 #include "TextWriter.hpp"
 #include "Visitor.hpp"
@@ -34,6 +35,14 @@ Visitor::Visitor(Compiler *compiler, std::string name, bool visitAppendedBuilder
     , _comp(NULL)
     , _aborted(false)
     , _visitAppendedBuilders(visitAppendedBuilders) {
+}
+
+CompilerReturnCode
+Visitor::perform(Compilation *comp) {
+    start(comp);
+    if (_aborted)
+        return _compiler->CompileFailed;
+    return _compiler->CompileSuccessful;
 }
 
 void

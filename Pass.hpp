@@ -47,7 +47,7 @@ class Pass : public Loggable {
     PassID id() const { return _id; }
     PassChain *chain() const { return _chain; }
 
-    virtual CompileResult perform(Compilation *comp) { return CompileSuccessful; }
+    virtual CompilerReturnCode perform(Compilation *comp);
 
     protected:
     Compiler *_compiler;

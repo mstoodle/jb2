@@ -39,6 +39,7 @@ namespace JitBuilder
 {
 
 class Compilation;
+class CompilationException;
 class Config;
 class Extension;
 class JB1;
@@ -49,32 +50,8 @@ class Strategy;
 class Type;
 class TypeDictionary;
 
-class CompilationException : public std::exception {
-public:
-    CompilationException(LOCATION, CompileResult result=CompileNotStarted)
-        : std::exception()
-        , _result(result)
-        , _location(PASSLOC)
-        , _message(std::string("CompilationException")) {
-    }
-
-    CompilationException & setMessage(std::string str)     { _message =            str ; return *this; }
-    CompilationException & setMessageLine(std::string str) { _message = addNewLine(str); return *this; }
-
-    CompilationException & appendMessage(std::string str)     { _message.append(           str ); return *this; }
-    CompilationException & appendMessageLine(std::string str) { _message.append(addNewLine(str)); return *this; }
-
-    std::string location()     { return            _location.to_string() ; }
-    std::string locationLine() { return addNewLine(_location.to_string()); }
-
-    CompileResult _result;
-    CreateLocation _location;
-    std::string _message;
-protected:
-    std::string addNewLine(std::string s) { return s + std::string("\n"); }
-};
-
 class Compiler {
+    friend class CompilationException;
     friend class Extension;
     friend class Pass;
     friend class Strategy;
@@ -102,7 +79,7 @@ public:
     T *lookupExtension(std::string name=T::NAME) { return static_cast<T *>(internalLookupExtension(name)); }
 
     PassID lookupPass(std::string name);
-    CompileResult compile(Compilation *comp, StrategyID strategyID);
+    CompilerReturnCode compile(Compilation *comp, StrategyID strategyID);
 
     TypeDictionaryID getTypeDictionaryID() { return this->_nextTypeDictionaryID++; }
 
@@ -110,6 +87,13 @@ public:
         assert(a < _nextActionID);
         auto found = _actionNames.find(a);
         assert(found != _actionNames.end());
+        return found->second;
+    }
+
+    const std::string returnCodeName(CompilerReturnCode c) const {
+        assert(c < _nextReturnCode);
+        auto found = _returnCodeNames.find(c);
+        assert(found != _returnCodeNames.end());
         return found->second;
     }
 
@@ -136,12 +120,23 @@ protected:
     ActionID _nextActionID;
     std::map<ActionID, std::string> _actionNames;
 
-    StrategyID _nextStrategyID;
-    std::map<StrategyID, Strategy *> _strategies;
+    CompilerReturnCode assignReturnCode(std::string name);
+    CompilerReturnCode _nextReturnCode;
+    std::map<CompilerReturnCode, std::string> _returnCodeNames;
+public:
+    CompilerReturnCode CompileSuccessful;
+    CompilerReturnCode CompileNotStarted;
+    CompilerReturnCode CompileFailed;
+    CompilerReturnCode CompileFail_UnknownStrategyID;
+    CompilerReturnCode CompileFail_IlGen;
 
+protected:
     PassID _nextPassID;
     std::map<std::string, PassID> _registeredPassNames;
     PassRegistry _passRegistry;
+
+    StrategyID _nextStrategyID;
+    std::map<StrategyID, Strategy *> _strategies;
 
     TypeID _nextTypeID;
     std::map<TypeID, Type *> _types;
@@ -151,10 +146,42 @@ protected:
     Platform *_target;
     Platform *_compiler;
 
-    // needs to follow at least _nextTypeDictionaryID
+    // must come AFTER _nextTypeDictionaryID for proper initialization
     TypeDictionary *_dict;
 
     static CompilerID nextCompilerID;
+};
+
+class CompilationException : public std::exception {
+public:
+    CompilationException(LOCATION, Compiler *compiler, CompilerReturnCode result)
+        : std::exception()
+        , _compiler(compiler)
+        , _result(result)
+        , _location(PASSLOC)
+        , _message(std::string("CompilationException")) {
+    }
+
+    CompilerReturnCode result() const { return _result; }
+    std::string resultString() const { return _compiler->returnCodeName(_result); }
+
+    std::string location() const     { return            _location.to_string() ; }
+    std::string locationLine() const { return addNewLine(_location.to_string()); }
+
+    std::string message() const { return _message; }
+
+    CompilationException & setMessage(std::string str)     { _message =            str ; return *this; }
+    CompilationException & setMessageLine(std::string str) { _message = addNewLine(str); return *this; }
+
+    CompilationException & appendMessage(std::string str)     { _message.append(           str ); return *this; }
+    CompilationException & appendMessageLine(std::string str) { _message.append(addNewLine(str)); return *this; }
+
+    const Compiler *_compiler;
+    CompilerReturnCode _result;
+    CreateLocation _location;
+    std::string _message;
+protected:
+    std::string addNewLine(std::string s) const { return s + std::string("\n"); }
 };
 
 } // namespace JitBuilder

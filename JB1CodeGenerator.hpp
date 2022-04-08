@@ -48,7 +48,7 @@ public:
     int32_t returnCode() const { return _compileReturnCode; }
     JB1MethodBuilder *j1mb() const { return _j1mb; }
 
-    virtual CompileResult perform(Compilation *comp);
+    virtual CompilerReturnCode perform(Compilation *comp);
 
 protected:
     virtual void visitPreCompilation(Compilation * comp);

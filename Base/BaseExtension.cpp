@@ -78,7 +78,12 @@ BaseExtension::BaseExtension(Compiler *compiler)
     , aCreateLocalStruct(registerAction(std::string("CreateLocalStruct")))
     , aIndexAt(registerAction(std::string("IndexAt")))
     , aForLoopUp(registerAction(std::string("ForLoopUp")))
-    , aReturn(registerAction(std::string("Return"))) {
+    , aReturn(registerAction(std::string("Return")))
+    , CompileFail_BadInputTypes_Add(registerReturnCode("CompileFail_BadInputTypes_Add"))
+    , CompileFail_BadInputTypes_Mul(registerReturnCode("CompileFail_BadInputTypes_Mul"))
+    , CompileFail_BadInputTypes_Sub(registerReturnCode("CompileFail_BadInputTypes_Sub"))
+    , CompileFail_BadInputTypes_ForLoopUp(registerReturnCode("CompileFail_BadInputTypes_ForLoopUp"))
+     {
 
     Strategy *jb1cgStrategy = new Strategy(compiler, "jb1cg");
     Pass *jb1cg = new JB1CodeGenerator(compiler);
@@ -152,8 +157,7 @@ BaseExtensionChecker::validateAdd(LOCATION, Builder *b, Value *left, Value *righ
 
 void
 BaseExtensionChecker::failValidateAdd(LOCATION, Builder *b, Value *left, Value *right) {
-    CompilationException e(PASSLOC);
-    e._result = CompileFail_BadInputTypesAdd;
+    CompilationException e(PASSLOC, _base->compiler(), _base->CompileFail_BadInputTypes_Add);
     const Type *lType = left->type();
     const Type *rType = right->type();
     e.setMessageLine(std::string("Add: invalid input types"))
@@ -207,8 +211,7 @@ BaseExtensionChecker::validateMul(LOCATION, Builder *b, Value *left, Value *righ
 
 void
 BaseExtensionChecker::failValidateMul(LOCATION, Builder *b, Value *left, Value *right) {
-    CompilationException e(PASSLOC);
-    e._result = CompileFail_BadInputTypesMul;
+    CompilationException e(PASSLOC, _base->compiler(), _base->CompileFail_BadInputTypes_Mul);
     const Type *lType = left->type();
     const Type *rType = right->type();
     e.setMessageLine(std::string("Mul: invalid input types"))
@@ -263,8 +266,7 @@ BaseExtensionChecker::validateSub(LOCATION, Builder *b, Value *left, Value *righ
 
 void
 BaseExtensionChecker::failValidateSub(LOCATION, Builder *b, Value *left, Value *right) {
-    CompilationException e(PASSLOC);
-    e._result = CompileFail_BadInputTypesSub;
+    CompilationException e(PASSLOC, _base->compiler(), _base->CompileFail_BadInputTypes_Sub);
     const Type *lType = left->type();
     const Type *rType = right->type();
     e.setMessageLine(std::string("Sub: invalid input types"))
@@ -311,8 +313,7 @@ BaseExtensionChecker::validateForLoopUp(LOCATION, Builder *b, LocalSymbol *loopV
 
 void
 BaseExtensionChecker::failValidateForLoopUp(LOCATION, Builder *b, LocalSymbol *loopVariable, Value *initial, Value *final, Value *bump) {
-    CompilationException e(PASSLOC);
-    e._result = CompileFail_BadInputTypesForLoopUp;
+    CompilationException e(PASSLOC, _base->compiler(), _base->CompileFail_BadInputTypes_ForLoopUp);
     e.setMessageLine(std::string("ForLoopUp: invalid input types"))
      .appendMessageLine(std::string("  loop var s").append(std::to_string(loopVariable->id())).append(" ").append(loopVariable->name()).append(" ").append(loopVariable->type()->to_string()))
      .appendMessageLine(std::string("   initial v").append(std::to_string(initial->id())).append(" ").append(initial->type()->to_string()))
@@ -563,7 +564,7 @@ BaseExtension::DefineFunctionType(LOCATION, std::string name, const Type *return
    return f;
 }
 
-CompileResult
+CompilerReturnCode
 BaseExtension::jb1cgCompile(Compilation *comp) {
    return _compiler->compile(comp, _jb1cgStrategyID);
 }

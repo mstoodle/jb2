@@ -57,6 +57,11 @@ Extension::registerAction(std::string name) {
     return _compiler->assignActionID(name);
 }
 
+CompilerReturnCode
+Extension::registerReturnCode(std::string name) {
+    return _compiler->assignReturnCode(name);
+}
+
 PassID
 Extension::addPass(Pass *pass) {
     return _compiler->addPass(pass);

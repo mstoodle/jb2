@@ -49,7 +49,12 @@ Compiler::Compiler(std::string name, Config *config)
     , _nextPassID(NoPass+1) // 0 reserved
     , _nextTypeID(NoType+1) // 0 not reserved, but Base gives it to NoType
     , _nextTypeDictionaryID(0)
-    , _dict(new TypeDictionary(this, name + "::root")) {
+    , _dict(new TypeDictionary(this, name + "::root"))
+    , CompileSuccessful(assignReturnCode("CompileSuccessful"))
+    , CompileNotStarted(assignReturnCode("CompileNotStarted"))
+    , CompileFailed(assignReturnCode("CompileFailed"))
+    , CompileFail_UnknownStrategyID(assignReturnCode("CompileFail_UnknownStrategy"))
+    , CompileFail_IlGen(assignReturnCode("CompileFail_IlGen")) {
     if (_config == NULL) {
         _config = new Config();
         _myConfig = true;
@@ -147,6 +152,13 @@ Compiler::assignActionID(std::string name) {
     return id;
 }
 
+CompilerReturnCode
+Compiler::assignReturnCode(std::string name) {
+    CompilerReturnCode rc = this->_nextReturnCode++;
+    this->_returnCodeNames.insert({rc, name});
+    return rc;
+}
+
 PassID
 Compiler::addPass(Pass *pass) {
     auto it = this->_registeredPassNames.find(pass->name());
@@ -178,7 +190,7 @@ Compiler::lookupStrategy(StrategyID id) {
     return it->second;
 }
 
-CompileResult
+CompilerReturnCode
 Compiler::compile(Compilation *comp, StrategyID strategyID) {
     try {
         bool success = comp->buildIL();
