@@ -27,73 +27,46 @@
 
 namespace OMR
 {
-
 namespace JitBuilder
 {
 
-class Transformer
-   {
-   public:
-   Transformer(FunctionBuilder * fb)
-      : _fb(fb)
-      , _traceEnabled(false)
-      { }
+class Transformer : public Visitor {
+    public:
+    Transformer(Compiler *compiler, std::string name="Transformer")
+       : Visitor(compiler, name)
+       , _traceEnabled(false)
+       { }
+ 
+    Transformer * setTraceEnabled(bool v=true) { _traceEnabled = v; return this; }
 
-   FunctionBuilder *fb() const { return _fb; }
+protected:
+    // how each builder is processed (once)
+    virtual void visitBuilder(Builder * b, std::vector<bool> & visited, BuilderWorklist & worklist);
+    virtual void visitOperations(Builder *b, std::vector<bool> & visited, BuilderWorklist & worklist);
 
-   void transform();
-   void transform(FunctionBuilder *fb)
-      {
-      FunctionBuilder *saved = _fb;
-      _fb = fb;
-      transform();
-      _fb = saved;
-      }
-   Transformer * setTraceEnabled(bool v=true) { _traceEnabled = v; return this; }
+    protected:
+    bool traceEnabled()               { return _traceEnabled; }
 
-   private:
-   // used internally to iteratively visit each builder once
-   void processBuilder(Builder * b, std::vector<bool> & visited, BuilderWorklist & worklist);
+    void appendOrInline(Builder * root, Builder * branch);
 
-   protected:
-   bool traceEnabled()               { return _traceEnabled; }
+    // To implement any transformation, subclass Transformer
+    //   and override the virtual functions below as needed
 
-   void appendOrInline(Builder * root, Builder * branch);
+    // called once on each operation
+    // the operation will be replaced by the contents of any non-NULL Builder object returned
+    virtual Builder * transformOperation(Operation * op) { return NULL; }
 
-   // To implement any transformation, subclass Transformer
-   //   and override the virtual functions below as needed
+    // logging support: output msg to the log if enabled
+    void trace(std::string msg);
 
-   // called once on each FunctionBuilder before any other processing
-   virtual FunctionBuilder * transformFunctionBuilder(FunctionBuilder * fb) { return NULL; }
+    // logging support: returns true if the transformation is allowed
+    //                  and if log enabled, logs details if performed and "not applied" message if not
+    bool performTransformation(Operation * op, Builder * transformed, std::string msg="");
 
-   // called once each Builder object before its operations are processed
-   virtual Builder * transformBuilderBeforeOperations(Builder * b) { return NULL; }
-
-   // called once on each operation
-   // the operation will be replaced by the contents of any non-NULL Builder object returned
-   virtual Builder * transformOperation(Operation * op) { return NULL; }
-
-   // called once each Builder object after its operations are processed
-   virtual Builder * transformBuilderAfterOperations(Builder * b) { return NULL; }
-
-   // called once on each FunctionBuilder after transformation is complete
-   virtual FunctionBuilder * transformFunctionBuilderAtEnd(FunctionBuilder * fb) { return NULL; }
-
-   // logging support: output msg to the log if enabled
-   void trace(std::string msg);
-
-   // logging support: returns true if the transformation is allowed
-   //                  and if log enabled, logs details if performed and "not applied" message if not
-   bool performTransformation(Operation * op, Builder * transformed, std::string msg="");
-   bool performTransformation(Builder * b, Builder * transformed, std::string msg="");
-   bool performTransformation(FunctionBuilder * fb, Builder * transformed, std::string msg="");
-
-   FunctionBuilder * _fb;
-   bool              _traceEnabled;
-   };
+    bool _traceEnabled;
+};
 
 } // namespace JitBuilder
-
 } // namespace OMR
 
 #endif // defined(TRANSFORMER_INCL)

@@ -102,19 +102,19 @@ Visitor::visitBuilder(Builder *b, std::vector<bool> & visited, BuilderWorklist &
     visited[id] = true;
 
     visitBuilderPreOps(b);
-    visitOperations(b, worklist);
+    visitOperations(b, visited, worklist);
     visitBuilderPostOps(b);
 }
 
 void
-Visitor::visitOperations(Builder *b, BuilderWorklist & worklist) {
+Visitor::visitOperations(Builder *b, std::vector<bool> & visited, BuilderWorklist & worklist) {
     for (OperationIterator opIt = b->OperationsBegin(); opIt != b->OperationsEnd(); opIt++) {
         Operation * op = *opIt;
         visitOperation(op);
 
         for (BuilderIterator bIt = op->BuildersBegin(); bIt != op->BuildersEnd(); bIt++) {
             Builder * inner_b = *bIt;
-            if (inner_b)
+            if (inner_b && !visited[inner_b->id()])
                 worklist.push_front(inner_b);
         }
     }

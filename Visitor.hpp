@@ -47,9 +47,11 @@ class Visitor : public Pass {
     virtual void start(Operation * op);
 
     protected:
-    void visitBuilder(Builder * b, std::vector<bool> & visited, BuilderWorklist & list);
-    void visitOperations(Builder * b, BuilderWorklist & worklist);
-    void abort();
+
+    // more dramatic visit patterns can be done by overriding these functions
+    virtual void visitBuilder(Builder * b, std::vector<bool> & visited, BuilderWorklist & list);
+    virtual void visitOperations(Builder * b, std::vector<bool> & visited, BuilderWorklist & worklist);
+    virtual void abort();
 
     // subclass Visitor and override these functions as needed
     virtual void visitBegin()                             { }

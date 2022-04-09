@@ -51,6 +51,7 @@ CORE_OBJECTS = Builder.o \
 	       Symbol.o \
 	       SymbolDictionary.o \
 	       TextWriter.o \
+	       Transformer.o \
 	       Type.o \
 	       TypeDictionary.o \
 	       Value.o \

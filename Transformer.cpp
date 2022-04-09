@@ -21,20 +21,25 @@
 
 #include <climits>
 #include <sstream>
-#include "Transformer.hpp"
 #include "Builder.hpp"
-#include "FunctionBuilder.hpp"
+#include "Compilation.hpp"
+#include "Config.hpp"
+#include "Operation.hpp"
 #include "TextWriter.hpp"
+#include "Transformer.hpp"
 
+namespace OMR {
+namespace JitBuilder {
 
 void
 OMR::JitBuilder::Transformer::trace(std::string msg)
    {
-   TextWriter *log = _fb->logger(traceEnabled());
+   TextWriter *log = _comp->logger(traceEnabled());
    if (log)
       log->indent() << msg << log->endl();
    }
 
+#if 0
 void
 OMR::JitBuilder::Transformer::appendOrInline(Builder * root, Builder * branch)
    {
@@ -42,7 +47,7 @@ OMR::JitBuilder::Transformer::appendOrInline(Builder * root, Builder * branch)
       root->AppendBuilder(branch);
    else
       {
-      TextWriter * log = _fb->logger(traceEnabled());
+      TextWriter * log = _comp->logger(traceEnabled());
       if (log) *log << "Inlining operations from " << branch << " into " << root << log->endl();
 
       // operations currently have branch as parent, change that to root
@@ -60,14 +65,16 @@ OMR::JitBuilder::Transformer::appendOrInline(Builder * root, Builder * branch)
    }
 
 void
-OMR::JitBuilder::Transformer::transform()
+OMR::JitBuilder::Transformer::transform(Compilation *comp)
    {
+   _comp = comp;
+
    BuilderWorklist worklist;
    std::vector<bool> visited(Builder::maxIndex());
 
-   transformFunctionBuilder(_fb);
+   transformCompilationBegin(comp);
 
-   processBuilder(_fb, visited, worklist);
+   comp->addInitialBuildersToWorklist(worklist);
 
    while(!worklist.empty())
       {
@@ -76,120 +83,103 @@ OMR::JitBuilder::Transformer::transform()
       worklist.pop_back();
       }
 
-   transformFunctionBuilderAtEnd(_fb);
+   transformCompilationEnd(comp);
+
+   _comp = NULL;
    }
+#endif
 
 bool
-OMR::JitBuilder::Transformer::performTransformation(Operation * op, Builder * transformed, std::string msg)
-   {
-   static int64_t lastTransformation = LLONG_MAX;
-   int64_t number = _fb->incrementTransformation();
-   int64_t lastIndex = _fb->config()->lastTransformationIndex();
-   bool succeed = (lastIndex < 0 || number < lastIndex);
+OMR::JitBuilder::Transformer::performTransformation(Operation * op, Builder * transformed, std::string msg) {
+    static int64_t lastTransformation = LLONG_MAX;
+    int64_t number = _comp->getTransformationID();
+    int64_t lastIndex = _comp->config()->lastTransformationIndex();
+    bool succeed = (lastIndex < 0 || number < lastIndex);
 
-   if (traceEnabled())
-      {
-      if (succeed)
-         {
-         std::ostringstream oss;
-         oss << "( " << number << " ) Transformation: " << msg;
-         trace(oss.str());
-         TextWriter *log= _fb->logger(traceEnabled());
-         LOG_INDENT_REGION(log)
-            {
-            if (log) log->indentIn();
-            if (log) log->print(op);
-            if (log) log->indent() << "Replaced with operations from : " << log->endl();
-            if (log) log->print(transformed);
-            if (log) log->indentOut();
+    if (traceEnabled()) {
+        if (succeed) {
+            std::ostringstream oss;
+            oss << "( " << number << " ) Transformation: " << msg;
+            trace(oss.str());
+            TextWriter *log= _comp->logger(traceEnabled());
+            LOG_INDENT_REGION(log) {
+                if (log) log->indentIn();
+                if (log) log->print(op);
+                if (log) log->indent() << "Replaced with operations from : " << log->endl();
+                if (log) log->print(transformed);
+                if (log) log->indentOut();
             }
-         LOG_OUTDENT
-         }
-      else
-         trace("Transformation not applied: " + msg);
-      }
+            LOG_OUTDENT
+        }
+        else
+            trace("Transformation not applied: " + msg);
+    }
 
-   return succeed;
-   }
+    return succeed;
+}
 
 void
-OMR::JitBuilder::Transformer::processBuilder(Builder * b, std::vector<bool> & visited, BuilderWorklist & worklist)
-   {
-   int64_t id = b->id();
-   if (visited[id])
-      return;
+Transformer::visitOperations(Builder *b, std::vector<bool> & visited, BuilderWorklist & worklist) {
+    TextWriter * log = _comp->logger(traceEnabled());
 
-   visited[id] = true;
+    for (OperationIterator opIt = b->OperationsBegin(); opIt != b->OperationsEnd(); opIt++) {
+        Operation * op = *opIt;
 
-   transformBuilderBeforeOperations(b);
+        if (log) {
+            log->indent() << std::string("Visit ");
+            log->print(op);
+        }
 
-   TextWriter *log= _fb->logger(traceEnabled());
-   for (OperationIterator opIt = b->OperationsBegin(); opIt != b->OperationsEnd(); opIt++)
-      {
-      Operation *op = *opIt;
-      if (log)
-         {
-         if (log) log->indent() << std::string("Visit ");
-         if (log) log->print(op);
-         }
-      Builder *transformation = transformOperation(op);
-      if (transformation != NULL)
-         {
-         if (performTransformation(op, transformation))
-            {
-            opIt = b->operations().erase(opIt); // remove the operation we just transformed
+        Builder *transformation = transformOperation(op);
+        if (transformation != NULL) {
+            if (performTransformation(op, transformation)) {
+                opIt = b->operations().erase(opIt); // remove the operation we just transformed
 
-            bool replaceWithBuilder=false;
-            if (replaceWithBuilder)
-               {
-               // replace the current operation with the Builder object containing its transformation
-               //    could also be done immutably by generating a new array of Operations
-               //    and returning new Builder but let's do in place for now
-               opIt = b->operations().insert(opIt, AppendBuilder::create(b, transformation));
-               }
-            else
-               {
-               // replace the operation with the operations inside the builder
-               // removing the builder object means each operation's parent changes
-               for (OperationIterator it = transformation->OperationsBegin(); it != transformation->OperationsEnd(); it++)
-                  {
-                  Operation * op = *it;
-                  op->setParent(b);
-                  }
-               opIt = b->operations().insert(opIt,
-                                             transformation->OperationsBegin(),
-                                             transformation->OperationsEnd());
-               for (OperationIterator it = transformation->OperationsBegin(); it != transformation->OperationsEnd(); it++)
-                  {
-                  // scan transformed operations for builder objects we need to traverse
-                  Operation *op = *it;
-                  for (BuilderIterator bIt = op->BuildersBegin(); bIt != op->BuildersEnd(); bIt++)
-                     {
-                     Builder *inner_b = *bIt;
-                     if (inner_b && !visited[inner_b->id()])
-                        worklist.push_front(inner_b);
-                     }
-                  opIt++; // skip over inserted operations
-                  }
-               opIt--; // compensate for increment on loop back edge
-               }
+                bool replaceWithBuilder=false;
+                if (false && replaceWithBuilder) {
+                    #if 0
+                    // replace the current operation with the Builder object containing its transformation
+                    //    could also be done immutably by generating a new array of Operations
+                    //    and returning new Builder but let's do in place for now
+                    opIt = b->operations().insert(opIt, AppendBuilder::create(b, transformation));
+                    #endif
+                }
+                else {
+                    // replace the operation with the operations inside the builder
+                    // removing the builder object means each operation's parent changes
+                    for (OperationIterator it = transformation->OperationsBegin(); it != transformation->OperationsEnd(); it++) {
+                        Operation * op = *it;
+                        op->setParent(b);
+                    }
+                    opIt = b->operations().insert(opIt,
+                                                  transformation->OperationsBegin(),
+                                                  transformation->OperationsEnd());
+                    for (OperationIterator it = transformation->OperationsBegin(); it != transformation->OperationsEnd(); it++) {
+                        // scan transformed operations for builder objects we need to traverse
+                        Operation *op = *it;
+                        for (BuilderIterator bIt = op->BuildersBegin(); bIt != op->BuildersEnd(); bIt++) {
+                            Builder *inner_b = *bIt;
+                            if (inner_b && !visited[inner_b->id()])
+                                worklist.push_front(inner_b);
+                        }
+                        opIt++; // skip over inserted operations
+                    }
+                    opIt--; // compensate for increment on loop back edge
+                }
 
-            // operation has changed, but any internal builders will be found by iterating
-            // over the transformed operations we just inserted
+                // operation has changed, but any internal builders will be found by iterating
+                // over the transformed operations we just inserted
             }
-         }
-      else
-         {
-         // operation wasn't transformed, so scan it for builder objects
-         for (BuilderIterator bIt = op->BuildersBegin(); bIt != op->BuildersEnd(); bIt++)
-            {
-            Builder *inner_b = *bIt;
-            if (inner_b && !visited[inner_b->id()])
-               worklist.push_front(inner_b);
+        }
+        else {
+            for (BuilderIterator bIt = op->BuildersBegin(); bIt != op->BuildersEnd(); bIt++) {
+                Builder * inner_b = *bIt;
+                if (inner_b)
+                    worklist.push_front(inner_b);
             }
-         }
-      }
+        }
+    }
+}
 
-   transformBuilderAfterOperations(b);
-
-   }
+} // namespace JitBuilder
+} // namespace OMR
