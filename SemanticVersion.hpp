@@ -19,6 +19,9 @@
  * SPDX-License-Identifier: EPL-2.0 OR Apache-2.0 OR GPL-2.0 WITH Classpath-exception-2.0 OR LicenseRef-GPL-2.0 WITH Assembly-exception
  *******************************************************************************/
 
+#ifndef SEMANTICVERSION_INCL
+#define SEMANTICVERSION_INCL
+
 #include <list>
 #include <string>
 
@@ -91,3 +94,6 @@ class SemanticVersion {
 
 } // namespace JitBuilder
 } // namespace OMR
+
+#endif // defined(SEMANTICVERSION_INCL)
+
