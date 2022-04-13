@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2021, 2021 IBM Corp. and others
+ * Copyright (c) 2021, 2022 IBM Corp. and others
  *
  * This program and the accompanying materials are made available under
  * the terms of the Eclipse Public License 2.0 which accompanies this
@@ -25,17 +25,16 @@
 #include <string>
 #include "Visitor.hpp"
 
-namespace OMR
-{
-namespace JitBuilder
-{
+namespace OMR {
+namespace JitBuilder {
 
 class Transformer : public Visitor {
     public:
     Transformer(Compiler *compiler, std::string name="Transformer")
-       : Visitor(compiler, name)
-       , _traceEnabled(false)
-       { }
+        : Visitor(compiler, name)
+        , _traceEnabled(false) {
+
+    }
  
     Transformer * setTraceEnabled(bool v=true) { _traceEnabled = v; return this; }
 
@@ -45,11 +44,9 @@ protected:
     virtual void visitOperations(Builder *b, std::vector<bool> & visited, BuilderWorklist & worklist);
 
     protected:
-    bool traceEnabled()               { return _traceEnabled; }
+    bool traceEnabled() { return _traceEnabled; }
 
-    void appendOrInline(Builder * root, Builder * branch);
-
-    // To implement any transformation, subclass Transformer
+    // To implement any Operation transformation, subclass Transformer
     //   and override the virtual functions below as needed
 
     // called once on each operation
@@ -70,3 +67,4 @@ protected:
 } // namespace OMR
 
 #endif // defined(TRANSFORMER_INCL)
+

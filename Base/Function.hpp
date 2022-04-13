@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2021, 2021 IBM Corp. and others
+ * Copyright (c) 2021, 2022 IBM Corp. and others
  *
  * This program and the accompanying materials are made available under
  * the terms of the Eclipse Public License 2.0 which accompanies this
@@ -70,9 +70,9 @@ public:
     void DefineFunction(LOCATION, std::string name, std::string fileName, std::string lineNumber, void *entryPoint, const Type *returnType, int32_t numParms, const Type **parmTypes);
     const PointerType * PointerTo(LOCATION, const Type *baseType);
 
-    std::string name() const                        { return _givenName; }
-    std::string fileName() const                    { return _fileName; }
-    std::string lineNumber() const                  { return _lineNumber; }
+    std::string name() const { return _givenName; }
+    std::string fileName() const { return _fileName; }
+    std::string lineNumber() const { return _lineNumber; }
 
     ParameterSymbolIterator ParametersBegin() const;
     ParameterSymbolIterator ParametersEnd() const;
@@ -83,13 +83,13 @@ public:
     LocalSymbolVector ResetLocals();
     LocalSymbol * LookupLocal(std::string name);
 
-    FunctionSymbolIterator FunctionsBegin()  const { return FunctionSymbolIterator(_functions); }
-    FunctionSymbolIterator FunctionsEnd()  const { return endFunctionIterator; }
+    FunctionSymbolIterator FunctionsBegin() const { return FunctionSymbolIterator(_functions); }
+    FunctionSymbolIterator FunctionsEnd() const { return endFunctionIterator; }
     FunctionSymbolVector ResetFunctions();
     FunctionSymbol *LookupFunction(std::string name) {
         Symbol *sym = getSymbol(name);
         if (sym == NULL || !sym->isFunction())
- 	         return NULL;
+            return NULL;
         return static_cast<FunctionSymbol *>(sym);
     }
 
@@ -195,3 +195,4 @@ protected:
 } // namespace OMR
 
 #endif // defined(FUNCTION_INCL)
+

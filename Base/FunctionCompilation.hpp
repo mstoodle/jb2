@@ -19,6 +19,9 @@
  * SPDX-License-Identifier: EPL-2.0 OR Apache-2.0 OR GPL-2.0 WITH Classpath-exception-2.0 OR LicenseRef-GPL-2.0 WITH Assembly-exception
  *******************************************************************************/
 
+#ifndef FUNCTIONCOMPILATION_INCL
+#define FUNCTIONCOMPILATION_INCL
+
 #include <stdint.h>
 #include <string>
 #include <vector>
@@ -72,3 +75,6 @@ protected:
 } // namespace FunctionCompilation
 } // namespace JitBuilder
 } // namespace OMR
+
+#endif // !defined(FUNCTIONCOMPILATION_INCL)
+

@@ -19,15 +19,16 @@
  * SPDX-License-Identifier: EPL-2.0 OR Apache-2.0 OR GPL-2.0 WITH Classpath-exception-2.0 OR LicenseRef-GPL-2.0 WITH Assembly-exception
  *******************************************************************************/
 
+#ifndef EXTENSION_INCL
+#define EXTENSION_INCL
+
 #include <string>
 #include <vector>
 #include "CreateLoc.hpp"
 #include "IDs.hpp"
 
-namespace OMR
-{
-namespace JitBuilder
-{
+namespace OMR {
+namespace JitBuilder {
 
 class Builder;
 class Compiler;
@@ -56,7 +57,6 @@ public:
     Builder *BoundBuilder(LOCATION, Builder *parent, Operation *parentOp, std::string name="");
 
 protected:
-
     ActionID registerAction(std::string name);
     CompilerReturnCode registerReturnCode(std::string name);
     PassID addPass(Pass *pass); 
@@ -83,3 +83,6 @@ protected:
 
 } // namespace JitBuilder
 } // namespace OMR
+
+#endif // !defined(EXTENSION_INCL)
+

@@ -33,18 +33,20 @@ class TextWriter;
 
 namespace Base {
 
-class Op_Const : public OperationR1L1
-    {
+class Op_Const : public OperationR1L1 {
     friend class BaseExtension;
-    public:
+
+public:
     virtual Operation * clone(LOCATION, Builder *b, OperationCloner *cloner) const;
     virtual void jbgen(JB1MethodBuilder *j1mb) const;
-    protected:
+
+protected:
     Op_Const(LOCATION, Extension *ext, Builder * parent, ActionID aConst, Value *result, Literal *lv);
-    };
+};
 
 } // namespace Base
 } // namespace JitBuilder
 } // namespace OMR
 
 #endif // !defined(CONSTOPERATIONS_INCL)
+

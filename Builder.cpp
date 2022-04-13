@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2021, 2021 IBM Corp. and others
+ * Copyright (c) 2021, 2022 IBM Corp. and others
  *
  * This program and the accompanying materials are made available under
  * the terms of the Eclipse Public License 2.0 which accompanies this
@@ -28,7 +28,8 @@
 #include "Operation.hpp"
 #include "Value.hpp"
 
-using namespace OMR::JitBuilder;
+namespace OMR {
+namespace JitBuilder {
 
 Builder::Builder(Compilation * comp, Context *context, std::string name)
     : _id(comp->getBuilderID())
@@ -80,6 +81,7 @@ Builder::~Builder() {
         delete op;
     }
 }
+
 Builder *
 Builder::create(Builder *parent, Context *context, std::string name) {
     return new Builder(parent, context, name);
@@ -92,7 +94,7 @@ Builder::create(Compilation *comp, Context *context, std::string name) {
 
 void
 Builder::addChild(Builder *child) {
-    
+    _children.push_back(child);
 }
 
 Builder *
@@ -100,3 +102,6 @@ Builder::add(Operation *op) {
     _operations.push_back(op);
     return this;
 }
+
+} // namespace JitBuilder
+} // namespace OMR

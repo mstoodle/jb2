@@ -22,7 +22,6 @@
 #ifndef SYMBOLDICTIONARY_INCL
 #define SYMBOLDICTIONARY_INCL
 
-
 #include <stdint.h>
 #include <map>
 #include <vector>
@@ -85,3 +84,4 @@ protected:
 } // namespace OMR
 
 #endif // defined(SYMBOLDICTIONARY_INCL)
+

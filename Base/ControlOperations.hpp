@@ -27,7 +27,6 @@
 
 namespace OMR {
 namespace JitBuilder {
-
 namespace Base {
 
 class BaseExtension;
@@ -37,6 +36,7 @@ class LocalSymbol;
 class ForLoopBuilder {
     friend class BaseExtension;
     friend class Op_ForLoopUp;
+
 public:
     ForLoopBuilder()
         : _loopVariable(NULL)
@@ -46,6 +46,7 @@ public:
         , _loopBody(NULL)
         , _loopBreak(NULL)
         , _loopContinue(NULL) {
+
     }
 
     LocalSymbol * loopVariable() const { return _loopVariable; }
@@ -76,7 +77,8 @@ private:
 
 class Op_ForLoopUp : public Operation {
     friend class BaseExtension;
-    public:
+
+public:
     virtual Operation * clone(LOCATION, Builder *b, OperationCloner *cloner) const;
     virtual void write(TextWriter &w) const;
     virtual void jbgen(JB1MethodBuilder *j1mb) const;
@@ -120,7 +122,7 @@ class Op_ForLoopUp : public Operation {
         return BuilderIterator(_loopBody);
     }
 
-    protected:
+protected:
     Op_ForLoopUp(LOCATION, Extension *ext, Builder * parent, ActionID aForLoopUp, ForLoopBuilder *loopBuilder);
 
     LocalSymbol *_loopVariable;
@@ -135,7 +137,8 @@ class Op_ForLoopUp : public Operation {
 // eventually generalize to handle multiple return values but not needed yet
 class Op_Return : public Operation {
     friend class BaseExtension;
-    public:
+
+public:
     virtual Operation * clone(LOCATION, Builder *b, OperationCloner *cloner) const;
     virtual void write(TextWriter &w) const;
     virtual void jbgen(JB1MethodBuilder *j1mb) const;
@@ -156,366 +159,14 @@ class Op_Return : public Operation {
             return OperandsEnd();
         }
 
-    protected:
+protected:
     Op_Return(LOCATION, Extension *ext, Builder * parent, ActionID aReturn);
     Op_Return(LOCATION, Extension *ext, Builder * parent, ActionID aReturn, Value * v);
     Value * _value;
     };
 
 #if 0
-class Op_CoercePointer : public OperationR1V1T1
-    {
-    public:
-    virtual size_t size() const { return sizeof(Op_CoercePointer); }
-    static Op_CoercePointer * create(Builder * parent, Value * result, Type * type, Value * value)
-        { return new Op_CoercePointer(parent, result, type, value); }
-
-    virtual Operation * clone(Builder *b, Value **results) const
-        {
-        assert(results);
-        return create(b, results[0], type(0), operand(0));
-        }
-    virtual Operation * clone(Builder *b, Value **results, Value **operands, Builder **builders) const
-        {
-        assert(results && operands && NULL == builders);
-        return create(b, results[0], type(0), operands[0]);
-        }
-    virtual void cloneTo(Builder *b, ValueMapper **resultMappers, ValueMapper **operandMappers, TypeMapper **typeMappers, LiteralMapper **literalMapppers, SymbolMapper **symbolMappers, BuilderMapper **builderMappers) const;
-
-    virtual Operation * clone(Builder *b, OperationCloner *cloner) const;
-
-    static void initializeTypeProductions(TypeDictionary * types, TypeGraph * graph);
-
-    protected:
-    Op_CoercePointer(Builder * parent, Value * result, Type * t, Value * v);
-    };
-
-Value * CoercePointer(Builder *b, Type *t, Value *v);
-
-class Add : public OperationR1V2
-    {
-    public:
-    static Add * create(Builder * parent, Value * result, Value * left, Value * right)
-        { return new Add(parent, result, left, right); }
-
-    static void initializeTypeProductions(TypeDictionary * types, TypeGraph * graph);
-
-    virtual Operation * clone(Builder *b, Value **results) const
-        {
-        assert(results);
-        return create(b, results[0], operand(0), operand(1));
-        }
-    virtual Operation * clone(Builder *b, Value **results, Value **operands, Builder **builders) const
-        {
-        assert(results && operands && NULL == builders);
-        return create(b, results[0], operands[0], operands[1]);
-        }
-    virtual void cloneTo(Builder *b, ValueMapper **resultMappers, ValueMapper **operandMappers, TypeMapper **typeMappers, LiteralMapper **literalMapppers, SymbolMapper **symbolMappers, BuilderMapper **builderMappers) const;
-
-    virtual Operation * clone(Builder *b, OperationCloner *cloner) const;
-
-    protected:
-    Add(Builder * parent, Value * result, Value * left, Value * right);
-    };
-
-class Sub : public OperationR1V2
-    {
-    public:
-    static Sub * create(Builder * parent, Value * result, Value * left, Value * right)
-        { return new Sub(parent, result, left, right); }
-
-    static void initializeTypeProductions(TypeDictionary * types, TypeGraph * graph);
-
-    virtual Operation * clone(Builder *b, Value **results) const
-        {
-        assert(results);
-        return create(b, results[0], operand(0), operand(1));
-        }
-    virtual Operation * clone(Builder *b, Value **results, Value **operands, Builder **builders) const
-        {
-        assert(results && operands && NULL == builders);
-        return create(b, results[0], operands[0], operands[1]);
-        }
-    virtual void cloneTo(Builder *b, ValueMapper **resultMappers, ValueMapper **operandMappers, TypeMapper **typeMappers, LiteralMapper **literalMapppers, SymbolMapper **symbolMappers, BuilderMapper **builderMappers) const;
-
-    virtual Operation * clone(Builder *b, OperationCloner *cloner) const;
-
-    protected:
-    Sub(Builder * parent, Value * result, Value * left, Value * right);
-    };
-
-class Mul : public OperationR1V2
-    {
-    public:
-    static Mul * create(Builder * parent, Value * result, Value * left, Value * right)
-        { return new Mul(parent, result, left, right); }
-
-    static void initializeTypeProductions(TypeDictionary * types, TypeGraph * graph);
-
-    virtual Operation * clone(Builder *b, Value **results) const
-        {
-        assert(results);
-        return create(b, results[0], operand(0), operand(1));
-        }
-    virtual Operation * clone(Builder *b, Value **results, Value **operands, Builder **builders) const
-        {
-        assert(results && NULL == builders);
-        return create(b, results[0], operands[0], operands[1]);
-        }
-    virtual void cloneTo(Builder *b, ValueMapper **resultMappers, ValueMapper **operandMappers, TypeMapper **typeMappers, LiteralMapper **literalMapppers, SymbolMapper **symbolMappers, BuilderMapper **builderMappers) const;
-
-    virtual Operation * clone(Builder *b, OperationCloner *cloner) const;
-
-    protected:
-    Mul(Builder * parent, Value * result, Value * left, Value * right);
-    };
-
-class IndexAt : public OperationR1V2T1
-    {
-    public:
-    static IndexAt * create(Builder * parent, Value * result, Type * pointerType, Value * address, Value * value)
-        { return new IndexAt(parent, result, pointerType, address, value); }
-    
-    virtual Operation * clone(Builder *b, Value **results) const
-        {
-        assert(results);
-        return create(b, results[0], type(0), operand(0), operand(1));
-        }
-    virtual Operation * clone(Builder *b, Value **results, Value **operands, Builder **builders) const
-        {
-        assert(results && NULL == operands && NULL == builders);
-        return create(b, results[0], type(0), operands[0], operands[1]);
-        }
-    virtual void cloneTo(Builder *b, ValueMapper **resultMappers, ValueMapper **operandMappers, TypeMapper **typeMappers, LiteralMapper **literalMapppers, SymbolMapper **symbolMappers, BuilderMapper **builderMappers) const;
-
-    virtual Operation * clone(Builder *b, OperationCloner *cloner) const;
-
-    protected:
-    IndexAt(Builder * parent, Value * result, Type * pointerType, Value * address, Value * value);
-    };
-
-class Load : public OperationR1S1
-    {
-    public:
-    static Load * create(Builder * parent, Value * result, Symbol *local)
-        { return new Load(parent, result, local); }
-    
-    virtual Operation * clone(Builder *b, Value **results) const
-        {
-        assert(results);
-        return create(b, results[0], symbol());
-        }
-    virtual Operation * clone(Builder *b, Value **results, Value **operands, Builder **builders) const
-        {
-        assert(results && NULL == operands && NULL == builders);
-        return create(b, results[0], symbol());
-        }
-    virtual void cloneTo(Builder *b, ValueMapper **resultMappers, ValueMapper **operandMappers, TypeMapper **typeMappers, LiteralMapper **literalMapppers, SymbolMapper **symbolMappers, BuilderMapper **builderMappers) const;
-
-    virtual Operation * clone(Builder *b, OperationCloner *cloner) const;
-
-    protected:
-    Load(Builder * parent, Value * result, std::string name);
-    Load(Builder * parent, Value * result, Symbol *s)
-        : OperationR1S1(aLoad, parent, result, s)
-        { }
-    };
-
-class LoadAt : public OperationR1V1T1
-    {
-    public:
-    static LoadAt * create(Builder * parent, Value * result, Type * pointerType, Value * address)
-        { return new LoadAt(parent, result, pointerType, address); }
-    
-    virtual Operation * clone(Builder *b, Value **results) const
-        {
-        assert(results);
-        return create(b, results[0], type(0), operand(0));
-        }
-    virtual Operation * clone(Builder *b, Value **results, Value **operands, Builder **builders) const
-        {
-        assert(results && operands && NULL == builders);
-        return create(b, results[0], type(0), operands[0]);
-        }
-    virtual void cloneTo(Builder *b, ValueMapper **resultMappers, ValueMapper **operandMappers, TypeMapper **typeMappers, LiteralMapper **literalMapppers, SymbolMapper **symbolMappers, BuilderMapper **builderMappers) const;
-
-    virtual Operation * clone(Builder *b, OperationCloner *cloner) const;
-
-    virtual bool hasExpander() const { return true; }
-    virtual bool expand(OperationReplacer *r) const;
-
-    protected:
-    LoadAt(Builder * parent, Value * result, Type * pointerType, Value * address);
-    };
-
-class LoadField : public OperationR1V1T1
-    {
-    public:
-    static LoadField * create(Builder * parent, Value * result, FieldType *fieldType, Value *structBase)
-        { return new LoadField(parent, result, fieldType, structBase); }
-
-    FieldType *getFieldType() const { return static_cast<FieldType *>(_type); }
-
-    virtual Operation * clone(Builder *b, Value **results) const
-        {
-        assert(results);
-        return create(b, results[0], getFieldType(), operand(0));
-        }
-    virtual Operation * clone(Builder *b, Value **results, Value **operands, Builder **builders) const
-        {
-        assert(results && operands && NULL == builders);
-        return create(b, results[0], getFieldType(), operands[0]);
-        }
-    virtual void cloneTo(Builder *b, ValueMapper **resultMappers, ValueMapper **operandMappers, TypeMapper **typeMappers, LiteralMapper **literalMapppers, SymbolMapper **symbolMappers, BuilderMapper **builderMappers) const;
-
-    virtual Operation * clone(Builder *b, OperationCloner *cloner) const;
-
-    protected:
-    LoadField(Builder * parent, Value * result, FieldType *fieldType, Value * structBase)
-        : OperationR1V1T1(aLoadField, parent, result, fieldType, structBase)
-        { }
-    };
-
-class LoadIndirect : public OperationR1V1T1
-    {
-    public:
-    static LoadIndirect * create(Builder * parent, Value * result, FieldType *fieldType, Value *structBase)
-        { return new LoadIndirect(parent, result, fieldType, structBase); }
-
-    FieldType *getFieldType() const { return static_cast<FieldType *>(_type); }
-
-    virtual Operation * clone(Builder *b, Value **results) const
-        {
-        assert(results);
-        return create(b, results[0], getFieldType(), operand(0));
-        }
-    virtual Operation * clone(Builder *b, Value **results, Value **operands, Builder **builders) const
-        {
-        assert(results && operands && NULL == builders);
-        return create(b, results[0], getFieldType(), operands[0]);
-        }
-    virtual void cloneTo(Builder *b, ValueMapper **resultMappers, ValueMapper **operandMappers, TypeMapper **typeMappers, LiteralMapper **literalMapppers, SymbolMapper **symbolMappers, BuilderMapper **builderMappers) const;
-
-    virtual Operation * clone(Builder *b, OperationCloner *cloner) const;
-
-    protected:
-    LoadIndirect(Builder * parent, Value * result, FieldType *fieldType, Value * structBase)
-        : OperationR1V1T1(aLoadIndirect, parent, result, fieldType, structBase)
-        { }
-    };
-
-class Store : public OperationR0S1V1
-    {
-    public:
-    static Store * create(Builder * parent, Symbol *local, Value * value)
-        { return new Store(parent, local, value); }
-    
-    virtual Operation * clone(Builder *b, Value **results) const
-        {
-        assert(NULL == results);
-        return create(b, symbol(), operand(0));
-        }
-    virtual Operation * clone(Builder *b, Value **results, Value **operands, Builder **builders) const
-        {
-        assert(NULL == results && operands && NULL == builders);
-        return create(b, symbol(), operands[0]);
-        }
-    virtual void cloneTo(Builder *b, ValueMapper **resultMappers, ValueMapper **operandMappers, TypeMapper **typeMappers, LiteralMapper **literalMapppers, SymbolMapper **symbolMappers, BuilderMapper **builderMappers) const;
-
-    virtual Operation * clone(Builder *b, OperationCloner *cloner) const;
-
-    protected:
-    Store(Builder * parent, std::string name, Value * value);
-    Store(Builder * parent, Symbol *s, Value * value)
-        : OperationR0S1V1(aStore, parent, s, value)
-        { }
-    };
-
-class StoreAt : public OperationR0V2
-    {
-    public:
-    static StoreAt * create(Builder * parent, Value * address, Value * value)
-        { return new StoreAt(parent, address, value); }
-    
-    virtual Value * getAddress() const { return _left; }
-    virtual Value * getValue() const    { return _right; }
-
-    virtual Operation * clone(Builder *b, Value **results) const
-        {
-        assert(NULL == results);
-        return create(b, getAddress(), getValue());
-        }
-    virtual Operation * clone(Builder *b, Value **results, Value **operands, Builder **builders) const
-        {
-        assert(NULL == results && operands && NULL == builders);
-        return create(b, operands[0], operands[1]);
-        }
-    virtual void cloneTo(Builder *b, ValueMapper **resultMappers, ValueMapper **operandMappers, TypeMapper **typeMappers, LiteralMapper **literalMapppers, SymbolMapper **symbolMappers, BuilderMapper **builderMappers) const;
-
-    virtual Operation * clone(Builder *b, OperationCloner *cloner) const;
-
-    virtual bool hasExpander() const { return true; }
-    virtual bool expand(OperationReplacer *r) const;
-
-    protected:
-    StoreAt(Builder * parent, Value * address, Value * value);
-    };
-
-class StoreField : public OperationR0V2T1
-    {
-    public:
-    static StoreField * create(Builder * parent, FieldType *fieldType, Value *structBase, Value *value)
-        { return new StoreField(parent, fieldType, structBase, value); }
-
-    FieldType *getFieldType() const { return static_cast<FieldType *>(_type); }
-
-    virtual Operation * clone(Builder *b, Value **results) const
-        {
-        assert(NULL == results);
-        return create(b, getFieldType(), operand(0), operand(1));
-        }
-    virtual Operation * clone(Builder *b, Value **results, Value **operands, Builder **builders) const
-        {
-        assert(NULL == results && operands && NULL == builders);
-        return create(b, getFieldType(), operands[0], operands[1]);
-        }
-    virtual void cloneTo(Builder *b, ValueMapper **resultMappers, ValueMapper **operandMappers, TypeMapper **typeMappers, LiteralMapper **literalMapppers, SymbolMapper **symbolMappers, BuilderMapper **builderMappers) const;
-
-    virtual Operation * clone(Builder *b, OperationCloner *cloner) const;
-
-    protected:
-    StoreField(Builder * parent, FieldType *fieldType, Value * structBase, Value *value)
-        : OperationR0V2T1(aStoreField, parent, fieldType, structBase, value)
-        { }
-    }; 
-
-class StoreIndirect : public OperationR0V2T1
-    {
-    public:
-    static StoreIndirect * create(Builder * parent, FieldType *fieldType, Value *structBase, Value *value)
-        { return new StoreIndirect(parent, fieldType, structBase, value); }
-
-    FieldType *getFieldType() const { return static_cast<FieldType *>(_type); }
-
-    virtual Operation * clone(Builder *b, Value **results) const
-        {
-        assert(NULL == results);
-        return create(b, getFieldType(), operand(0), operand(1));
-        }
-    virtual Operation * clone(Builder *b, Value **results, Value **operands, Builder **builders) const
-        {
-        assert(NULL == results && operands && NULL == builders);
-        return create(b, getFieldType(), operands[0], operands[1]);
-        }
-    virtual void cloneTo(Builder *b, ValueMapper **resultMappers, ValueMapper **operandMappers, TypeMapper **typeMappers, LiteralMapper **literalMapppers, SymbolMapper **symbolMappers, BuilderMapper **builderMappers) const;
-
-    virtual Operation * clone(Builder *b, OperationCloner *cloner) const;
-
-    protected:
-    StoreIndirect(Builder * parent, FieldType *fieldType, Value * structBase, Value *value)
-        : OperationR0V2T1(aStoreIndirect, parent, fieldType, structBase, value)
-        { }
-    };
+// keep handy during migration
 
 class AppendBuilder : public OperationB1
     {
@@ -778,7 +429,7 @@ class ForLoop : public Operation
     Value * _bump;
     };
 
-class IfCmpGreaterThan : public OperationR0V2B1
+class IfCmpGreaterThan : public OperationB1R0V2
     {
     public:
     static IfCmpGreaterThan * create(Builder * parent, Builder * tgt, Value * left, Value * right)
@@ -804,7 +455,7 @@ class IfCmpGreaterThan : public OperationR0V2B1
     IfCmpGreaterThan(Builder * parent, Builder * tgt, Value * left, Value * right);
     };
 
-class IfCmpLessThan : public OperationR0V2B1
+class IfCmpLessThan : public OperationB1R0V2
     {
     public:
     static IfCmpLessThan * create(Builder * parent, Builder * tgt, Value * left, Value * right)
@@ -830,7 +481,7 @@ class IfCmpLessThan : public OperationR0V2B1
     IfCmpLessThan(Builder * parent, Builder * tgt, Value * left, Value * right);
     };
 
-class IfCmpGreaterOrEqual : public OperationR0V2B1
+class IfCmpGreaterOrEqual : public OperationB1R0V2
     {
     public:
     static IfCmpGreaterOrEqual * create(Builder * parent, Builder * tgt, Value * left, Value * right)
@@ -856,7 +507,7 @@ class IfCmpGreaterOrEqual : public OperationR0V2B1
     IfCmpGreaterOrEqual(Builder * parent, Builder * tgt, Value * left, Value * right);
     };
 
-class IfCmpLessOrEqual : public OperationR0V2B1
+class IfCmpLessOrEqual : public OperationB1R0V2
     {
     public:
     static IfCmpLessOrEqual * create(Builder * parent, Builder * tgt, Value * left, Value * right)
@@ -882,7 +533,7 @@ class IfCmpLessOrEqual : public OperationR0V2B1
     IfCmpLessOrEqual(Builder * parent, Builder * tgt, Value * left, Value * right);
     };
 
-class IfThenElse : public OperationR0V1B1
+class IfThenElse : public OperationB1R0V1
     {
     public:
     virtual size_t size() const { return sizeof(IfThenElse); }
@@ -930,11 +581,7 @@ class IfThenElse : public OperationR0V1B1
 
     Builder * _elseBuilder;
     };
-#endif
 
-    ;
-
-#if 0
 class Switch : public OperationR0V1
     {
     public:
@@ -1028,10 +675,11 @@ class CreateLocalStruct : public OperationR1T1
     CreateLocalStruct(Builder * parent, Value * result, Type * structType);
     };
 
-#endif // #if 0
+#endif
 
 } // namespace Base
 } // namespace JitBuilder
 } // namespace OMR
 
 #endif // !defined(CONTROLOPERATIONS_INCL)
+

@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2021, 2021 IBM Corp. and others
+ * Copyright (c) 2021, 2022 IBM Corp. and others
  *
  * This program and the accompanying materials are made available under
  * the terms of the Eclipse Public License 2.0 which accompanies this
@@ -32,6 +32,7 @@ Pass::Pass(Compiler *compiler, std::string name)
     : _id(0)
     , _name(name)
     , _compiler(compiler) {
+
     _id = compiler->addPass(this);
 }
 
@@ -42,3 +43,4 @@ Pass::perform(Compilation *comp) {
 
 } // namespace JitBuilder
 } // namespace OMR
+

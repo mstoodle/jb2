@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2021, 2021 IBM Corp. and others
+ * Copyright (c) 2021, 2022 IBM Corp. and others
  *
  * This program and the accompanying materials are made available under
  * the terms of the Eclipse Public License 2.0 which accompanies this
@@ -36,31 +36,30 @@ class Extension;
 class OperationCloner;
 class Type;
 
-class Value
-   {
-   friend class Builder;
-   friend class BuilderBase;
-   friend class Extension;
-   friend class OperationCloner;
+class Value {
+    friend class Builder;
+    friend class BuilderBase;
+    friend class Extension;
+    friend class OperationCloner;
 
 public:
-   ValueID id() const            { return _id; }
-   const Builder *parent() const { return _parent; }
-   const Type * type() const     { return _type; }
+    ValueID id() const { return _id; }
+    const Builder *parent() const { return _parent; }
+    const Type * type() const { return _type; }
 
-   virtual size_t size() const   { return sizeof(Value); }
+    virtual size_t size() const { return sizeof(Value); }
 
 protected:
-   static Value * create(const Builder * parent, const Type * type);
-   Value(const Builder * parent, const Type * type);
+    static Value * create(const Builder * parent, const Type * type);
+    Value(const Builder * parent, const Type * type);
 
-   ValueID   _id;
-   const Builder * _parent;
-   const Type    * _type;
-   };
+    ValueID   _id;
+    const Builder * _parent;
+    const Type * _type;
+};
 
 } // namespace JitBuilder
-
 } // namespace OMR
 
 #endif // defined(VALUE_INCL)
+

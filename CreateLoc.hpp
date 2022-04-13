@@ -36,16 +36,18 @@ namespace OMR {
 namespace JitBuilder {
 
 class CreateLocation {
-    public:
+public:
     CreateLocation(LOCATION)
-       : _fileName(LOC_FILE)
-       , _lineNumber(LOC_LINE)
-       , _functionName(LOC_FUNC)
+        : _fileName(LOC_FILE)
+        , _lineNumber(LOC_LINE)
+        , _functionName(LOC_FUNC)
     { }
 
-    std::string to_string() const { return std::string(_functionName).append(" in ").append(_fileName).append(":L").append(std::to_string(_lineNumber)); }
+    std::string to_string() const {
+        return std::string(_functionName).append(" in ").append(_fileName).append(":L").append(std::to_string(_lineNumber));
+    }
 
-    protected:
+protected:
     const char *_fileName;
     uint32_t _lineNumber;
     const char *_functionName;
@@ -55,3 +57,4 @@ class CreateLocation {
 } // namespace OMR
 
 #endif // defined(CREATELOC_INCL)
+

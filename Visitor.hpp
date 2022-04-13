@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2021, 2021 IBM Corp. and others
+ * Copyright (c) 2021, 2022 IBM Corp. and others
  *
  * This program and the accompanying materials are made available under
  * the terms of the Eclipse Public License 2.0 which accompanies this
@@ -26,7 +26,6 @@
 #include "Pass.hpp"
 #include "typedefs.hpp"
 
-
 namespace OMR {
 namespace JitBuilder {
 
@@ -37,7 +36,7 @@ class Extension;
 class Operation;
 
 class Visitor : public Pass {
-    public:
+public:
     Visitor(Compiler *compiler, std::string name="", bool visitAppendedBuilders=false);
 
     virtual CompilerReturnCode perform(Compilation *comp);
@@ -46,7 +45,7 @@ class Visitor : public Pass {
     virtual void start(Builder * b);
     virtual void start(Operation * op);
 
-    protected:
+protected:
 
     // more dramatic visit patterns can be done by overriding these functions
     virtual void visitBuilder(Builder * b, std::vector<bool> & visited, BuilderWorklist & list);
@@ -74,3 +73,4 @@ class Visitor : public Pass {
 } // namespace OMR
 
 #endif // defined(VISITOR_INCL)
+

@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2021, 2021 IBM Corp. and others
+ * Copyright (c) 2021, 2022 IBM Corp. and others
  *
  * This program and the accompanying materials are made available under
  * the terms of the Eclipse Public License 2.0 which accompanies this
@@ -24,7 +24,6 @@
 
 #include <string>
 #include <vector>
-
 #include "Context.hpp"
 #include "BaseIterator.hpp"
 
@@ -79,10 +78,12 @@ public:
 protected:
     NativeCallableContext(FunctionCompilation *comp, std::string name="")
         : Context(comp, NULL, name) {
-        }
+
+    }
     NativeCallableContext(FunctionCompilation *comp, NativeCallableContext *caller, std::string name="")
         : Context(comp, caller, name) {
-        }
+
+    }
 
     ParameterSymbolVector _parameters;
     LocalSymbolVector _locals;
@@ -97,3 +98,4 @@ protected:
 } // namespace OMR
 
 #endif // defined(NATIVECALLABLECONTEXT_INCL)
+

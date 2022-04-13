@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2021, 2021 IBM Corp. and others
+ * Copyright (c) 2021, 2022 IBM Corp. and others
  *
  * This program and the accompanying materials are made available under
  * the terms of the Eclipse Public License 2.0 which accompanies this
@@ -25,33 +25,26 @@
 #define TOSTR(x)     #x
 #define LINETOSTR(x) TOSTR(x)
 
-#if 0
 #include "Builder.hpp"
-#include "DynamicOperation.hpp"
-#include "DynamicType.hpp"
-#include "FunctionBuilder.hpp"
+#include "Compilation.hpp"
+#include "Compiler.hpp"
+#include "Config.hpp"
+#include "Context.hpp"
+#include "Extension.hpp"
+#include "Literal.hpp"
+#include "LiteralDictionary.hpp"
+#include "Location.hpp"
 #include "Operation.hpp"
+#include "Pass.hpp"
+#include "SemanticVersion.hpp"
+#include "Strategy.hpp"
 #include "Symbol.hpp"
-#include "Transformer.hpp"
+#include "SymbolDictionary.hpp"
 #include "TextWriter.hpp"
+#include "Transformer.hpp"
 #include "Type.hpp"
 #include "TypeDictionary.hpp"
 #include "Value.hpp"
-#endif
-
-namespace OMR { namespace JitBuilder { class Compilation; } }
-
-bool initializeJit();
-#if 0
-int32_t compileFunction(Function* fb, void ** entry);
-bool constructFunctionBuilder(FunctionBuilder * fb);
-#endif
-int32_t compile(OMR::JitBuilder::Compilation *comp);
-void shutdownJit();
-
-// Legacy definitions: may need to make IlBuilder a class....
-//#define IlBuilder Builder
-//#define MethodBuilder FunctionBuilder
-//#define compileMethodBuilder(fb,e) compileFunctionBuilder(fb, e)
+#include "Visitor.hpp"
 
 #endif // defined(JITBUILDER_INCL)

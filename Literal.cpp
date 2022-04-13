@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2021, 2021 IBM Corp. and others
+ * Copyright (c) 2021, 2022 IBM Corp. and others
  *
  * This program and the accompanying materials are made available under
  * the terms of the Eclipse Public License 2.0 which accompanies this
@@ -57,12 +57,14 @@ Literal::write(TextWriter & w) const {
 
 const int64_t
 Literal::getInteger() const {
+    // TODO: convert to CompilationException
     assert(_type->isInteger());
     return _type->getInteger(this);
 }
 
 const double
 Literal::getFloatingPoint() const {
+    // TODO: convert to CompilationException
     assert(_type->isFloatingPoint());
     return _type->getFloatingPoint(this);
 }

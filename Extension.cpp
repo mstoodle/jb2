@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2021, 2021 IBM Corp. and others
+ * Copyright (c) 2021, 2022 IBM Corp. and others
  *
  * This program and the accompanying materials are made available under
  * the terms of the Eclipse Public License 2.0 which accompanies this
@@ -28,10 +28,8 @@
 #include "TypeDictionary.hpp"
 #include "Value.hpp"
 
-namespace OMR
-{
-namespace JitBuilder
-{
+namespace OMR {
+namespace JitBuilder {
 
 
 const SemanticVersion Extension::version(0,0,0);
@@ -89,3 +87,4 @@ Extension::OrphanBuilder(LOCATION, Builder *parent, Context *context, std::strin
 
 } // namespace JitBuilder
 } // namespace OMR
+

@@ -63,7 +63,7 @@ protected:
 };
 
 } // namespace JitBuilder
-
 } // namespace OMR
 
 #endif // defined(CONTEXT_INCL)
+

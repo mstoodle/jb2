@@ -24,21 +24,19 @@
 
 #include <string>
 
-namespace OMR
-{
-namespace JitBuilder
-{
+namespace OMR {
+namespace JitBuilder {
 
 class Compilation;
 class TextWriter;
 
 class Loggable {
-    public:
+public:
     Loggable() { }
 
     Loggable * setTraceEnabled(bool v=true) { _traceEnabled = v; return this; }
 
-    protected:
+protected:
     bool traceEnabled() { return _traceEnabled; }
     TextWriter & trace(Compilation *comp, std::string msg="");
 
@@ -49,3 +47,4 @@ class Loggable {
 } // namespace OMR
 
 #endif // !defined(LOGGABLE_INCL)
+

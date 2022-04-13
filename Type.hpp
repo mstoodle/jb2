@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2021, 2021 IBM Corp. and others
+ * Copyright (c) 2021, 2022 IBM Corp. and others
  *
  * This program and the accompanying materials are made available under
  * the terms of the Eclipse Public License 2.0 which accompanies this
@@ -49,31 +49,9 @@ class Type;
 class TypeDictionary;
 
 class Type {
-public:
-#if 0
-    class Builder {
-    public:
-        Builder *extension(Extension *x) { _ext = x; return this; }
-        Builder *dict(TypeDictionary *dict) { _dict = dict; }
-        Builder *name(std::string myName) { _name = myName; }
-        Builder *size(size_t mySize) { _size = mySize; })
-        Builder *layout(Type *layout) { _layout = layout; }
-
-        Type *create(LOCATION) {
-            return new Type(PASSLOC, _ext, _name, _size, _layout);
-        }
-    protected:
-        Extension * _ext;
-        TypeDictionary * _dict;
-        std::string _name;
-        size_t _size;
-        Type * _layout;
-    };
-#endif
     friend class Compiler;
+    friend class Extension;
     friend class TypeDictionary;
-protected:
-    typedef void (ValuePrinter)(TextWriter *w, const Type *t, void *p);
 
 public:
     std::string name() const                 { return _name; }
@@ -128,12 +106,10 @@ public:
     
     // create a JB1 Const operation for a Literal of this Type
     virtual void createJB1ConstOp(Location *loc, JB1MethodBuilder *j1mb, Builder *b, Value *result, Literal *lv) const {
-        assert(0); return; // default must be to assert
+        assert(0); return; // default must be to assert TODO convert to CompilationException
     }
 
 protected:
-    friend class Extension;
-
     static Type * create(LOCATION, Extension *ext, std::string name, size_t size, const Type * layout=NULL) {
         return new Type(PASSLOC, ext, name, size, layout);
     }
@@ -157,3 +133,4 @@ protected:
 } // namespace OMR
 
 #endif // defined(TYPE_INCL)
+

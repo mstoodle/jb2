@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2021, 2021 IBM Corp. and others
+ * Copyright (c) 2021, 2022 IBM Corp. and others
  *
  * This program and the accompanying materials are made available under
  * the terms of the Eclipse Public License 2.0 which accompanies this
@@ -22,21 +22,19 @@
 #ifndef COMPILER_INCL
 #define COMPILER_INCL
 
+#include <cassert>
 #include <exception>
 #include <list>
 #include <map>
 #include <stdint.h>
 #include <string>
 #include <vector>
-#include "Flags.hpp"
 #include "IDs.hpp"
 #include "CreateLoc.hpp"
 #include "typedefs.hpp"
 
-namespace OMR
-{
-namespace JitBuilder
-{
+namespace OMR {
+namespace JitBuilder {
 
 class Compilation;
 class CompilationException;
@@ -76,12 +74,16 @@ public:
     }
     bool validateExtension(std::string name) const;
     template<typename T>
-    T *lookupExtension(std::string name=T::NAME) { return static_cast<T *>(internalLookupExtension(name)); }
+    T *lookupExtension(std::string name=T::NAME) {
+        return static_cast<T *>(internalLookupExtension(name));
+    }
 
     PassID lookupPass(std::string name);
     CompilerReturnCode compile(Compilation *comp, StrategyID strategyID);
 
-    TypeDictionaryID getTypeDictionaryID() { return this->_nextTypeDictionaryID++; }
+    TypeDictionaryID getTypeDictionaryID() {
+        return this->_nextTypeDictionaryID++;
+    }
 
     const std::string actionName(ActionID a) const {
         assert(a < _nextActionID);
@@ -123,12 +125,14 @@ protected:
     CompilerReturnCode assignReturnCode(std::string name);
     CompilerReturnCode _nextReturnCode;
     std::map<CompilerReturnCode, std::string> _returnCodeNames;
+
 public:
     CompilerReturnCode CompileSuccessful;
     CompilerReturnCode CompileNotStarted;
     CompilerReturnCode CompileFailed;
     CompilerReturnCode CompileFail_UnknownStrategyID;
     CompilerReturnCode CompileFail_IlGen;
+    CompilerReturnCode CompileFail_TypeMustBeReduced;
 
 protected:
     PassID _nextPassID;
@@ -180,6 +184,7 @@ public:
     CompilerReturnCode _result;
     CreateLocation _location;
     std::string _message;
+
 protected:
     std::string addNewLine(std::string s) const { return s + std::string("\n"); }
 };
@@ -188,3 +193,4 @@ protected:
 } // namespace OMR
 
 #endif // !defined(COMPILER_INCL)
+

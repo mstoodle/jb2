@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2021, 2021 IBM Corp. and others
+ * Copyright (c) 2021, 2022 IBM Corp. and others
  *
  * This program and the accompanying materials are made available under
  * the terms of the Eclipse Public License 2.0 which accompanies this
@@ -41,10 +41,12 @@ public:
     Iterator<T>() // used to create an "end" iterator, _index must be -1 to match end of iteration
         : _index(-1) {
     }
+
     Iterator<T>(const Iterator<T> & other)
         : _index(other._index) {
         _items = other._items;
     }
+
     Iterator<T>(T * one)
         : _index(0)
         , _items(1) {
@@ -57,6 +59,7 @@ public:
         _items[0] = one;
         _items[1] = two;
     }
+
     Iterator<T>(T * one, T * two, T * three)
         : _index(2)
         , _items(3) {
@@ -64,6 +67,7 @@ public:
         _items[1] = two;
         _items[2] = three;
     }
+
     Iterator<T>(int numArgs, ...)
         : _index(numArgs-1)
         , _items(numArgs) {
@@ -73,20 +77,24 @@ public:
             _items[a] = va_arg(args, T *);
         va_end(args);
     }
+
     Iterator<T>(T **array, int arraySize)
         : _index(arraySize-1) {
         _items.assign(array, array+arraySize);
     }
+
     Iterator<T>(std::vector<T *> v)
         : _index(v.size()-1)
         , _items(v) {
     }
+
     void prepend(Iterator<T> toPrepend) {
         std::vector<T *> v = toPrepend._items;
         _items.reserve(_items.size() + v.size());
         _items.insert(_items.begin(), v.begin(), v.end());
         _index = _items.size() - 1;
     }
+
     T * operator*() {
         return _items[_items.size()-1-_index];
     }
@@ -100,12 +108,15 @@ public:
         // at end, _index == -1
         return NULL;
     }
+
     bool operator!=(const Iterator<T> & other) {
         return !(*this == other);
     }
+
     bool operator==(const Iterator<T> & other) {
         return _index == other._index;
     }
+
 protected:
     std::vector<T *> _items;
     int _index;
@@ -122,3 +133,4 @@ typedef Iterator<Value> ValueIterator;
 } // namespace OMR
 
 #endif // defined(ITERATOR_INCL)
+

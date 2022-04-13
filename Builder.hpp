@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2021, 2021 IBM Corp. and others
+ * Copyright (c) 2021, 2022 IBM Corp. and others
  *
  * This program and the accompanying materials are made available under
  * the terms of the Eclipse Public License 2.0 which accompanies this
@@ -175,21 +175,6 @@ public:
     Builder(Compilation *comp, Context *context=NULL, std::string name="");
     Builder(Builder *parent, Context *context=NULL, std::string name="");
     Builder(Builder *parent, Operation *boundToOp, std::string name="");
-
-#if 0
-    void creationError(Action a, std::string msg);
-    void creationError(Action a, std::string sName, std::string s);
-    void creationError(Action a, std::string vName, Value * v);
-    void creationError(Action a, std::string tName, Type * t, std::string vName, Value * v);
-    void creationError(Action a, std::string t1Name, Type * t1, std::string t2Name, Type * t2);
-    void creationError(Action a, std::string lName, Value * left, std::string rName, Value * right);
-    void creationError(Action a, std::string oneName, Value * one, std::string twoName, Value * two, std::string threeName, Value * three);
-    void creationError(Action a, std::string tName, Type * t, std::string firstName, Value * first, std::string secondName, Value * second);
-    void creationError(Action a, std::string sName, std::string sValue, std::string fName, std::string fValue, std::string bName, Value *bValue);
-    void creationError(Action a, std::string sName, std::string sValue, std::string fName, std::string fValue, std::string bName, Value *bValue, std::string vName, Value *vValue);
-    void creationError(Action a, std::string fName, Value *function, int32_t numArgs, va_list args);
-    void creationError(Action a, std::string fName, Value *function, int32_t numArgs, Value **args);
-#endif
 
     void setParent(Builder *parent);
     void addChild(Builder *child);

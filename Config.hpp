@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2021, 2021 IBM Corp. and others
+ * Copyright (c) 2021, 2022 IBM Corp. and others
  *
  * This program and the accompanying materials are made available under
  * the terms of the Eclipse Public License 2.0 which accompanies this
@@ -24,77 +24,55 @@
 
 #include <string>
 
-namespace OMR
-{
-namespace JitBuilder
-{
+namespace OMR {
+namespace JitBuilder {
 
 class FunctionBuilder;
 class Transformer;
 
-class Config
-   {
-   public:
-   Config()
-      : _reportMemory(false)
-      , _traceBuildIL(false)
-      , _traceCodeGenerator(false)
-      , _traceReducer(false)
-      , _lastTransformationIndex(-1) // no limit
-      , _logRegex("")
-      , _reducer(NULL)
-      { }
+class Config {
+public:
+    Config()
+        : _traceBuildIL(false)
+        , _traceCodeGenerator(false)
+        , _traceTypeReplacer(false)
+        , _lastTransformationIndex(-1) // no limit
+        , _logRegex("") {
+    }
 
-   // when true, FunctionBuilder will report memory usage and check everything was freed
-   bool reportMemory() const                      { return _reportMemory; }
-   Config * setReportMemory(bool v=true)          { _reportMemory = v; return this; }
+    // when true, turn logging on when buildIL() is called
+    bool traceBuildIL() const                                 { return _traceBuildIL; }
+    Config * setTraceBuildIL(bool v=true)                     { _traceBuildIL = v; return this; }
 
-   // when true, turn logging on when buildIL() is called
-   bool traceBuildIL() const                      { return _traceBuildIL; }
-   Config * setTraceBuildIL(bool v=true)          { _traceBuildIL = v; return this; }
+    // when true, turn logging on when CodeGenerator runs
+    bool traceCodeGenerator() const                           { return _traceCodeGenerator; }
+    Config * setTraceCodeGenerator(bool v=true)               { _traceCodeGenerator = v; return this; }
 
-   // when true, turn logging on when CodeGenerator runs
-   bool traceCodeGenerator() const                { return _traceCodeGenerator; }
-   Config * setTraceCodeGenerator(bool v=true)    { _traceCodeGenerator = v; return this; }
+    // when true, turn logging on when CodeGenerator runs
+    bool traceTypeReplacer() const                            { return _traceTypeReplacer; }
+    Config * setTraceTypeReplacer(bool v=true)                { _traceTypeReplacer = v; return this; }
 
-   // when true, turn logging on when CodeGenerator runs
-   bool traceTypeReplacer() const                 { return _traceTypeReplacer; }
-   Config * setTraceTypeReplacer(bool v=true)     { _traceTypeReplacer = v; return this; }
+    // if >= 0, identifies the last transformation to apply
+    bool limitLastTransformationIndex() const                 { return _lastTransformationIndex >= 0; }
+    TransformationID lastTransformationIndex() const          { return _lastTransformationIndex; }
+    Config * setLastTransformationIndex(TransformationID idx) { _lastTransformationIndex = idx; return this; }
 
-   // when true, turn logging on when DialectReducer runs
-   bool traceReducer() const                      { return _traceReducer; }
-   Config * setTraceReducer(bool v=true)          { _traceReducer = v; return this; }
+    // when true, logging should be enabled
+    bool logCompilation(Compilation * fb) const               { return false; } // TODO: match name against _logRegex
+    Config * setLogRegex(std::string regex)                   { _logRegex = regex; return this; }
 
-   // if >= 0, identifies the last transformation to apply
-   bool limitLastTransformationIndex() const      { return _lastTransformationIndex >= 0; }
-   int64_t lastTransformationIndex() const        { return _lastTransformationIndex; }
-   Config * setLastTransformationIndex(int64_t v) { _lastTransformationIndex = v; return this; }
+protected:
+    bool _traceBuildIL;
+    bool _traceCodeGenerator;
+    bool _traceTypeReplacer;
 
-   // when true, logging should be enabled
-   bool logFunctionBuilder(FunctionBuilder * fb) const { return false; } // TODO: match fb->name against _logRegex
-   Config * setMethodLogRegex(std::string regex)  { _logRegex = regex; return this; }
+    TransformationID _lastTransformationIndex;
 
-   // if set, the reducer will be applied automatically before code generation
-   // should really be handled as part of an optimization sequence
-   bool hasReducer() const { return _reducer != NULL; }
-   Transformer *reducer() const { return _reducer; }
-   Config * setTypeReplacer(Transformer *r) { _reducer = r; return this; }
-
-   protected:
-   bool _reportMemory;
-   bool _traceBuildIL;
-   bool _traceCodeGenerator;
-   bool _traceReducer;
-   bool _traceTypeReplacer;
-
-   int64_t _lastTransformationIndex;
-
-   std::string _logRegex;
-
-   Transformer * _reducer;
-   };
+    std::string _logRegex;
+};
 
 } // namespace JitBuilder
 } // namespace OMR
 
 #endif // defined(CONFIG_INCL)
+

@@ -135,7 +135,7 @@ Op_LoadField::jbgen(JB1MethodBuilder *j1mb) const {
 // StoreField
 //
 Op_StoreField::Op_StoreField(LOCATION, Extension *ext, Builder * parent, ActionID aStoreField, const FieldType *fieldType, Value *structValue, Value *value)
-    : OperationR0V2T1(PASSLOC, aStoreField, ext, parent, fieldType, structValue, value) {
+    : OperationR0T1V2(PASSLOC, aStoreField, ext, parent, fieldType, structValue, value) {
 }
 
 Operation *
@@ -173,7 +173,7 @@ Op_LoadFieldAt::jbgen(JB1MethodBuilder *j1mb) const {
 // StoreFieldAt
 //
 Op_StoreFieldAt::Op_StoreFieldAt(LOCATION, Extension *ext, Builder * parent, ActionID aStoreFieldAt, const FieldType *fieldType, Value *pStruct, Value *value)
-    : OperationR0V2T1(PASSLOC, aStoreFieldAt, ext, parent, fieldType, pStruct, value) {
+    : OperationR0T1V2(PASSLOC, aStoreFieldAt, ext, parent, fieldType, pStruct, value) {
 }
 
 Operation *
@@ -210,7 +210,7 @@ Op_CreateLocalArray::jbgen(JB1MethodBuilder *j1mb) const {
 //
 Operation *
 Op_CreateLocalStruct::clone(LOCATION, Builder *b, OperationCloner *cloner) const {
-    Type *cloneType = cloner->type();
+    const Type *cloneType = cloner->type();
     assert(cloneType->isStruct());
     return new Op_CreateLocalStruct(PASSLOC, this->_ext, b, this->action(), cloner->result(), static_cast<const StructType *>(cloneType));
 }
@@ -773,7 +773,7 @@ ForLoop::initializeTypeProductions(TypeDictionary * types, TypeGraph * graph)
    }
 
 IfCmpGreaterThan::IfCmpGreaterThan(Builder * parent, Builder * tgt, Value * left, Value * right)
-   : OperationR0V2B1(aIfCmpGreaterThan, parent, tgt, left, right)
+   : OperationB1R0V2(aIfCmpGreaterThan, parent, tgt, left, right)
    {
    }
 
@@ -801,7 +801,7 @@ IfCmpGreaterThan::initializeTypeProductions(TypeDictionary * types, TypeGraph * 
    }
 
 IfCmpLessThan::IfCmpLessThan(Builder * parent, Builder * tgt, Value * left, Value * right)
-   : OperationR0V2B1(aIfCmpLessThan, parent, tgt, left, right)
+   : OperationB1R0V2(aIfCmpLessThan, parent, tgt, left, right)
    {
    }
 
@@ -829,7 +829,7 @@ IfCmpLessThan::initializeTypeProductions(TypeDictionary * types, TypeGraph * gra
    }
 
 IfCmpGreaterOrEqual::IfCmpGreaterOrEqual(Builder * parent, Builder * tgt, Value * left, Value * right)
-   : OperationR0V2B1(aIfCmpGreaterOrEqual, parent, tgt, left, right)
+   : OperationB1R0V2(aIfCmpGreaterOrEqual, parent, tgt, left, right)
    {
    }
 
@@ -857,7 +857,7 @@ IfCmpGreaterOrEqual::initializeTypeProductions(TypeDictionary * types, TypeGraph
    }
 
 IfCmpLessOrEqual::IfCmpLessOrEqual(Builder * parent, Builder * tgt, Value * left, Value * right)
-   : OperationR0V2B1(aIfCmpLessOrEqual, parent, tgt, left, right)
+   : OperationB1R0V2(aIfCmpLessOrEqual, parent, tgt, left, right)
    {
    }
 
@@ -885,13 +885,13 @@ IfCmpLessOrEqual::initializeTypeProductions(TypeDictionary * types, TypeGraph * 
    }
 
 IfThenElse::IfThenElse(Builder * parent, Builder * thenB, Builder * elseB, Value * cond)
-   : OperationR0V1B1(aIfThenElse, parent, thenB, cond)
+   : OperationB1R0V1(aIfThenElse, parent, thenB, cond)
    , _elseBuilder(elseB)
    {
    }
 
 IfThenElse::IfThenElse(Builder * parent, Builder * thenB, Value * cond)
-   : OperationR0V1B1(aIfThenElse, parent, thenB, cond)
+   : OperationB1R0V1(aIfThenElse, parent, thenB, cond)
    , _elseBuilder(NULL)
    {
    }
@@ -973,59 +973,53 @@ Switch::clone(Builder *b, Value **results, Value **operands, Builder **builders)
    }
 
 void
-Switch::cloneTo(Builder *b, ValueMapper **resultMappers, ValueMapper **operandMappers, TypeMapper **typeMappers, LiteralMapper **literalMappers, SymbolMapper **symbolMappers, BuilderMapper **builderMappers) const
-   {
-   b->Switch(operandMappers[0]->next(), builderMappers[0]->next(), numCases(), (Case **)_cases.data());
-   }
+Switch::cloneTo(Builder *b, ValueMapper **resultMappers, ValueMapper **operandMappers, TypeMapper **typeMappers, LiteralMapper **literalMappers, SymbolMapper **symbolMappers, BuilderMapper **builderMappers) const {
+    b->Switch(operandMappers[0]->next(), builderMappers[0]->next(), numCases(), (Case **)_cases.data());
+}
 
 Operation *
-Switch::clone(Builder *b, OperationCloner *cloner) const
-   {
-   return create(b, cloner->operand(), cloner->builder(), numCases(), (Case **)_cases.data());
-   }
+Switch::clone(Builder *b, OperationCloner *cloner) const {
+    return create(b, cloner->operand(), cloner->builder(), numCases(), (Case **)_cases.data());
+}
 
 void
-Switch::initializeTypeProductions(TypeDictionary * types, TypeGraph * graph)
-   {
-   graph->registerValidOperation(types->NoType, aSwitch, types->Int32);
-   }
+Switch::initializeTypeProductions(TypeDictionary * types, TypeGraph * graph) {
+    graph->registerValidOperation(types->NoType, aSwitch, types->Int32);
+}
 
 CreateLocalArray::CreateLocalArray(Builder * parent, Value * result, int32_t numElements, Type * elementType)
-   : OperationR1L1T1(aCreateLocalArray, parent, result, Literal::create(parent->fb()->dict(), numElements), elementType)
-   {
-   }
+   : OperationR1L1T1(aCreateLocalArray, parent, result, Literal::create(parent->fb()->dict(), numElements), elementType) {
+
+}
 
 void
-CreateLocalArray::cloneTo(Builder *b, ValueMapper **resultMappers, ValueMapper **operandMappers, TypeMapper **typeMappers, LiteralMapper **literalMappers, SymbolMapper **symbolMappers, BuilderMapper **builderMappers) const
-   {
+CreateLocalArray::cloneTo(Builder *b, ValueMapper **resultMappers, ValueMapper **operandMappers, TypeMapper **typeMappers, LiteralMapper **literalMappers, SymbolMapper **symbolMappers, BuilderMapper **builderMappers) const {
    resultMappers[0]->add( b->CreateLocalArray(literalMappers[0]->next()->getInt32(), typeMappers[0]->next()) );
-   }
+}
 
 Operation *
-CreateLocalArray::clone(Builder *b, OperationCloner *cloner) const
-   {
-   return create(b, cloner->result(), cloner->literal()->getInt32(), cloner->type());
-   }
+CreateLocalArray::clone(Builder *b, OperationCloner *cloner) const {
+    return create(b, cloner->result(), cloner->literal()->getInt32(), cloner->type());
+}
 
 CreateLocalStruct::CreateLocalStruct(Builder * parent, Value * result, Type * structType)
-   : OperationR1T1(aCreateLocalStruct, parent, result, structType)
-   {
+   : OperationR1T1(aCreateLocalStruct, parent, result, structType) {
+
    }
 
 void
-CreateLocalStruct::cloneTo(Builder *b, ValueMapper **resultMappers, ValueMapper **operandMappers, TypeMapper **typeMappers, LiteralMapper **literalMappers, SymbolMapper **symbolMappers, BuilderMapper **builderMappers) const
-   {
-   resultMappers[0]->add( b->CreateLocalStruct(typeMappers[0]->next()) );
-   }
+CreateLocalStruct::cloneTo(Builder *b, ValueMapper **resultMappers, ValueMapper **operandMappers, TypeMapper **typeMappers, LiteralMapper **literalMappers, SymbolMapper **symbolMappers, BuilderMapper **builderMappers) const {
+    resultMappers[0]->add( b->CreateLocalStruct(typeMappers[0]->next()) );
+}
 
 Operation *
-CreateLocalStruct::clone(Builder *b, OperationCloner *cloner) const
-   {
-   return create(b, cloner->result(), cloner->type());
-   }
+CreateLocalStruct::clone(Builder *b, OperationCloner *cloner) const {
+    return create(b, cloner->result(), cloner->type());
+}
 
 #endif
 
 } // namespace Base
 } // namespace JitBuilder
 } // namespace OMR
+

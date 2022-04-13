@@ -51,8 +51,8 @@ extern "C" {
     }
 }
 
-BaseExtension::BaseExtension(Compiler *compiler)
-    : Extension(compiler, NAME)
+BaseExtension::BaseExtension(Compiler *compiler, bool extended, std::string extensionName)
+    : Extension(compiler, (extended ? extensionName : NAME))
     , NoType(registerType<NoTypeType>(new NoTypeType(LOC, this)))
     , Int8(registerType<Int8Type>(new Int8Type(LOC, this)))
     , Int16(registerType<Int16Type>(new Int16Type(LOC, this)))
@@ -82,15 +82,15 @@ BaseExtension::BaseExtension(Compiler *compiler)
     , CompileFail_BadInputTypes_Add(registerReturnCode("CompileFail_BadInputTypes_Add"))
     , CompileFail_BadInputTypes_Mul(registerReturnCode("CompileFail_BadInputTypes_Mul"))
     , CompileFail_BadInputTypes_Sub(registerReturnCode("CompileFail_BadInputTypes_Sub"))
-    , CompileFail_BadInputTypes_ForLoopUp(registerReturnCode("CompileFail_BadInputTypes_ForLoopUp"))
-     {
+    , CompileFail_BadInputTypes_ForLoopUp(registerReturnCode("CompileFail_BadInputTypes_ForLoopUp")) {
 
-    Strategy *jb1cgStrategy = new Strategy(compiler, "jb1cg");
-    Pass *jb1cg = new JB1CodeGenerator(compiler);
-    jb1cgStrategy->addPass(jb1cg);
-    _jb1cgStrategyID = jb1cgStrategy->id();
-
-    _checkers.push_back(new BaseExtensionChecker(this));
+    if (!extended) {
+        Strategy *jb1cgStrategy = new Strategy(compiler, "jb1cg");
+        Pass *jb1cg = new JB1CodeGenerator(compiler);
+        jb1cgStrategy->addPass(jb1cg);
+        _jb1cgStrategyID = jb1cgStrategy->id();
+        _checkers.push_back(new BaseExtensionChecker(this));
+    }
 }
 
 BaseExtension::~BaseExtension() {
@@ -110,12 +110,11 @@ BaseExtension::~BaseExtension() {
 //
 
 Value *
-BaseExtension::Const(LOCATION, Builder *b, Literal * lv)
-   {
-   Value * result = createValue(b, lv->type());
-   addOperation(b, new Op_Const(PASSLOC, this, b, this->aConst, result, lv));
-   return result;
-   }
+BaseExtension::Const(LOCATION, Builder *b, Literal * lv) {
+    Value * result = createValue(b, lv->type());
+    addOperation(b, new Op_Const(PASSLOC, this, b, this->aConst, result, lv));
+    return result;
+}
 
 
 //
@@ -451,20 +450,18 @@ BaseExtension::IndexAt(LOCATION, Builder *b, Value *base, Value *index) {
 // Pseudo operations
 //
 Location *
-BaseExtension::SourceLocation(LOCATION, Builder *b, std::string func)
-   {
-   Location *loc = new Location(b->comp(), func, "");
-   b->setLocation(loc);
-   return loc;
-   }
+BaseExtension::SourceLocation(LOCATION, Builder *b, std::string func) {
+    Location *loc = new Location(b->comp(), func, "");
+    b->setLocation(loc);
+    return loc;
+}
 
 Location *
-BaseExtension::SourceLocation(LOCATION, Builder *b, std::string func, std::string lineNumber)
-   {
-   Location *loc = new Location(b->comp(), func, lineNumber);
-   b->setLocation(loc);
-   return loc;
-   }
+BaseExtension::SourceLocation(LOCATION, Builder *b, std::string func, std::string lineNumber) {
+    Location *loc = new Location(b->comp(), func, lineNumber);
+    b->setLocation(loc);
+    return loc;
+}
 
 Location *
 BaseExtension::SourceLocation(LOCATION, Builder *b, std::string func, std::string lineNumber, int32_t bcIndex) {
@@ -474,66 +471,59 @@ BaseExtension::SourceLocation(LOCATION, Builder *b, std::string func, std::strin
 }
 
 Value *
-BaseExtension::ConstInt8(LOCATION, Builder *b, int8_t v)
-   {
-   Literal *lv = this->Int8->literal(PASSLOC, b->comp(), v);
-   return Const(PASSLOC, b, lv);
-   }
+BaseExtension::ConstInt8(LOCATION, Builder *b, int8_t v) {
+    Literal *lv = this->Int8->literal(PASSLOC, b->comp(), v);
+    return Const(PASSLOC, b, lv);
+}
 
 Value *
-BaseExtension::ConstInt16(LOCATION, Builder *b, int16_t v)
-   {
-   Literal *lv = this->Int16->literal(PASSLOC, b->comp(), v);
-   return Const(PASSLOC, b, lv);
-   }
+BaseExtension::ConstInt16(LOCATION, Builder *b, int16_t v) {
+    Literal *lv = this->Int16->literal(PASSLOC, b->comp(), v);
+    return Const(PASSLOC, b, lv);
+}
 
 Value *
-BaseExtension::ConstInt32(LOCATION, Builder *b, int32_t v)
-   {
-   Literal *lv = this->Int32->literal(PASSLOC, b->comp(), v);
-   return Const(PASSLOC, b, lv);
-   }
+BaseExtension::ConstInt32(LOCATION, Builder *b, int32_t v) {
+    Literal *lv = this->Int32->literal(PASSLOC, b->comp(), v);
+    return Const(PASSLOC, b, lv);
+}
 
 Value *
-BaseExtension::ConstInt64(LOCATION, Builder *b, int64_t v)
-   {
-   Literal *lv = this->Int64->literal(PASSLOC, b->comp(), v);
-   return Const(PASSLOC, b, lv);
-   }
+BaseExtension::ConstInt64(LOCATION, Builder *b, int64_t v) {
+    Literal *lv = this->Int64->literal(PASSLOC, b->comp(), v);
+    return Const(PASSLOC, b, lv);
+}
 
 Value *
-BaseExtension::ConstFloat32(LOCATION, Builder *b, float v)
-   {
-   Literal *lv = this->Float32->literal(PASSLOC, b->comp(), v);
-   return Const(PASSLOC, b, lv);
-   }
+BaseExtension::ConstFloat32(LOCATION, Builder *b, float v) {
+    Literal *lv = this->Float32->literal(PASSLOC, b->comp(), v);
+    return Const(PASSLOC, b, lv);
+}
 
 Value *
-BaseExtension::ConstFloat64(LOCATION, Builder *b, double v)
-   {
-   Literal *lv = this->Float64->literal(PASSLOC, b->comp(), v);
-   return Const(PASSLOC, b, lv);
-   }
+BaseExtension::ConstFloat64(LOCATION, Builder *b, double v) {
+    Literal *lv = this->Float64->literal(PASSLOC, b->comp(), v);
+    return Const(PASSLOC, b, lv);
+}
 
 Value *
-BaseExtension::ConstAddress(LOCATION, Builder *b, void * v)
-   {
-   Literal *lv = this->Address->literal(PASSLOC, b->comp(), v);
-   return Const(PASSLOC, b, lv);
-   }
+BaseExtension::ConstAddress(LOCATION, Builder *b, void * v) {
+    Literal *lv = this->Address->literal(PASSLOC, b->comp(), v);
+    return Const(PASSLOC, b, lv);
+}
 
 Value *
 BaseExtension::Zero(LOCATION, Compilation *comp, Builder *b, const Type *type) {
-   Literal *zero = type->zero(PASSLOC, comp);
-   assert(zero);
-   return Const(PASSLOC, b, zero);
+    Literal *zero = type->zero(PASSLOC, comp);
+    assert(zero);
+    return Const(PASSLOC, b, zero);
 }
 
 Value *
 BaseExtension::One(LOCATION, Compilation *comp, Builder *b, const Type *type) {
-   Literal *one = type->identity(PASSLOC, comp);
-   assert(one);
-   return Const(PASSLOC, b, one);
+    Literal *one = type->identity(PASSLOC, comp);
+    assert(one);
+    return Const(PASSLOC, b, one);
 }
 
 void
@@ -559,17 +549,18 @@ BaseExtension::PointerTo(LOCATION, FunctionCompilation *comp, const Type *baseTy
 
 const FunctionType *
 BaseExtension::DefineFunctionType(LOCATION, std::string name, const Type *returnType, int32_t numParms, const Type **parmTypes) {
-   const FunctionType *f = FunctionType::create(PASSLOC, this, name, returnType, numParms, parmTypes);
-   // should register it somewhere!
-   return f;
+    const FunctionType *f = FunctionType::create(PASSLOC, this, name, returnType, numParms, parmTypes);
+    // should register it somewhere!
+    return f;
 }
 
 CompilerReturnCode
 BaseExtension::jb1cgCompile(Compilation *comp) {
-   return _compiler->compile(comp, _jb1cgStrategyID);
+    return _compiler->compile(comp, _jb1cgStrategyID);
 }
 
 #if 0
+// keep handy during migration
 Value *
 BuilderBase::CoercePointer(Type * t, Value * v)
    {
@@ -1030,9 +1021,9 @@ BuilderBase::CreateLocalStruct(Type *structType)
    add(OMR::JitBuilder::CreateLocalStruct::create(self(), result, structType));
    return result;
    }
-
 #endif
 
 } // namespace Base
 } // namespace JitBuilder
 } // namespace OMR
+

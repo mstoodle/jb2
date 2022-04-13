@@ -27,10 +27,8 @@
 #include "Loggable.hpp"
 #include "typedefs.hpp"
 
-namespace OMR
-{
-namespace JitBuilder
-{
+namespace OMR {
+namespace JitBuilder {
 
 class Compilation;
 class Compiler;
@@ -40,7 +38,7 @@ class Pass : public Loggable {
     friend class Extension;
     friend class Strategy;
 
-    public:
+public:
     Pass(Compiler *compiler, std::string name);
 
     std::string name() const { return _name; }
@@ -49,7 +47,7 @@ class Pass : public Loggable {
 
     virtual CompilerReturnCode perform(Compilation *comp);
 
-    protected:
+protected:
     Compiler *_compiler;
     PassID _id;
     std::string _name;
@@ -61,3 +59,4 @@ class Pass : public Loggable {
 } // namespace OMR
 
 #endif // !defined(PASS_INCL)
+

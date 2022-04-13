@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2021, 2021 IBM Corp. and others
+ * Copyright (c) 2021, 2022 IBM Corp. and others
  *
  * This program and the accompanying materials are made available under
  * the terms of the Eclipse Public License 2.0 which accompanies this
@@ -54,7 +54,8 @@ Compiler::Compiler(std::string name, Config *config)
     , CompileNotStarted(assignReturnCode("CompileNotStarted"))
     , CompileFailed(assignReturnCode("CompileFailed"))
     , CompileFail_UnknownStrategyID(assignReturnCode("CompileFail_UnknownStrategy"))
-    , CompileFail_IlGen(assignReturnCode("CompileFail_IlGen")) {
+    , CompileFail_IlGen(assignReturnCode("CompileFail_IlGen"))
+    , CompileFail_TypeMustBeReduced(assignReturnCode("CompileFail_TypeMustBeReduced")) {
     if (_config == NULL) {
         _config = new Config();
         _myConfig = true;
@@ -82,9 +83,9 @@ Extension *
 Compiler::internalLoadExtension(std::string name, SemanticVersion *version) {
     Extension *ext = internalLookupExtension(name);
     if (ext) {
-	    if (version == NULL || ext->semver()->isCompatibleWith(*version))
-	        return ext;
-	    return NULL;
+        if (version == NULL || ext->semver()->isCompatibleWith(*version))
+            return ext;
+        return NULL;
     }
 
     std::string soname = std::string("lib") + name + std::string(".so");
@@ -217,3 +218,4 @@ Compiler::compile(Compilation *comp, StrategyID strategyID) {
 
 } // namespace JitBuilder
 } // namespace OMR
+

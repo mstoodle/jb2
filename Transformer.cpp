@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2021, 2021 IBM Corp. and others
+ * Copyright (c) 2021, 2022 IBM Corp. and others
  *
  * This program and the accompanying materials are made available under
  * the terms of the Eclipse Public License 2.0 which accompanies this
@@ -32,65 +32,14 @@ namespace OMR {
 namespace JitBuilder {
 
 void
-OMR::JitBuilder::Transformer::trace(std::string msg)
-   {
-   TextWriter *log = _comp->logger(traceEnabled());
-   if (log)
-      log->indent() << msg << log->endl();
-   }
-
-#if 0
-void
-OMR::JitBuilder::Transformer::appendOrInline(Builder * root, Builder * branch)
-   {
-   if (branch->isTarget())
-      root->AppendBuilder(branch);
-   else
-      {
-      TextWriter * log = _comp->logger(traceEnabled());
-      if (log) *log << "Inlining operations from " << branch << " into " << root << log->endl();
-
-      // operations currently have branch as parent, change that to root
-      for (OperationIterator opIt = branch->OperationsBegin(); opIt != branch->OperationsEnd(); opIt++)
-         {
-         Operation * op = *opIt;
-         op->setParent(root);
-         }
-
-      root->operations().insert(root->OperationsEnd(),
-                                branch->OperationsBegin(),
-                                branch->OperationsEnd());
-
-      }
-   }
-
-void
-OMR::JitBuilder::Transformer::transform(Compilation *comp)
-   {
-   _comp = comp;
-
-   BuilderWorklist worklist;
-   std::vector<bool> visited(Builder::maxIndex());
-
-   transformCompilationBegin(comp);
-
-   comp->addInitialBuildersToWorklist(worklist);
-
-   while(!worklist.empty())
-      {
-      Builder *b = worklist.back();
-      processBuilder(b, visited, worklist);
-      worklist.pop_back();
-      }
-
-   transformCompilationEnd(comp);
-
-   _comp = NULL;
-   }
-#endif
+Transformer::trace(std::string msg) {
+    TextWriter *log = _comp->logger(traceEnabled());
+    if (log)
+        log->indent() << msg << log->endl();
+}
 
 bool
-OMR::JitBuilder::Transformer::performTransformation(Operation * op, Builder * transformed, std::string msg) {
+Transformer::performTransformation(Operation * op, Builder * transformed, std::string msg) {
     static int64_t lastTransformation = LLONG_MAX;
     int64_t number = _comp->getTransformationID();
     int64_t lastIndex = _comp->config()->lastTransformationIndex();
@@ -137,7 +86,7 @@ Transformer::visitOperations(Builder *b, std::vector<bool> & visited, BuilderWor
 
                 bool replaceWithBuilder=false;
                 if (false && replaceWithBuilder) {
-                    #if 0
+                    #ifdef IMPLEMENTED_APPENDBUILDER
                     // replace the current operation with the Builder object containing its transformation
                     //    could also be done immutably by generating a new array of Operations
                     //    and returning new Builder but let's do in place for now
@@ -183,3 +132,4 @@ Transformer::visitOperations(Builder *b, std::vector<bool> & visited, BuilderWor
 
 } // namespace JitBuilder
 } // namespace OMR
+

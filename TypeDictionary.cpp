@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2021, 2021 IBM Corp. and others
+ * Copyright (c) 2021, 2022 IBM Corp. and others
  *
  * This program and the accompanying materials are made available under
  * the terms of the Eclipse Public License 2.0 which accompanies this
@@ -31,7 +31,6 @@
 namespace OMR {
 namespace JitBuilder {
 
-
 TypeDictionary::TypeDictionary(Compiler *compiler)
     : _id(compiler->getTypeDictionaryID())
     , _compiler(compiler)
@@ -55,11 +54,10 @@ TypeDictionary::TypeDictionary(Compiler *compiler, std::string name, TypeDiction
     , _name(name)
     , _nextTypeID(linkedDict->_nextTypeID)
     , _linkedDictionary(linkedDict) {
-    for (TypeIterator typeIt = linkedDict->TypesBegin(); typeIt != linkedDict->TypesEnd(); typeIt++)
-        {
+    for (TypeIterator typeIt = linkedDict->TypesBegin(); typeIt != linkedDict->TypesEnd(); typeIt++) {
         const Type *type = *typeIt;
         internalRegisterType(type);
-        }
+    }
     _nextTypeID = linkedDict->_nextTypeID;
 }
 
@@ -83,7 +81,7 @@ TypeDictionary::LookupType(TypeID id) {
 
 void
 TypeDictionary::RemoveType(const Type *type) {
-    // brutal performance; should really collect these and do in one pass
+    // TODO should really collect these and do in one pass
     for (auto it = _types.begin(); it != _types.end(); ) {
         if (*it == type)
             it = _types.erase(it);
@@ -118,25 +116,7 @@ TypeDictionary::registerType(const Type *type) {
 }
 
 #if 0
-PointerType *
-TypeDictionary::PointerTo(Type * baseType)
-   {
-   // don't replicate types
-   std::map<Type *,PointerType *>::iterator found = _pointerTypeFromBaseType.find(baseType);
-   if (found != _pointerTypeFromBaseType.end())
-      {
-      PointerType *t = found->second;
-      return t;
-      }
-
-   // if not found already, then create it
-   PointerType * newType = PointerType::create(this, std::string("PointerTo(") + baseType->name()  + std::string(")"), baseType);
-   addType(newType);
-   _pointerTypeFromBaseType[baseType] = newType;
-   registerPointerType(newType);
-   return newType;
-   }
-
+// keep this handy in case needed during migration
 void
 TypeDictionary::RemoveType(Type *type)
    {
@@ -173,116 +153,8 @@ TypeDictionary::RemoveType(Type *type)
    // TODO but not *strictly* necessary: _graph->unregister(type);
    }
 
-StructType *
-TypeDictionary::LookupStruct(std::string structName)
-   {
-   std::map<std::string,StructType *>::iterator found = _structTypeFromName.find(structName);
-   if (found != _structTypeFromName.end())
-      return found->second;
-
-   return NULL;
-   }
-
-StructType *
-TypeDictionary::DefineStruct(std::string structName, size_t size)
-   {
-   StructType *existingType = LookupStruct(structName);
-   if (existingType)
-      {
-      assert(existingType->size() == size);
-      return existingType;
-      }
-
-   StructType * newType = StructType::create(this, structName, size);
-   addType(newType);
-   _structTypeFromName.insert({structName, newType});
-   _graph->registerType(newType);
-   _graph->registerType(PointerTo(newType));
-   return newType;
-   }
-
-UnionType *
-TypeDictionary::DefineUnion(std::string unionName)
-   {
-   StructType *existingType = LookupStruct(unionName);
-   if (existingType)
-      {
-      assert(existingType->isUnion());
-      return static_cast<UnionType *>(existingType);
-      }
-
-   UnionType * newType = UnionType::create(this, unionName);
-   addType(newType);
-   _structTypeFromName.insert({unionName, newType});
-   _graph->registerType(newType);
-   _graph->registerType(PointerTo(newType));
-   return newType;
-   }
-
-FieldType *
-TypeDictionary::DefineField(StructType *structType, Literal *fieldName, Type * fType, size_t offset)
-   {
-   assert(structType);
-   if (structType->closed())
-      {
-      // TODO: useful error message
-      return NULL;
-      }
-
-   assert(fieldName->kind() == T_string || fieldName->kind() == T_typename);
-   FieldType *fieldType = structType->LookupField(fieldName->getString());
-   if (fieldType)
-      {
-      assert(fieldType->type() == fType && fieldType->offset() == offset);
-      return fieldType;
-      }
-
-   fieldType = structType->addField(fieldName, fType, offset);
-   addType(fieldType);
-   _graph->registerValidDirectFieldAccess(fieldType, structType);
-   _graph->registerValidIndirectFieldAccess(fieldType, PointerTo(structType));
-   return fieldType;
-   }
-
-void
-TypeDictionary::CloseStruct(Type *type)
-   {
-   assert(type && type->isStruct());
-   StructType *structType = static_cast<StructType *>(type);
-   structType->setClosed();
-   }
-
-void
-TypeDictionary::CloseUnion(Type *type)
-   {
-   assert(type && type->isUnion());
-   UnionType *unionType = static_cast<UnionType *>(type);
-   unionType->setClosed();
-   }
-
-FunctionType *
-TypeDictionary::DefineFunctionType(std::string name,
-                                   Type *returnType,
-                                   int32_t numParms,
-                                   Type **parmTypes)
-   {
-   // don't replicate types
-   std::map<std::string,FunctionType *>::iterator found = _functionTypeFromName.find(name);
-   if (found != _functionTypeFromName.end())
-      {
-      FunctionType *t = found->second;
-      assert(t->returnType() == returnType && t->numParms() == numParms);
-      for (int p=0;p < numParms;p++)
-         assert(t->parmType(p) == parmTypes[p]);
-      return t;
-      }
-
-   FunctionType * newType = FunctionType::create(this, name, returnType, numParms, parmTypes);
-   addType(newType);
-   _graph->registerFunctionType(newType);
-   return newType;
-   }
 #endif
 
 } // namespace JitBuilder
 } // namespace OMR
+

@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2021, 2021 IBM Corp. and others
+ * Copyright (c) 2021, 2022 IBM Corp. and others
  *
  * This program and the accompanying materials are made available under
  * the terms of the Eclipse Public License 2.0 which accompanies this
@@ -36,7 +36,7 @@
 #include "ilgen/IlType.hpp"
 #include "ilgen/TypeDictionary.hpp"
 
-int32_t internal_compileMethodBuilder(TR::MethodBuilder *mb, void ** entryPoint);
+extern int32_t internal_compileMethodBuilder(TR::MethodBuilder *mb, void ** entryPoint);
 
 namespace OMR {
 namespace JitBuilder {
@@ -58,12 +58,10 @@ JB1CodeGenerator::perform(Compilation *comp) {
             , _cg(cg)
             , _ilBuilt(false) {
 
+            // IL may already be constructed but if not, call buildIL()
             bool success = _comp->ilBuilt();
             if (!success)
                 success = _comp->buildIL();
-
-            //if (_fb->config()->hasReducer())
-            //    _fb->config()->reducer()->transform(_fb);
 
             _cg->j1mb()->setMethodBuilder(this);
             _cg->j1mb()->registerTypes(_comp->dict());
@@ -85,18 +83,29 @@ JB1CodeGenerator::perform(Compilation *comp) {
         JB1CodeGenerator * _cg;
         bool _ilBuilt;
     };
+
     setTraceEnabled(comp->config()->traceCodeGenerator());
-    JB1MethodBuilder j1mb(comp);
-    _j1mb = &j1mb;
-    TR::TypeDictionary types;
-    CompileMethodBuilder cmb(comp, this, &types);
+    int32_t compileReturnCode=-1;
     void *entryPoint=NULL;
-    int32_t compileReturnCode = internal_compileMethodBuilder(&cmb, &entryPoint);
-    _j1mb = NULL;
+    {
+        JB1MethodBuilder j1mb(comp);
+        _j1mb = &j1mb;
+
+        TR::TypeDictionary types;
+        CompileMethodBuilder cmb(comp, this, &types);
+
+        entryPoint=NULL;
+        compileReturnCode = internal_compileMethodBuilder(&cmb, &entryPoint);
+
+        _j1mb = NULL;
+    }
     setTraceEnabled(false);
+
     if (compileReturnCode != 0)
         return comp->compiler()->CompileFailed;
+
     comp->setNativeEntryPoint(entryPoint, 0);
+
     return comp->compiler()->CompileSuccessful;
 }
 
@@ -119,9 +128,15 @@ JB1CodeGenerator::visitOperation(Operation * op) {
 
 void
 JB1CodeGenerator::visitPostCompilation(Compilation *comp) {
+    assert(_j1mb);
+    TextWriter *log = comp->logger(traceEnabled());
+    if (log) log->indentOut();
+    _j1mb->printAllMaps();
 }
 
 #if 0
+// old impl of JBCodeGenerator kept here so it's handy during mgration
+
 void
 JBCodeGenerator::generateFunctionAPI(FunctionBuilder *fb) {
     TextWriter *log = fb->logger(traceEnabled());
@@ -277,9 +292,7 @@ JBCodeGenerator::Return(Location *loc, Builder *b, Value *value) {
     else
         omr_b->Return();
 }
-#endif
 
-#if 0
    Builder * b = op->parent();
    TR::IlBuilder *omr_b = mapBuilder(b);
    omr_b->setBCIndex(op->location()->bcIndex())->SetCurrentIlGenerator();

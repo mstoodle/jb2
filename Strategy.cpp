@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2021, 2021 IBM Corp. and others
+ * Copyright (c) 2021, 2022 IBM Corp. and others
  *
  * This program and the accompanying materials are made available under
  * the terms of the Eclipse Public License 2.0 which accompanies this
@@ -32,11 +32,13 @@ Strategy::Strategy(Compiler *compiler, std::string name)
     : _id(NoStrategy)
     , _compiler(compiler)
     , _name(name) {
+
     _id = compiler->addStrategy(this);
 }
 
 Strategy *
 Strategy::addPass(Pass *pass) {
+    // TODO: convert to CompilationException
     assert(pass->_compiler == _compiler);
     _passes.push_back(pass);
     return this;
@@ -47,7 +49,7 @@ Strategy::perform(Compilation *comp) {
     for (auto it = _passes.begin(); it != _passes.end(); it++) {
         Pass *pass = *it;
 
-        if (comp->logger()) {
+        if (comp->logger()) { // TODO should have its own specific trace enabler
             TextWriter &log = *comp->logger();
             log << "IL before pass " << pass->name() << log.endl();
             log.print(comp);
@@ -64,7 +66,7 @@ Strategy::perform(Compilation *comp) {
             return rc;
         }
     }
-    if (comp->logger()) {
+    if (comp->logger()) { // TODO should have its own specific trace enabler
         TextWriter &log = *comp->logger();
         log << "Final IL" << log.endl();
         log.print(comp);
@@ -74,3 +76,4 @@ Strategy::perform(Compilation *comp) {
 
 } // namespace JitBuilder
 } // namespace OMR
+

@@ -73,8 +73,8 @@ class LocalSymbol;
 class BaseExtension : public Extension {
     friend class PointerTypeBuilder;
 
-    public:
-    BaseExtension(Compiler *compiler);
+public:
+    BaseExtension(Compiler *compiler, bool extended=false, std::string extensionName="");
     virtual ~BaseExtension();
 
     static const std::string NAME;
@@ -202,7 +202,7 @@ class BaseExtension : public Extension {
 
     CompilerReturnCode jb1cgCompile(Compilation *comp);
 
-    protected:
+protected:
     StrategyID _jb1cgStrategyID;
     std::vector<BaseExtensionChecker *> _checkers;
 
@@ -213,6 +213,7 @@ class BaseExtensionChecker {
 public:
     BaseExtensionChecker(BaseExtension *base)
         : _base(base) {
+
     }
 
     virtual bool validateAdd(LOCATION, Builder *b, Value *left, Value *right);
@@ -234,3 +235,4 @@ protected:
 } // namespace OMR
 
 #endif // defined(BASEEXTENSION_INCL)
+

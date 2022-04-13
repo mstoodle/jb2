@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2021, 2021 IBM Corp. and others
+ * Copyright (c) 2021, 2022 IBM Corp. and others
  *
  * This program and the accompanying materials are made available under
  * the terms of the Eclipse Public License 2.0 which accompanies this
@@ -27,11 +27,8 @@
 #include <string>
 #include "Mapper.hpp"
 
-namespace OMR
-{
-
-namespace JitBuilder
-{
+namespace OMR {
+namespace JitBuilder {
 
 class Builder;
 class Literal;
@@ -40,143 +37,130 @@ class Symbol;
 class Type;
 class Value;
 
-class OperationCloner
-   {
-   public:
-   OperationCloner(Operation *op);
-   ~OperationCloner();
+class OperationCloner {
+public:
+    OperationCloner(Operation *op);
+    ~OperationCloner();
 
-   void init();
-   void reset();
+    void init();
+    void reset();
 
-   OperationCloner *changeOperand(Value *v, uint32_t i=0)
-      {
-      if (i < _numOperands)
-         _operands[i] = v;
-      return this;
-      }
+    OperationCloner *changeOperand(Value *v, uint32_t i=0) {
+        if (i < _numOperands)
+            _operands[i] = v;
+        return this;
+    }
 
-   OperationCloner *changeType(Type *t, uint32_t i=0)
-      {
-      if (i < _numTypes)
-         _types[i] = t;
-      return this;
-      }
+    OperationCloner *changeType(const Type *t, uint32_t i=0) {
+        if (i < _numTypes)
+            _types[i] = t;
+        return this;
+    }
 
-   OperationCloner *changeLiteral(Literal *v, uint32_t i=0)
-      {
-      if (i < _numLiterals)
-         _literals[i] = v;
-      return this;
-      }
+    OperationCloner *changeLiteral(Literal *v, uint32_t i=0) {
+        if (i < _numLiterals)
+            _literals[i] = v;
+        return this;
+    }
 
-   OperationCloner *changeSymbol(Symbol *s, uint32_t i=0)
-      {
-      if (i < _numSymbols)
-         _symbols[i] = s;
-      return this;
-      }
+    OperationCloner *changeSymbol(Symbol *s, uint32_t i=0) {
+        if (i < _numSymbols)
+            _symbols[i] = s;
+        return this;
+    }
 
-   OperationCloner *changeBuilder(Builder *b, uint32_t i=0)
-      {
-      if (i < _numBuilders)
-         _builders[i] = b;
-      return this;
-      }
+    OperationCloner *changeBuilder(Builder *b, uint32_t i=0) {
+        if (i < _numBuilders)
+            _builders[i] = b;
+        return this;
+    }
 
-   Operation *clone(Builder *b);
-   Operation *cloneTo(Builder *b, ValueMapper **resultMappers, ValueMapper **operandMappers, TypeMapper **typeMappers, LiteralMapper **literalMapppers, SymbolMapper **symbolMappers, BuilderMapper **builderMappers);
+    Operation *clone(Builder *b);
+    Operation *cloneTo(Builder *b,
+                       ValueMapper **resultMappers,
+                       ValueMapper **operandMappers,
+                       TypeMapper **typeMappers,
+                       LiteralMapper **literalMapppers,
+                       SymbolMapper **symbolMappers,
+                       BuilderMapper **builderMappers);
 
-   uint32_t numResults() const
-      {
-      return _numResults;
-      }
-   Value *result(uint32_t i=0) const
-      {
-      if (i < _numResults) return _results[i];
-      return NULL;
-      }
-   void changeResult(Value *v, uint32_t i=0)
-      {
-      if (i < _numResults) _results[i] = v;
-      }
-   void createResult(Builder *b, uint32_t i=0);
+    uint32_t numResults() const {
+        return _numResults;
+    }
+    Value *result(uint32_t i=0) const {
+        if (i < _numResults) return _results[i];
+        return NULL;
+    }
+    void changeResult(Value *v, uint32_t i=0) {
+        if (i < _numResults) _results[i] = v;
+    }
+    void createResult(Builder *b, uint32_t i=0);
 
-   uint32_t numOperands() const
-      {
-      return _numOperands;
-      }
-   Value *operand(uint32_t i=0) const
-      {
-      if (i < _numOperands) return _operands[i];
-      return NULL;
-      }
+    uint32_t numOperands() const {
+        return _numOperands;
+    }
+    Value *operand(uint32_t i=0) const {
+        if (i < _numOperands) return _operands[i];
+        return NULL;
+    }
 
-   uint32_t numTypes() const
-      {
-      return _numTypes;
-      }
-   Type *type(uint32_t i=0) const
-      {
-      if (i < _numTypes) return _types[i];
-      return NULL;
-      }
+    uint32_t numTypes() const {
+        return _numTypes;
+    }
+    const Type *type(uint32_t i=0) const {
+        if (i < _numTypes) return _types[i];
+        return NULL;
+    }
 
-   uint32_t numLiterals() const
-      {
-      return _numLiterals;
-      }
-   Literal *literal(uint32_t i=0) const
-      {
-      if (i < _numLiterals) return _literals[i];
-      return NULL;
-      }
+    uint32_t numLiterals() const {
+        return _numLiterals;
+    }
+    Literal *literal(uint32_t i=0) const {
+        if (i < _numLiterals) return _literals[i];
+        return NULL;
+    }
 
-   uint32_t numSymbols() const
-      {
-      return _numSymbols;
-      }
-   Symbol *symbol(uint32_t i=0) const
-      {
-      if (i < _numSymbols) return _symbols[i];
-      return NULL;
-      }
+    uint32_t numSymbols() const {
+        return _numSymbols;
+    }
+    Symbol *symbol(uint32_t i=0) const {
+        if (i < _numSymbols) return _symbols[i];
+        return NULL;
+    }
 
-   uint32_t numBuilders() const
-      {
-      return _numBuilders;
-      }
-   Builder *builder(uint32_t i=0) const
-      {
-      if (i < _numBuilders) return _builders[i];
-      return NULL;
-      }
+    uint32_t numBuilders() const {
+        return _numBuilders;
+    }
+    Builder *builder(uint32_t i=0) const {
+        if (i < _numBuilders) return _builders[i];
+        return NULL;
+    }
 
-   private:
+private:
 
-   Operation *_op;
+    Operation *_op;
 
-   int32_t _numResults;
-   Value **_results;
+    int32_t _numResults;
+    Value **_results;
 
-   int32_t _numOperands;
-   Value **_operands;
+    int32_t _numOperands;
+    Value **_operands;
 
-   int32_t _numTypes;
-   Type **_types;
+    int32_t _numTypes;
+    const Type **_types;
 
-   int32_t _numLiterals;
-   Literal **_literals;
+    int32_t _numLiterals;
+    Literal **_literals;
 
-   int32_t _numSymbols;
-   Symbol **_symbols;
+    int32_t _numSymbols;
+    Symbol **_symbols;
 
-   int32_t _numBuilders;
-   Builder **_builders;
-   };
+    int32_t _numBuilders;
+    Builder **_builders;
+};
 
 } // namespace JitBuilder
-
 } // namespace OMR
 
 #endif // defined(OPERATIONCLONER_INCL)
+

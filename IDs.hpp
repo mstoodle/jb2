@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2021, 2021 IBM Corp. and others
+ * Copyright (c) 2021, 2022 IBM Corp. and others
  *
  * This program and the accompanying materials are made available under
  * the terms of the Eclipse Public License 2.0 which accompanies this
@@ -31,6 +31,9 @@ const ActionID NoAction=0;
 typedef uint64_t BuilderID;
 const BuilderID NoBuilder=0;
 
+typedef int32_t ByteCodeIndex;
+const ByteCodeIndex InvalidByteCodeIndex=-1;
+
 typedef uint64_t CaseID;
 const CaseID NoCase=0;
 
@@ -41,7 +44,7 @@ typedef uint64_t CompilerID;
 const CompilerID NoCompiler=0;
 
 typedef uint64_t CompilerReturnCode;
-// uses every value
+// zero is not "special"
 
 typedef uint64_t ContextID;
 const ContextID NoContext=0;
@@ -86,3 +89,4 @@ const ValueID NoValue=0;
 } // namespace OMR
 
 #endif // !defined(IDENTIFIERTYPES_INCL)
+

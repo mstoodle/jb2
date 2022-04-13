@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2021, 2021 IBM Corp. and others
+ * Copyright (c) 2021, 2022 IBM Corp. and others
  *
  * This program and the accompanying materials are made available under
  * the terms of the Eclipse Public License 2.0 which accompanies this
@@ -25,27 +25,25 @@
 #include <list>
 #include <string>
 
-namespace OMR
-{
-namespace JitBuilder
-{
+namespace OMR {
+namespace JitBuilder {
 
 typedef uint16_t MajorID;
 typedef uint16_t MinorID;
 typedef uint16_t PatchID;
 
 class SemanticVersion {
-    protected:
+protected:
 
-    class BuildIdentifier {
-    public:
+    // TODO: to be used in comparing build IDs
+    struct BuildIdentifier {
         enum { isNumeric, isNonNumeric } _kind;
-            std::string _identifier;
-            uint64_t _numericIdentifier;
-            int compare(const BuildIdentifier & other) const;
+        std::string _identifier;
+        uint64_t _numericIdentifier;
+        int compare(const BuildIdentifier & other) const;
     };
 
-    public:
+public:
     SemanticVersion(MajorID major, MinorID minor, PatchID patch, std::string preRelease, std::string buildMetadata)
         : _valid(false)
         , _major(major)

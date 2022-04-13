@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2021, 2021 IBM Corp. and others
+ * Copyright (c) 2021, 2022 IBM Corp. and others
  *
  * This program and the accompanying materials are made available under
  * the terms of the Eclipse Public License 2.0 which accompanies this
@@ -137,6 +137,7 @@ Function::DefineFunction(LOCATION,
                          const Type *returnType,
                          int32_t numParms,
                          ...) {
+
     const Type **parmTypes = new const Type*[numParms];
     va_list parms;
     va_start(parms, numParms);
@@ -157,6 +158,7 @@ Function::DefineFunction(LOCATION,
                          const Type *returnType,
                          int32_t numParms,
                          const Type **parmTypes) {
+
     // copy parameter types so don't have to force caller to keep the parmTypes array alive
     const Type **copiedParmTypes = new const Type*[numParms];
     for (int32_t p=0;p < numParms;p++)
@@ -175,6 +177,7 @@ Function::internalDefineFunction(LOCATION,
                                  const Type *returnType,
                                  int32_t numParms,
                                  const Type **parmTypes) {
+
     const FunctionType *type = _ext->DefineFunctionType(PASSLOC, name, returnType, numParms, parmTypes);
     FunctionSymbol *sym = new FunctionSymbol(type, name, fileName, lineNumber, entryPoint);
 
@@ -230,6 +233,7 @@ Function::LookupLocal(std::string name) {
         if (parameter->name() == name)
             return parameter;
     }
+
     return NULL;
 }
 
@@ -353,3 +357,4 @@ Function::internalDebugger(int32_t *returnCode)
 } // namespace Base
 } // namespace JitBuilder
 } // namespace OMR
+

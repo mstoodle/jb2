@@ -44,3 +44,4 @@ typedef std::vector<Symbol *> SymbolVector;
 } // namespace OMR
 
 #endif // defined(TYPEDEFS_INCL)
+

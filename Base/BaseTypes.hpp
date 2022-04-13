@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2021, 2021 IBM Corp. and others
+ * Copyright (c) 2021, 2022 IBM Corp. and others
  *
  * This program and the accompanying materials are made available under
  * the terms of the Eclipse Public License 2.0 which accompanies this
@@ -50,8 +50,9 @@ class NoTypeType : public Type {
 
     protected:
     NoTypeType(LOCATION, Extension *ext)
-        : Type(PASSLOC, ext, "NoType", 0)
-        { }
+        : Type(PASSLOC, ext, "NoType", 0) {
+
+    }
 };
 
 class NumericType : public Type {
@@ -59,8 +60,9 @@ class NumericType : public Type {
 
     protected:
     NumericType(LOCATION, Extension *ext, std::string name, size_t size)
-        : Type(PASSLOC, ext, name, size)
-        { }
+        : Type(PASSLOC, ext, name, size) {
+
+    }
 };
 
 class IntegerType : public NumericType {
@@ -70,8 +72,9 @@ class IntegerType : public NumericType {
 
     protected:
     IntegerType(LOCATION, Extension *ext, std::string name, size_t size)
-        : NumericType(PASSLOC, ext, name, size)
-        { }
+        : NumericType(PASSLOC, ext, name, size) {
+
+    }
 };
 
 class Int8Type : public IntegerType {
@@ -161,8 +164,9 @@ class FloatingPointType : public NumericType {
 
     protected:
     FloatingPointType(LOCATION, Extension *ext, std::string name, size_t size)
-        : NumericType(PASSLOC, ext, name, size)
-        { }
+        : NumericType(PASSLOC, ext, name, size) {
+
+    }
 };
 
 class Float32Type : public FloatingPointType {
@@ -426,8 +430,9 @@ class FunctionType : public Type {
     friend class BaseExtension;
     friend class TypeDictionary;
 
-    public:
+public:
     #if 0
+    // TODO: Move to separate class
     class TypeBuilder {
         struct FieldInfo {
             std::string _name;
@@ -495,13 +500,13 @@ class FunctionType : public Type {
     virtual void printType(TextWriter &w);
     virtual void printValue(TextWriter &w, const void *p) const;
 
-    protected:
+protected:
     FunctionType(LOCATION, Extension *ext, std::string name, const Type *returnType, int32_t numParms, const Type ** parmTypes)
         : Type(PASSLOC, ext, name, 0)
         , _returnType(returnType)
         , _numParms(numParms)
-        , _parmTypes(parmTypes)
-        {
+        , _parmTypes(parmTypes) {
+
         }
 
     const Type *_returnType;
@@ -514,3 +519,4 @@ class FunctionType : public Type {
 } // namespace OMR
 
 #endif // !defined(BASETYPES_INCL)
+

@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2021, 2021 IBM Corp. and others
+ * Copyright (c) 2021, 2022 IBM Corp. and others
  *
  * This program and the accompanying materials are made available under
  * the terms of the Eclipse Public License 2.0 which accompanies this
@@ -21,7 +21,6 @@
 
 #ifndef TYPEDICTIONARY_INCL
 #define TYPEDICTIONARY_INCL
-
 
 #include <stdint.h>
 #include <vector>
@@ -65,6 +64,7 @@ public:
     void write(TextWriter &w);
 
     void registerType(const Type *type);
+
 protected:
     void internalRegisterType(const Type *type);
 
@@ -75,9 +75,10 @@ protected:
     std::vector<const Type *> _ownedTypes;
     TypeID _nextTypeID;
     TypeDictionary * _linkedDictionary;
-    };
+};
 
 } // namespace JitBuilder
 } // namespace OMR
 
 #endif // defined(TYPEDICTIONARY_INCL)
+

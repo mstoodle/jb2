@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2021, 2021 IBM Corp. and others
+ * Copyright (c) 2021, 2022 IBM Corp. and others
  *
  * This program and the accompanying materials are made available under
  * the terms of the Eclipse Public License 2.0 which accompanies this
@@ -51,25 +51,28 @@ public:
 
     virtual void write(TextWriter & w) const;
 
-    //static uint64_t maxID() { return globalIndex; }
-
 protected:
     Symbol(std::string name, const Type * type)
         : _name(name)
         , _type(type)
-      , _id(NoSymbol) {
+        , _id(NoSymbol) {
+
     }
 
-    void assignID(SymbolID id) { assert(_id == NoSymbol); assert(id != NoSymbol); _id = id; }
+    void assignID(SymbolID id) {
+        // TODO convert to CompilationException
+        assert(_id == NoSymbol);
+       	assert(id != NoSymbol);
+       	_id = id;
+    }
 
     std::string _name;
     const Type * _type;
     SymbolID _id;
-
-    //static int64_t globalIndex;
 };
 
 } // namespace JitBuilder
 } // namespace OMR
 
 #endif // defined(SYMBOL_INCL)
+

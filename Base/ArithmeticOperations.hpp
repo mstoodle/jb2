@@ -64,3 +64,4 @@ protected:
 } // namespace OMR
 
 #endif // !defined(ARITHMETICOPERATIONS_INCL)
+

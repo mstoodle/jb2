@@ -38,9 +38,7 @@ namespace OMR {
 namespace JitBuilder {
 namespace Base {
 
-//
-// Const
-//
+
 Op_Const::Op_Const(LOCATION, Extension *ext, Builder * parent, ActionID aConst, Value * result, Literal *lv)
     : OperationR1L1(PASSLOC, aConst, ext, parent, result, lv) {
 }
@@ -59,3 +57,4 @@ Op_Const::jbgen(JB1MethodBuilder *j1mb) const {
 } // namespace Base
 } // namespace JitBuilder
 } // namespace OMR
+

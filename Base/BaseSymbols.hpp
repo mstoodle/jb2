@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2021, 2021 IBM Corp. and others
+ * Copyright (c) 2021, 2022 IBM Corp. and others
  *
  * This program and the accompanying materials are made available under
  * the terms of the Eclipse Public License 2.0 which accompanies this
@@ -38,8 +38,9 @@ class LocalSymbol : public Symbol {
 
 public:
     LocalSymbol(std::string name, const Type * type)
-        : Symbol(name, type)
-        { }
+        : Symbol(name, type) {
+
+    }
 
     virtual bool isLocal() const { return true; }
 };
@@ -84,8 +85,9 @@ class ParameterSymbol : public LocalSymbol {
 public:
     ParameterSymbol(std::string name, const Type * type, int index)
         : LocalSymbol(name, type)
-        , _index(index)
-        { }
+        , _index(index) {
+
+    }
 
     int index() const { return _index; }
 
@@ -100,3 +102,4 @@ protected:
 } // namespace OMR
 
 #endif // !defined(BASESYMBOLS_INCL)
+

@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2021, 2021 IBM Corp. and others
+ * Copyright (c) 2021, 2022 IBM Corp. and others
  *
  * This program and the accompanying materials are made available under
  * the terms of the Eclipse Public License 2.0 which accompanies this
@@ -37,20 +37,21 @@ public:
     Location(Compilation *comp, std::string fileName, std::string lineNumber, int32_t bcIndex);
 
     virtual size_t size()          { return sizeof(Location); }
-    uint64_t id() const            { return _id; }
-    int32_t bcIndex() const        { return _bcIndex; }
+    LocationID id() const          { return _id; }
+    ByteCodeIndex bcIndex() const  { return _bcIndex; }
     std::string fileName() const   { return _fileName; }
     std::string lineNumber() const { return _lineNumber; }
 
 protected:
-    int64_t       _id;
+    LocationID    _id;
     Compilation * _comp;
     std::string   _fileName;
     std::string   _lineNumber;
-    int32_t       _bcIndex;
+    ByteCodeIndex _bcIndex;
 };
 
 } // namespace JitBuilder
 } // namespace OMR
 
 #endif // defined(LOCATION_INCL)
+

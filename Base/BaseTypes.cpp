@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2021, 2021 IBM Corp. and others
+ * Copyright (c) 2021, 2022 IBM Corp. and others
  *
  * This program and the accompanying materials are made available under
  * the terms of the Eclipse Public License 2.0 which accompanies this
@@ -66,7 +66,7 @@ Int8Type::printValue(TextWriter &w, const void *p) const {
 
 void
 Int8Type::printLiteral(TextWriter & w, const Literal *lv) const {
-   w << name() << "(" << ((int) lv->value<const int8_t>()) << ")";
+    w << name() << "(" << ((int) lv->value<const int8_t>()) << ")";
 }
 
 const int64_t
@@ -98,14 +98,13 @@ Int16Type::literalsAreEqual(const LiteralBytes *l1, const LiteralBytes *l2) cons
 }
 
 void
-Int16Type::printValue(TextWriter &w, const void *p) const
-   {
-   w << name() << " " << *reinterpret_cast<const int16_t *>(p);
-   }
+Int16Type::printValue(TextWriter &w, const void *p) const {
+    w << name() << " " << *reinterpret_cast<const int16_t *>(p);
+}
 
 void
 Int16Type::printLiteral(TextWriter & w, const Literal *lv) const {
-   w << name() << "(" << (lv->value<const int16_t>()) << ")";
+    w << name() << "(" << (lv->value<const int16_t>()) << ")";
 }
 
 const int64_t
@@ -138,14 +137,13 @@ Int32Type::literalsAreEqual(const LiteralBytes *l1, const LiteralBytes *l2) cons
 }
 
 void
-Int32Type::printValue(TextWriter &w, const void *p) const
-   {
-   w << name() << " " << *reinterpret_cast<const int32_t *>(p);
-   }
+Int32Type::printValue(TextWriter &w, const void *p) const {
+    w << name() << " " << *reinterpret_cast<const int32_t *>(p);
+}
 
 void
 Int32Type::printLiteral(TextWriter & w, const Literal *lv) const {
-   w << name() << "(" << (lv->value<const int32_t>()) << ")";
+    w << name() << "(" << (lv->value<const int32_t>()) << ")";
 }
 
 const int64_t
@@ -178,14 +176,13 @@ Int64Type::literalsAreEqual(const LiteralBytes *l1, const LiteralBytes *l2) cons
 }
 
 void
-Int64Type::printValue(TextWriter &w, const void *p) const
-   {
-   w << name() << " " << *reinterpret_cast<const int64_t *>(p);
-   }
+Int64Type::printValue(TextWriter &w, const void *p) const {
+    w << name() << " " << *reinterpret_cast<const int64_t *>(p);
+}
 
 void
 Int64Type::printLiteral(TextWriter & w, const Literal *lv) const {
-   w << name() << "(" << (lv->value<const int64_t>()) << ")";
+    w << name() << "(" << (lv->value<const int64_t>()) << ")";
 }
 
 const int64_t
@@ -218,14 +215,13 @@ Float32Type::literalsAreEqual(const LiteralBytes *l1, const LiteralBytes *l2) co
 }
 
 void
-Float32Type::printValue(TextWriter &w, const void *p) const
-   {
-   w << name() << " " << *reinterpret_cast<const float *>(p);
-   }
+Float32Type::printValue(TextWriter &w, const void *p) const {
+    w << name() << " " << *reinterpret_cast<const float *>(p);
+}
 
 void
 Float32Type::printLiteral(TextWriter & w, const Literal *lv) const {
-   w << name() << "(" << (lv->value<const float>()) << ")";
+    w << name() << "(" << (lv->value<const float>()) << ")";
 }
 
 const double
@@ -258,14 +254,13 @@ Float64Type::literalsAreEqual(const LiteralBytes *l1, const LiteralBytes *l2) co
 }
 
 void
-Float64Type::printValue(TextWriter &w, const void *p) const
-   {
-   w << name() << " " << *reinterpret_cast<const double *>(p);
-   }
+Float64Type::printValue(TextWriter &w, const void *p) const {
+    w << name() << " " << *reinterpret_cast<const double *>(p);
+}
 
 void
 Float64Type::printLiteral(TextWriter & w, const Literal *lv) const {
-   w << name() << "(" << (lv->value<const double>()) << ")";
+    w << name() << "(" << (lv->value<const double>()) << ")";
 }
 
 const double
@@ -287,11 +282,13 @@ Float64Type::createJB1ConstOp(Location *loc, JB1MethodBuilder *j1mb, Builder *b,
 
 AddressType::AddressType(LOCATION, Extension *ext)
     : Type(PASSLOC, ext, "Address", ext->compiler()->platformWordSize()) {
+
 }
 
 AddressType::AddressType(LOCATION, Extension *ext, std::string name)
     : Type(PASSLOC, ext, name, ext->compiler()->platformWordSize() ) {
 }
+
 
 
 Literal *
@@ -306,14 +303,13 @@ AddressType::literalsAreEqual(const LiteralBytes *l1, const LiteralBytes *l2) co
 }
 
 void
-AddressType::printValue(TextWriter &w, const void *p) const
-   {
-   w << name() << " " << *(reinterpret_cast<const void * const *>(p));
-   }
+AddressType::printValue(TextWriter &w, const void *p) const {
+    w << name() << " " << *(reinterpret_cast<const void * const *>(p));
+}
 
 void
 AddressType::printLiteral(TextWriter & w, const Literal *lv) const {
-   w << name() << "(" << (lv->value<void * const>()) << ")";
+    w << name() << "(" << (lv->value<void * const>()) << ")";
 }
 
 bool
@@ -334,6 +330,7 @@ PointerTypeBuilder::PointerTypeBuilder(BaseExtension *ext, FunctionCompilation *
     , _dict(comp->dict())
     , _baseType(NULL)
     , _helper(NULL) {
+
 }
 
 const PointerType *
@@ -362,6 +359,7 @@ PointerType::literal(LOCATION, Compilation *comp, const void * value) const {
     *pValue = value;
     return this->Type::literal(PASSLOC, comp, reinterpret_cast<const LiteralBytes *>(pValue));
 }
+
 bool
 PointerType::literalsAreEqual(const LiteralBytes *l1, const LiteralBytes *l2) const {
     return (*reinterpret_cast<void * const *>(l1)) == (*reinterpret_cast<void * const *>(l2));
@@ -374,14 +372,13 @@ PointerType::to_string() const {
 }
 
 void
-PointerType::printValue(TextWriter &w, const void *p) const
-   {
-   w << name() << " " << *(reinterpret_cast<const void * const *>(p));
-   }
+PointerType::printValue(TextWriter &w, const void *p) const {
+    w << name() << " " << *(reinterpret_cast<const void * const *>(p));
+}
 
 void
 PointerType::printLiteral(TextWriter & w, const Literal *lv) const {
-   w << name() << "(" << (lv->value<void * const>()) << ")";
+    w << name() << "(" << (lv->value<void * const>()) << ")";
 }
 
 bool
@@ -399,6 +396,7 @@ FieldType::FieldType(LOCATION, TypeDictionary *dict, const StructType *structTyp
     , _fieldName(name)
     , _type(type)
     , _offset(offset) {
+
 }
 
 std::string
@@ -426,6 +424,7 @@ StructTypeBuilder::StructTypeBuilder(BaseExtension *ext, Function *func)
     , _dict(func->comp()->dict())
     , _size(0)
     , _helper(NULL) {
+
 }
 
 void
@@ -458,6 +457,7 @@ StructTypeBuilder::create(LOCATION) {
 
 StructType::StructType(LOCATION, StructTypeBuilder *builder)
     : Type(PASSLOC, builder->dict(), builder->name(), builder->size()) {
+
     _dict->registerType(this); // proactive: other types may be created before we're done
     if (builder->helper())
         builder->helper()(this, builder);
@@ -508,14 +508,13 @@ StructType::literalsAreEqual(const LiteralBytes *l1, const LiteralBytes *l2) con
 }
 
 void
-StructType::printValue(TextWriter &w, const void *p) const
-   {
-   // TODO
-   }
+StructType::printValue(TextWriter &w, const void *p) const {
+    // TODO
+}
 
 void
 StructType::printLiteral(TextWriter & w, const Literal *lv) const {
-   // TODO
+    // TODO
 }
 
 void
@@ -552,16 +551,14 @@ StructType::registerJB1Type(JB1MethodBuilder *j1mb) const {
 
 #if NEED_UNION
 void
-UnionType::printType(TextWriter &w)
-   {
-   // TODO
-   }
+UnionType::printType(TextWriter &w) {
+    // TODO
+}
 
 void
-UnionType::printValue(TextWriter &w, const void *p) const
-   {
-   // TODO
-   }
+UnionType::printValue(TextWriter &w, const void *p) const {
+    // TODO
+}
 #endif
 
 FunctionType *
@@ -570,23 +567,21 @@ FunctionType::create(LOCATION,
                      std::string name,
                      const Type *returnType,
                      int32_t numParms,
-                     const Type ** parmTypes)
-   {
-   return new FunctionType(PASSLOC, ext, name, returnType, numParms, parmTypes);
-   }
+                     const Type ** parmTypes) {
+    return new FunctionType(PASSLOC, ext, name, returnType, numParms, parmTypes);
+}
 
 void
-FunctionType::printType(TextWriter &w)
-   {
-   // TODO
-   }
+FunctionType::printType(TextWriter &w) {
+    // TODO
+}
 
 void
-FunctionType::printValue(TextWriter &w, const void *p) const
-   {
-   // TODO
-   }
+FunctionType::printValue(TextWriter &w, const void *p) const {
+    // TODO
+}
 
 } // namespace Base
 } // namespace JitBuilder
 } // namespace OMR
+

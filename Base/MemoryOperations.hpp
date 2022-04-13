@@ -79,7 +79,7 @@ protected:
     Op_LoadField(LOCATION, Extension *ext, Builder * parent, ActionID aLoadField, Value *result, const FieldType *fieldType, Value *structValue);
 };
 
-class Op_StoreField : public OperationR0V2T1 {
+class Op_StoreField : public OperationR0T1V2 {
     friend class BaseExtension;
 public:
     virtual Operation * clone(LOCATION, Builder *b, OperationCloner *cloner) const;
@@ -99,7 +99,7 @@ protected:
     Op_LoadFieldAt(LOCATION, Extension *ext, Builder * parent, ActionID aLoadFieldAt, Value *result, const FieldType *fieldType, Value *pStruct);
 };
 
-class Op_StoreFieldAt : public OperationR0V2T1 {
+class Op_StoreFieldAt : public OperationR0T1V2 {
     friend class BaseExtension;
 public:
     virtual Operation * clone(LOCATION, Builder *b, OperationCloner *cloner) const;
@@ -200,7 +200,7 @@ class LoadIndirect : public OperationR1V1T1
         { }
     };
 
-class StoreField : public OperationR0V2T1
+class StoreField : public OperationR0T1V2
     {
     public:
     static StoreField * create(Builder * parent, FieldType *fieldType, Value *structBase, Value *value)
@@ -224,11 +224,11 @@ class StoreField : public OperationR0V2T1
 
     protected:
     StoreField(Builder * parent, FieldType *fieldType, Value * structBase, Value *value)
-        : OperationR0V2T1(aStoreField, parent, fieldType, structBase, value)
+        : OperationR0T1V2(aStoreField, parent, fieldType, structBase, value)
         { }
     }; 
 
-class StoreIndirect : public OperationR0V2T1
+class StoreIndirect : public OperationR0T1V2
     {
     public:
     static StoreIndirect * create(Builder * parent, FieldType *fieldType, Value *structBase, Value *value)
@@ -252,7 +252,7 @@ class StoreIndirect : public OperationR0V2T1
 
     protected:
     StoreIndirect(Builder * parent, FieldType *fieldType, Value * structBase, Value *value)
-        : OperationR0V2T1(aStoreIndirect, parent, fieldType, structBase, value)
+        : OperationR0T1V2(aStoreIndirect, parent, fieldType, structBase, value)
         { }
     };
 
@@ -304,10 +304,11 @@ class CreateLocalStruct : public OperationR1T1
     CreateLocalStruct(Builder * parent, Value * result, Type * structType);
     };
 
-#endif // #if 0
+#endif
 
 } // namespace Base
 } // namespace JitBuilder
 } // namespace OMR
 
 #endif // !defined(MEMORYOPERATIONS_INCL)
+

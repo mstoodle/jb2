@@ -19,6 +19,9 @@
  * SPDX-License-Identifier: EPL-2.0 OR Apache-2.0 OR GPL-2.0 WITH Classpath-exception-2.0 OR LicenseRef-GPL-2.0 WITH Assembly-exception
  *******************************************************************************/
 
+#ifndef PASSCHAIN_INCL
+#define PASSCHAIN_INCL
+
 #include <deque>
 
 namespace OMR {
@@ -42,6 +45,7 @@ class PassChain
 public:
     PassChain(Pass *pass)
         : _pass(pass) {
+
     }
 
     virtual bool processBuilder(Pass *pass, Builder *b);
@@ -60,3 +64,6 @@ protected:
 
 } // namespace JitBuilder
 } // namespace OMR
+
+
+#endif // !defined(PASSCHAIN_INCL)

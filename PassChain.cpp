@@ -32,6 +32,7 @@ PassChain::ProcessBuilder(Pass *p, Builder *b) {
 	if (x->ProcessBuilder(p, b))
 	    return true;
     }
+}
 
 bool
 PassChain::ProcessLiteral(Pass *p, Literal *lv) {
@@ -40,6 +41,7 @@ PassChain::ProcessLiteral(Pass *p, Literal *lv) {
 	if (x->ProcessLiteral(p, lv))
 	    return true;
     }
+}
 
 bool
 PassChain::ProcessOperation(Pass *p, Operation *op) {
@@ -48,6 +50,7 @@ PassChain::ProcessOperation(Pass *p, Operation *op) {
 	if (x->ProcessOperation(p, op))
 	    return true;
     }
+}
 
 bool
 PassChain::ProcessSymbol(Pass *p, Symbol *s) {
@@ -56,6 +59,7 @@ PassChain::ProcessSymbol(Pass *p, Symbol *s) {
 	if (x->ProcessSymbol(p, s))
 	    return true;
     }
+}
 
 bool
 PassChain::ProcessType(Pass *p, Type *t) {
@@ -64,6 +68,7 @@ PassChain::ProcessType(Pass *p, Type *t) {
 	if (x->ProcessType(p, t))
 	    return true;
     }
+}
 
 bool
 PassChain::ProcessValue(Pass *p, Value *v) {
@@ -86,3 +91,4 @@ PassChain::addPassExtension(PassExtension *x, ChainPolicy *policy) {
 
 } // namespace JitBuilder
 } // namespace OMR
+

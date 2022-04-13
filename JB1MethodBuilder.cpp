@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2021, 2021 IBM Corp. and others
+ * Copyright (c) 2021, 2022 IBM Corp. and others
  *
  * This program and the accompanying materials are made available under
  * the terms of the Eclipse Public License 2.0 which accompanies this
@@ -51,6 +51,7 @@ JB1MethodBuilder::JB1MethodBuilder(Compilation *comp)
 
 JB1MethodBuilder::~JB1MethodBuilder() {
 }
+
 //
 // Public functions
 //
@@ -216,6 +217,7 @@ JB1MethodBuilder::DefineFunction(std::string name,
                              const Type * returnType,
                              int32_t numParms,
                              const Type **parmTypes) {
+
     TR::IlType **omr_parmTypes = new TR::IlType *[numParms];
     for (int p=0;p < numParms;p++)
         omr_parmTypes[p] = map(parmTypes[p]);                                    
@@ -304,7 +306,16 @@ JB1MethodBuilder::EntryPoint(Builder *entryBuilder) {
 }
 
 void
-JB1MethodBuilder::ForLoopUp(Location *loc, Builder *b, Symbol *loopVariable, Value *initial, Value *final, Value *bump, Builder *loopBody, Builder *loopBreak, Builder *loopContinue) {
+JB1MethodBuilder::ForLoopUp(Location *loc,
+                           Builder *b,
+                           Symbol *loopVariable,
+                           Value *initial,
+                           Value *final,
+                           Value *bump,
+                           Builder *loopBody,
+                           Builder *loopBreak,
+                           Builder *loopContinue) {
+
     TR::IlBuilder *omr_b = map(b);
     omr_b->setBCIndex(loc->bcIndex())->SetCurrentIlGenerator();
     TR::IlBuilder *omr_loopBody = map(loopBody);
@@ -316,6 +327,7 @@ JB1MethodBuilder::ForLoopUp(Location *loc, Builder *b, Symbol *loopVariable, Val
     if (loopContinue != NULL)
         registerBuilder(loopContinue, omr_loopContinue);
 }
+
 void
 JB1MethodBuilder::Return(Location *loc, Builder *b) {
     TR::IlBuilder *omr_b = map(b);
@@ -397,6 +409,8 @@ JB1MethodBuilder::IndexAt(Location *loc, Builder *b, Value *result, Value *base,
     TR::IlType *ptrType = map(base->type());
     registerValue(result, omr_b->IndexAt(ptrType, map(base), map(index)));
 }
+
+
 //
 // internal functions
 //
@@ -532,6 +546,8 @@ JB1MethodBuilder::printAllMaps() {
 }
 
 #if 0
+// some of this may be handy so keep it at hand during migration
+
 void
 JBCodeGenerator::generateFunctionAPI(FunctionBuilder *fb) {
     TextWriter *log = fb->logger(traceEnabled());
@@ -690,8 +706,6 @@ JBCodeGenerator::Return(Location *loc, Builder *b, Value *value) {
         omr_b->Return();
 }
 
-#endif
-#if 0
    Builder * b = op->parent();
    TR::IlBuilder *omr_b = mapBuilder(b);
    omr_b->setBCIndex(op->location()->bcIndex())->SetCurrentIlGenerator();

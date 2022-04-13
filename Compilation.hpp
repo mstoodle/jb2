@@ -19,6 +19,10 @@
  * SPDX-License-Identifier: EPL-2.0 OR Apache-2.0 OR GPL-2.0 WITH Classpath-exception-2.0 OR LicenseRef-GPL-2.0 WITH Assembly-exception
  *******************************************************************************/
 
+#ifndef COMPILATION_INCL
+#define COMPILATION_INCL
+
+
 #include <stdint.h>
 #include <string>
 #include "CreateLoc.hpp"
@@ -140,3 +144,5 @@ class Compilation {
 
 } // namespace JitBuilder
 } // namespace OMR
+
+#endif // !defined(COMPILATION_INCL)
