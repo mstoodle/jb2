@@ -209,8 +209,8 @@ testMultiply(Base::BaseExtension *base, const Type *JBType, const char *fmt, voi
     TextWriter *log = (DO_LOGGING) ? &logger : NULL;
 
     printf("Step 7: compile the function\n");
-    CompileResult result = func.Compile(log);
-    if (result != CompileSuccessful) {
+    CompilerReturnCode result = func.Compile(log);
+    if (result != c->CompileSuccessful) {
         printf("Compilation was not successful");
         return -3;
     }
