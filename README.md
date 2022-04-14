@@ -86,5 +86,8 @@ samples, porting more JitBuilder features into the Base extension, and
 creating new extensions (e.g. Complex, DenseArray) as this library continues
 to evolve.
 
-Let me know what you think! You can open an issue at this repository, or
-you can reach me directly at mstoodle AT gmail.com .
+Let me know what you think or if you have any suggestions or feedback! You can
+(preferably) [open an issue at this repository](https://github.com/mstoodle/jb2/issues), or
+(if you really prefer to) you can reach me directly at mstoodle AT gmail.com .
+You can also find me at the #jitbuilder channel at the
+[Eclipse OMR slack](https://join.slack.com/t/eclipse-omr/shared_invite/enQtMzg2ODIwODc4MTAyLTk4ZjJjNTZlZmMyMGRmYTczOTkzMGJiNTQ4NTA3YTA1NGU4MmJjNWI4NTBjOGNkNmNjMWQ3MmFmYjA4OGZjZjM)!
