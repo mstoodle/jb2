@@ -1,4 +1,4 @@
-OMRDIR=../omr/
+OMRDIR=omr/
 JITB=jitbuilder
 LIBJITB=lib$(JITB).a
 OMRBUILDDIR=$(OMRDIR)/build
@@ -52,6 +52,24 @@ JB1CodeGenerator.o: JB1CodeGenerator.cpp JB1CodeGenerator.hpp
 
 JB1MethodBuilder.o: JB1MethodBuilder.cpp JB1MethodBuilder.hpp
 	g++ $(CXXFLAGS) -c -I.  -I${OMRDIR}/jitbuilder/x/amd64 -I${OMRDIR}/jitbuilder/x -I${OMRDIR}/jitbuilder -I${OMRDIR}/compiler/x/amd64 -I${OMRDIR}/compiler/x -I${OMRDIR}/compiler -I${OMRDIR}/ -I${OMRDIR}/include_core -I${OMRBUILDDIR} $<
+
+getomr:
+	git clone git@github.com:eclipse/omr.git $(OMRDIR)
+
+omrcfg:
+	mkdir -p $(OMRBUILDDIR) && cd $(OMRBUILDDIR) && cmake .. -DOMR_COMPILER=1 -DOMR_JITBUILDER=1 -DCMAKE_BUILD_TYPE=Release
+
+omrcfgdbg:
+	mkdir -p $(OMRBUILDDIR) && cd $(OMRBUILDDIR) && cmake .. -DOMR_COMPILER=1 -DOMR_JITBUILDER=1 -DCMAKE_BUILD_TYPE=Debug
+
+omrjb:
+	cd $(OMRBUILDDIR) && make jitbuilder
+
+cleanomrcfg:
+	rm -rf $(OMRDIR)/build
+
+cleanomr:
+	rm -rf $(OMRDIR)
 
 clean:
 	rm -f *.o $(LIBJITB2)
