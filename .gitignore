@@ -2,3 +2,8 @@
 *.so
 *.a
 *.swp
+omr/
+samples/matmult
+test/testbase
+test/testcompiler
+test/testsemver
