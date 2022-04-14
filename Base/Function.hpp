@@ -28,7 +28,6 @@
 
 #include "BaseExtension.hpp"
 #include "BaseIterator.hpp"
-#include "BaseOperations.hpp"
 #include "BaseSymbols.hpp"
 #include "BaseTypes.hpp"
 #include "Builder.hpp"
