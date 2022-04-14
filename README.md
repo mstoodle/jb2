@@ -56,7 +56,7 @@ to load the Base extension features into a `Compiler`.
  There is an example (called `matmult`) for how to use JB2 in the top level
 `samples` directory:
 ```
-cd ../samples
+cd samples
 make matmult
 ./matmult
 ```
