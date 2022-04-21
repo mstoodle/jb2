@@ -104,7 +104,7 @@ public:
     }
 
     virtual int32_t numBuilders() const {
-        return 1 + (_loopBreak != NULL ? 1 : 0) + (_loopContinue != NULL) ? 1 : 0;
+        return 1 + ((_loopBreak != NULL) ? 1 : 0) + ((_loopContinue != NULL) ? 1 : 0);
     }
     virtual Builder * builder(int32_t i=0) const {
         if (i == 0) return _loopBody;
