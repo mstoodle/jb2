@@ -75,6 +75,10 @@ public:
         w._os << v;
         return w;
     }
+    friend TextWriter &operator<<(TextWriter &w, const size_t v) {
+        w._os << v;
+        return w;
+    }
     friend TextWriter &operator<<(TextWriter &w, const void * v) {
         w._os << v;
         return w;
