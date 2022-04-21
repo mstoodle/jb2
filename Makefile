@@ -54,7 +54,7 @@ JB1MethodBuilder.o: JB1MethodBuilder.cpp JB1MethodBuilder.hpp
 	g++ $(CXXFLAGS) -c -I.  -I${OMRDIR}/jitbuilder/x/amd64 -I${OMRDIR}/jitbuilder/x -I${OMRDIR}/jitbuilder -I${OMRDIR}/compiler/x/amd64 -I${OMRDIR}/compiler/x -I${OMRDIR}/compiler -I${OMRDIR}/ -I${OMRDIR}/include_core -I${OMRBUILDDIR} $<
 
 getomr:
-	git clone --branch jb2Fixes git@github.com:mstoodle/omr.git $(OMRDIR)
+	git clone git@github.com:eclipse/omr.git $(OMRDIR)
 
 omrcfg:
 	mkdir -p $(OMRBUILDDIR) && cd $(OMRBUILDDIR) && cmake .. -DOMR_COMPILER=1 -DOMR_JITBUILDER=1 -DCMAKE_BUILD_TYPE=Release

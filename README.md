@@ -11,9 +11,9 @@ and build Eclipse OMR. Then you need to build the JB2 core library (`libjbcore.s
 
 ## Get and build Eclipse OMR
 
-First, you need to clone this repository:
+First, you need to clone the upstream Eclipse OMR repository:
 ```
-$ git clone git@github.com:mstoodle/jb2.git
+$ git clone git@github.com:eclipse/omr.git
 ```
 
 Once cloned, you need to get, configure, and build OMR's JitBuilder library:
