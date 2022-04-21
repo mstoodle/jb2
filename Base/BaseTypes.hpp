@@ -195,8 +195,8 @@ class Float64Type : public FloatingPointType {
     public:
     virtual size_t size() const { return 64; }
     Literal *literal(LOCATION, Compilation *comp, const double value) const;
-    Literal *zero(LOCATION, Compilation *comp) const { return literal(PASSLOC, comp, 0.0d); }
-    Literal *identity(LOCATION, Compilation *comp) const { return literal(PASSLOC, comp, 1.0d); }
+    Literal *zero(LOCATION, Compilation *comp) const { return literal(PASSLOC, comp, 0.0); }
+    Literal *identity(LOCATION, Compilation *comp) const { return literal(PASSLOC, comp, 1.0); }
     virtual bool literalsAreEqual(const LiteralBytes *l1, const LiteralBytes *l2) const;
     virtual bool isConcrete() const { return true; }
     virtual void printValue(TextWriter &w, const void *p) const;
