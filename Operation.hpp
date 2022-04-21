@@ -57,6 +57,8 @@ class Operation {
     friend class Transformer;
 
 public:
+    virtual ~Operation() { }
+
     OperationID id() const                              { return _id; }
     ActionID action() const                             { return _action; }
     Builder * parent() const                            { return _parent; }
