@@ -24,10 +24,10 @@
 #include <stdio.h>
 #include "gtest/gtest.h"
 #include "Compiler.hpp"
-#include "base/BaseExtension.hpp"
-#include "base/ControlOperations.hpp"
-#include "base/Function.hpp"
-#include "base/FunctionCompilation.hpp"
+#include "Base/BaseExtension.hpp"
+#include "Base/ControlOperations.hpp"
+#include "Base/Function.hpp"
+#include "Base/FunctionCompilation.hpp"
 #include "TextWriter.hpp"
 
 
@@ -141,8 +141,8 @@ TESTCONSTFUNC(Int8, int8_t, 3, 0)
 TESTCONSTFUNC(Int16, int16_t, 3, 0)
 TESTCONSTFUNC(Int32, int32_t, 3, 0)
 TESTCONSTFUNC(Int64, int64_t, 3, 0)
-TESTCONSTFUNC(Float32, float, 3.0f, 0.0f)
-TESTCONSTFUNC(Float64, double, 3.0d, 0.0d)
+TESTCONSTFUNC(Float32, float, 3.0, 0.0)
+TESTCONSTFUNC(Float64, double, 3.0, 0.0)
 
 // Test function that returns the value of its single parameter
 #define TYPEFUNC(type) \
@@ -167,8 +167,8 @@ TESTTYPEFUNC(Int8, int8_t, 3, 0)
 TESTTYPEFUNC(Int16, int16_t, 3, 0)
 TESTTYPEFUNC(Int32, int32_t, 3, 0)
 TESTTYPEFUNC(Int64, int64_t, 3, 0)
-TESTTYPEFUNC(Float32, float, 3.0f, 0.0f)
-TESTTYPEFUNC(Float64, double, 3.0d, 0.0d)
+TESTTYPEFUNC(Float32, float, 3.0, 0.0)
+TESTTYPEFUNC(Float64, double, 3.0, 0.0)
 
 // Address handled specially
 TYPEFUNC(Address)
@@ -204,8 +204,8 @@ TESTSTORETYPEFUNC(Int8, int8_t, 3, 0)
 TESTSTORETYPEFUNC(Int16, int16_t, 3, 0)
 TESTSTORETYPEFUNC(Int32, int32_t, 3, 0)
 TESTSTORETYPEFUNC(Int64, int64_t, 3, 0)
-TESTSTORETYPEFUNC(Float32, float, 3.0f, 0.0f)
-TESTSTORETYPEFUNC(Float64, double, 3.0d, 0.0d)
+TESTSTORETYPEFUNC(Float32, float, 3.0, 0.0)
+TESTSTORETYPEFUNC(Float64, double, 3.0, 0.0)
 
 // Address handled specially
 STORETYPEFUNC(Address)
@@ -240,8 +240,8 @@ TESTPOINTERTOTYPEFUNC(Int8, int8_t, 3, 0)
 TESTPOINTERTOTYPEFUNC(Int16, int16_t, 3, 0)
 TESTPOINTERTOTYPEFUNC(Int32, int32_t, 3, 0)
 TESTPOINTERTOTYPEFUNC(Int64, int64_t, 3, 0)
-TESTPOINTERTOTYPEFUNC(Float32, float, 3.0f, 0.0f)
-TESTPOINTERTOTYPEFUNC(Float64, double, 3.0d, 0.0d)
+TESTPOINTERTOTYPEFUNC(Float32, float, 3.0, 0.0)
+TESTPOINTERTOTYPEFUNC(Float64, double, 3.0, 0.0)
 
 // Address handled specially
 POINTERTOTYPEFUNC(Address)
@@ -281,8 +281,8 @@ TESTSTOREPOINTERTOTYPEFUNC(Int8, int8_t, 3, 0)
 TESTSTOREPOINTERTOTYPEFUNC(Int16, int16_t, 3, 0)
 TESTSTOREPOINTERTOTYPEFUNC(Int32, int32_t, 3, 0)
 TESTSTOREPOINTERTOTYPEFUNC(Int64, int64_t, 3, 0)
-TESTSTOREPOINTERTOTYPEFUNC(Float32, float, 3.0f, 0.0f)
-TESTSTOREPOINTERTOTYPEFUNC(Float64, double, 3.0d, 0.0d)
+TESTSTOREPOINTERTOTYPEFUNC(Float32, float, 3.0, 0.0)
+TESTSTOREPOINTERTOTYPEFUNC(Float64, double, 3.0, 0.0)
 
 // Address handled specially
 STOREPOINTERTOTYPEFUNC(Address)
@@ -333,8 +333,8 @@ TESTONEFIELDTYPESTRUCT(Int8,int8_t,3,0)
 TESTONEFIELDTYPESTRUCT(Int16,int16_t,3,0)
 TESTONEFIELDTYPESTRUCT(Int32,int32_t,3,0)
 TESTONEFIELDTYPESTRUCT(Int64,int64_t,3,0)
-TESTONEFIELDTYPESTRUCT(Float32,float,3.0f,0.0f)
-TESTONEFIELDTYPESTRUCT(Float64,double,3.0d,0.0d)
+TESTONEFIELDTYPESTRUCT(Float32,float,3.0,0.0)
+TESTONEFIELDTYPESTRUCT(Float64,double,3.0,0.0)
 
 ONEFIELDSTRUCTTYPEFUNC(Address)
 TEST(BaseExtension, createOneFieldStructAddress) {
@@ -396,8 +396,8 @@ TESTFIVEFIELDTYPESTRUCT(Int8,int8_t,3,0)
 TESTFIVEFIELDTYPESTRUCT(Int16,int16_t,3,0)
 TESTFIVEFIELDTYPESTRUCT(Int32,int32_t,3,0)
 TESTFIVEFIELDTYPESTRUCT(Int64,int64_t,3,0)
-TESTFIVEFIELDTYPESTRUCT(Float32,float,3.0f,0.0f)
-TESTFIVEFIELDTYPESTRUCT(Float64,double,3.0d,0.0d)
+TESTFIVEFIELDTYPESTRUCT(Float32,float,3.0,0.0)
+TESTFIVEFIELDTYPESTRUCT(Float64,double,3.0,0.0)
 
 FIVEFIELDSTRUCTTYPEFUNC(Address,void*)
 TEST(BaseExtension, createFiveFieldStructAddress) {
@@ -460,8 +460,8 @@ TESTSTOREFIVEFIELDTYPESTRUCT(Int8,int8_t,3,0)
 TESTSTOREFIVEFIELDTYPESTRUCT(Int16,int16_t,3,0)
 TESTSTOREFIVEFIELDTYPESTRUCT(Int32,int32_t,3,0)
 TESTSTOREFIVEFIELDTYPESTRUCT(Int64,int64_t,3,0)
-TESTSTOREFIVEFIELDTYPESTRUCT(Float32,float,3.0f,0.0f)
-TESTSTOREFIVEFIELDTYPESTRUCT(Float64,double,3.0d,0.0d)
+TESTSTOREFIVEFIELDTYPESTRUCT(Float32,float,3.0,0.0)
+TESTSTOREFIVEFIELDTYPESTRUCT(Float64,double,3.0,0.0)
 
 STOREFIVEFIELDSTRUCTTYPEFUNC(Address,void*)
 TEST(BaseExtension, createStoreFiveFieldStructAddress) {
@@ -531,8 +531,8 @@ TESTCREATESTRUCT(Int16,Int8,Int8,int16_t,int8_t,int8_t,3,0)
 TESTCREATESTRUCT(Int32,Int16,Int16,int32_t,int16_t,int16_t,3,0)
 TESTCREATESTRUCT(Int64,Int32,Int32,int64_t,int32_t,int32_t,3,0)
 TESTCREATESTRUCT(Int64,Int64,Int64,int64_t,int64_t,int64_t,3,0)
-TESTCREATESTRUCT(Int32,Float32,Int64,int32_t,float,int64_t,3.0f,0.0f)
-TESTCREATESTRUCT(Int64,Float64,Int32,int64_t,double,int32_t,3.0d,0.0d)
+TESTCREATESTRUCT(Int32,Float32,Int64,int32_t,float,int64_t,3.0,0.0)
+TESTCREATESTRUCT(Int64,Float64,Int32,int64_t,double,int32_t,3.0,0.0)
 
 CREATESTRUCTFUNC(Int32,Address,Int32,int32_t,void *,int32_t)
 TEST(BaseExtension, createStruct_Int32_Address_Int32) {
@@ -635,8 +635,8 @@ TESTARRAYTYPEFUNC(Int8, int8_t, 1, 3, 7, 0, 13, 19)
 TESTARRAYTYPEFUNC(Int16, int16_t, 2, 3, 8, 0, 14, 20)
 TESTARRAYTYPEFUNC(Int32, int32_t, 3, 3, 9, 0, 15, 21)
 TESTARRAYTYPEFUNC(Int64, int64_t, 4, 3, 10, 0, 16, 22)
-TESTARRAYTYPEFUNC(Float32, float, 5, 3.0f, 11, 0.0f, 17, 23)
-TESTARRAYTYPEFUNC(Float64, double, 6, 3.0d, 12, 0.0d, 18, 24)
+TESTARRAYTYPEFUNC(Float32, float, 5, 3.0, 11, 0.0, 17, 23)
+TESTARRAYTYPEFUNC(Float64, double, 6, 3.0, 12, 0.0, 18, 24)
 
 // Address handled specially
 ARRAYTYPEFUNC(Address)
@@ -695,8 +695,8 @@ TESTADDTYPEFUNC(Int8, int8_t, 0, 1, 1, -1)
 TESTADDTYPEFUNC(Int16, int16_t, 0, 1, 1, -1)
 TESTADDTYPEFUNC(Int32, int32_t, 0, 1, 1, -1)
 TESTADDTYPEFUNC(Int64, int64_t, 0, 1, 1, -1)
-TESTADDTYPEFUNC(Float32, float, 0.0f, 1.0f, 1.0f, -1.0f)
-TESTADDTYPEFUNC(Float64, double, 0.0d, 1.0d, 1.0d, -1.0d)
+TESTADDTYPEFUNC(Float32, float, 0.0, 1.0, 1.0, -1.0)
+TESTADDTYPEFUNC(Float64, double, 0.0, 1.0, 1.0, -1.0)
 
 // Address handled specially
 ADDTWOTYPEFUNC(Address,Word,)
@@ -787,8 +787,8 @@ TESTMULTYPEFUNC(Int8, int8_t, 0, 1, 2, -1)
 TESTMULTYPEFUNC(Int16, int16_t, 0, 1, 2, -1)
 TESTMULTYPEFUNC(Int32, int32_t, 0, 1, 2, -1)
 TESTMULTYPEFUNC(Int64, int64_t, 0, 1, 2, -1)
-TESTMULTYPEFUNC(Float32, float, 0.0f, 2.0f, 1.0f, -1.0f)
-TESTMULTYPEFUNC(Float64, double, 0.0d, 2.0d, 1.0d, -1.0d)
+TESTMULTYPEFUNC(Float32, float, 0.0, 2.0, 1.0, -1.0)
+TESTMULTYPEFUNC(Float64, double, 0.0, 2.0, 1.0, -1.0)
 
 #define TESTMULTYPESINVALID(leftType,rightType) \
     MULTWOTYPEFUNC(leftType,rightType,Validity) \
@@ -832,7 +832,7 @@ TESTMULTYPESINVALID(Address,Address);
 
 #define TESTSUBTYPEFUNC(type,ctype,a1,b1,a2,b2) \
     SUBTYPEFUNC(type,type,type,) \
-    TEST(BaseExtension, create ## type ## ## type ## type ## SubFunction) { \
+    TEST(BaseExtension, create ## type ## type ## type ## SubFunction) { \
         typedef ctype (FuncProto)(ctype, ctype); \
         COMPILE_FUNC(type ## _ ## type ## _ ## type ## _SubFunction, FuncProto, f, false); \
         ctype x1=a1; ctype x2=a2; ctype y1=b1; ctype y2=b2; \
@@ -854,8 +854,8 @@ TESTSUBTYPEFUNC(Int8, int8_t, 0, 1, 1, -1)
 TESTSUBTYPEFUNC(Int16, int16_t, 0, 1, 1, -1)
 TESTSUBTYPEFUNC(Int32, int32_t, 0, 1, 1, -1)
 TESTSUBTYPEFUNC(Int64, int64_t, 0, 1, 1, -1)
-TESTSUBTYPEFUNC(Float32, float, 0.0f, 1.0f, 1.0f, -1.0f)
-TESTSUBTYPEFUNC(Float64, double, 0.0d, 1.0d, 1.0d, -1.0d)
+TESTSUBTYPEFUNC(Float32, float, 0.0, 1.0, 1.0, -1.0)
+TESTSUBTYPEFUNC(Float64, double, 0.0, 1.0, 1.0, -1.0)
 
 SUBTYPEFUNC(Address,Address,Word,)
 TEST(BaseExtension, createAddressAddressWordSubFunction) {

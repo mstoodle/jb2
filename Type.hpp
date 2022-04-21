@@ -86,7 +86,7 @@ public:
     virtual bool literalsAreEqual(const LiteralBytes *lv1, const LiteralBytes *lv2) const { return false; }
 
     virtual const int64_t getInteger(const Literal *lv) const { return 0; }
-    virtual const double getFloatingPoint(const Literal *lv) const { return 0.0d; }
+    virtual const double getFloatingPoint(const Literal *lv) const { return 0.0; }
 
     // creates a Literal of this Type from the raw LiteralBytes
     Literal * literal(LOCATION, Compilation *comp, const LiteralBytes *value) const;
