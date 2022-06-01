@@ -55,14 +55,14 @@ extern "C" {
 
 BaseExtension::BaseExtension(Compiler *compiler, bool extended, std::string extensionName)
     : Extension(compiler, (extended ? extensionName : NAME))
-    , NoType(registerType<NoTypeType>(new NoTypeType(LOC, this)))
-    , Int8(registerType<Int8Type>(new Int8Type(LOC, this)))
-    , Int16(registerType<Int16Type>(new Int16Type(LOC, this)))
-    , Int32(registerType<Int32Type>(new Int32Type(LOC, this)))
-    , Int64(registerType<Int64Type>(new Int64Type(LOC, this)))
-    , Float32(registerType<Float32Type>(new Float32Type(LOC, this)))
-    , Float64(registerType<Float64Type>(new Float64Type(LOC, this)))
-    , Address(registerType<AddressType>(new AddressType(LOC, this)))
+    , NoType(new NoTypeType(LOC, this))
+    , Int8(new Int8Type(LOC, this))
+    , Int16(new Int16Type(LOC, this))
+    , Int32(new Int32Type(LOC, this))
+    , Int64(new Int64Type(LOC, this))
+    , Float32(new Float32Type(LOC, this))
+    , Float64(new Float64Type(LOC, this))
+    , Address(new AddressType(LOC, this))
     , Word(compiler->platformWordSize() == 64 ? this->Int64->refine<Type>() : this->Int32->refine<Type>())
     , aConst(registerAction(std::string("Const")))
     , aAdd(registerAction(std::string("Add")))
@@ -726,7 +726,7 @@ BaseExtension::Store(LOCATION, Builder *b, Symbol * sym, Value *value) {
 Value *
 BaseExtension::LoadAt(LOCATION, Builder *b, Value *ptrValue) {
     assert(ptrValue->type()->isKind<PointerType>());
-    const Type *baseType = ptrValue->type()->refine<PointerType>()->BaseType();
+    const Type *baseType = ptrValue->type()->refine<PointerType>()->baseType();
     Value * result = createValue(b, baseType);
     addOperation(b, new Op_LoadAt(PASSLOC, this, b, this->aLoadAt, result, ptrValue));
     return result;
@@ -735,7 +735,7 @@ BaseExtension::LoadAt(LOCATION, Builder *b, Value *ptrValue) {
 void
 BaseExtension::StoreAt(LOCATION, Builder *b, Value *ptrValue, Value *value) {
     assert(ptrValue->type()->isKind<PointerType>());
-    const Type *baseType = ptrValue->type()->refine<PointerType>()->BaseType();
+    const Type *baseType = ptrValue->type()->refine<PointerType>()->baseType();
     assert(baseType == value->type());
     addOperation(b, new Op_StoreAt(PASSLOC, this, b, this->aStoreAt, ptrValue, value));
 }
@@ -759,7 +759,7 @@ BaseExtension::StoreField(LOCATION, Builder *b, const FieldType *fieldType, Valu
 Value *
 BaseExtension::LoadFieldAt(LOCATION, Builder *b, const FieldType *fieldType, Value *pStruct) {
     assert(pStruct->type()->isKind<PointerType>());
-    const Type *structType = pStruct->type()->refine<PointerType>()->BaseType();
+    const Type *structType = pStruct->type()->refine<PointerType>()->baseType();
     assert(fieldType->owningStruct() == structType);
     Value * result = createValue(b, fieldType->type());
     addOperation(b, new Op_LoadFieldAt(PASSLOC, this, b, this->aLoadFieldAt, result, fieldType, pStruct));
@@ -769,7 +769,7 @@ BaseExtension::LoadFieldAt(LOCATION, Builder *b, const FieldType *fieldType, Val
 void
 BaseExtension::StoreFieldAt(LOCATION, Builder *b, const FieldType *fieldType, Value *pStruct, Value *value) {
     assert(pStruct->type()->isKind<PointerType>());
-    const Type *structType = pStruct->type()->refine<PointerType>()->BaseType();
+    const Type *structType = pStruct->type()->refine<PointerType>()->baseType();
     assert(fieldType->owningStruct() == structType);
     addOperation(b, new Op_StoreFieldAt(PASSLOC, this, b, this->aStoreFieldAt, fieldType, pStruct, value));
 }
@@ -778,7 +778,7 @@ Value *
 BaseExtension::CreateLocalArray(LOCATION, Builder *b, Literal *numElements, const PointerType *pElementType) {
    assert(numElements->type()->isKind<IntegerType>());
    Value * result = createValue(b, pElementType);
-   const Type *elementType = pElementType->BaseType();
+   const Type *elementType = pElementType->baseType();
    // assert concrete type
    addOperation(b, new Op_CreateLocalArray(PASSLOC, this, b, this->aCreateLocalArray, result, numElements, pElementType));
    return result;
@@ -786,7 +786,7 @@ BaseExtension::CreateLocalArray(LOCATION, Builder *b, Literal *numElements, cons
 
 Value *
 BaseExtension::CreateLocalStruct(LOCATION, Builder *b, const PointerType *pStructType) {
-    const Type *baseType = pStructType->BaseType();
+    const Type *baseType = pStructType->baseType();
     assert(baseType->isKind<StructType>());
     const StructType *structType = baseType->refine<StructType>();
     Value * result = createValue(b, pStructType);
@@ -919,7 +919,7 @@ BaseExtension::OffsetAt(LOCATION, Builder *b, Value *array, size_t elementIndex)
     if (!pElement->isKind<Base::PointerType>())
         failValidateOffsetAt(PASSLOC, b, array);
 
-    const Type *Element = pElement->refine<PointerType>()->BaseType();
+    const Type *Element = pElement->refine<PointerType>()->baseType();
     size_t offset = elementIndex; // * Element->size()/8;
     Literal *elementOffset = this->Word->literal(PASSLOC, b->comp(), reinterpret_cast<LiteralBytes *>(&offset));
     return IndexAt(PASSLOC, b, array, Const(PASSLOC, b, elementOffset));
@@ -943,7 +943,7 @@ BaseExtension::OffsetAt(LOCATION, Builder *b, Value *array, Value * indexValue) 
     if (!pElement->isKind<Base::PointerType>())
         failValidateOffsetAt(PASSLOC, b, array);
 
-    //const Type *Element = pElement->refine<Base::PointerType>()->BaseType();
+    //const Type *Element = pElement->refine<Base::PointerType>()->baseType();
     //size_t size = Element->size() / 8;
     //Value *elementSize = this->Const(PASSLOC, b, this->Word->literal(PASSLOC, b->comp(), reinterpret_cast<LiteralBytes *>(&size)));
     //Value *offsetValue = this->Mul(PASSLOC, b, indexValue, elementSize);

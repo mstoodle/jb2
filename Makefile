@@ -1,7 +1,7 @@
 OMRDIR=omr/
 JITB=jitbuilder
 LIBJITB=lib$(JITB).a
-OMRBUILDDIR=$(OMRDIR)/build.debug
+OMRBUILDDIR=$(OMRDIR)/build
 LIBJITBDIR=$(OMRBUILDDIR)/jitbuilder
 
 JITB2=jitbuilder2
@@ -23,6 +23,8 @@ CORE_OBJECTS = Builder.o \
 	       Location.o \
 	       Loggable.o \
 	       Operation.o \
+	       OperationCloner.o \
+	       OperationReplacer.o \
 	       Pass.o \
 	       SemanticVersion.o \
 	       Strategy.o \
@@ -32,6 +34,7 @@ CORE_OBJECTS = Builder.o \
 	       Transformer.o \
 	       Type.o \
 	       TypeDictionary.o \
+	       TypeReplacer.o \
 	       Value.o \
 	       Visitor.o
 

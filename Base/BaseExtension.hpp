@@ -346,4 +346,3 @@ private:
 } // namespace OMR
 
 #endif // defined(BASEEXTENSION_INCL)
-

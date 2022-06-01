@@ -43,6 +43,13 @@ NativeCallableContext::DefineParameter(std::string name, const Type * type) {
     return parm;
 }
 
+void
+NativeCallableContext::DefineParameter(ParameterSymbol *parm) {
+    assert(parm->index() == this->_parameters.size());
+    this->_parameters.push_back(parm);
+    addSymbol(parm);
+}
+
 LocalSymbol *
 NativeCallableContext::DefineLocal(std::string name, const Type * type) {
     Symbol *sym = this->lookupSymbol(name);
@@ -53,6 +60,12 @@ NativeCallableContext::DefineLocal(std::string name, const Type * type) {
     this->_locals.push_back(local);
     addSymbol(local);
     return local;
+}
+
+void
+NativeCallableContext::DefineLocal(LocalSymbol *local) {
+    this->_locals.push_back(local);
+    addSymbol(local);
 }
 
 } // namespace Base

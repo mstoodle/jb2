@@ -23,7 +23,6 @@
 #include "Compilation.hpp"
 #include "Config.hpp"
 #include "JB1MethodBuilder.hpp"
-#include "JitBuilder.hpp"
 #include "Literal.hpp"
 #include "Location.hpp"
 #include "Operation.hpp"
@@ -62,7 +61,6 @@ void
 JB1MethodBuilder::registerTypes(TypeDictionary *dict) {
     TypeID numTypes = dict ->numTypes();
     std::vector<bool> mappedTypes(numTypes);
-    //mappedTypes.clear();
     while (numTypes > 0) {
         TypeID startNumTypes = numTypes;
         for (auto it = dict->TypesBegin(); it != dict->TypesEnd(); it++) {

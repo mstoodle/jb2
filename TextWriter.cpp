@@ -134,7 +134,7 @@ TextWriter::visitBuilderPostOps(Builder * b) {
 }
 
 void
-TextWriter::printTypePrefix(Type * type, bool indent) {
+TextWriter::printTypePrefix(const Type * type, bool indent) {
     TextWriter &w = *this;
     if (indent)
         w.indent();
@@ -143,7 +143,7 @@ TextWriter::printTypePrefix(Type * type, bool indent) {
 }
 
 void
-TextWriter::writeType(Type *type, bool indent) {
+TextWriter::writeType(const Type *type, bool indent) {
     TextWriter &w = *this;
     printTypePrefix(type, indent);
 
@@ -267,8 +267,8 @@ TextWriter::writeOperation(Operation * op) {
         case aLoadField :
             {
             LoadField *lfOp = static_cast<LoadField *>(op);
-            FieldType *fieldType = lfOp->getFieldType();
-            StructType *structType = fieldType->owningStruct();
+            const FieldType *fieldType = lfOp->getFieldType();
+            const StructType *structType = fieldType->owningStruct();
             w << lfOp->result() << " = " << name << fieldType << " ( " << structType->name() << " . " << fieldType->name() << " ) " << lfOp->operand() << w.endl();
             }
             break;
@@ -276,8 +276,8 @@ TextWriter::writeOperation(Operation * op) {
         case aLoadIndirect :
             {
             LoadIndirect *liOp = static_cast<LoadIndirect *>(op);
-            FieldType *fieldType = liOp->getFieldType();
-            StructType *structType = fieldType->owningStruct();
+            const FieldType *fieldType = liOp->getFieldType();
+            const StructType *structType = fieldType->owningStruct();
             w << liOp->result() << " = " << name << fieldType << " ( " << structType->name() << " -> " << fieldType->name() << " ) " << liOp->operand() << w.endl();
             }
             break;
@@ -289,8 +289,8 @@ TextWriter::writeOperation(Operation * op) {
         case aStoreField :
             {
             StoreField *sfOp = static_cast<StoreField *>(op);
-            FieldType *fieldType = sfOp->getFieldType();
-            StructType *structType = fieldType->owningStruct();
+            const FieldType *fieldType = sfOp->getFieldType();
+            const StructType *structType = fieldType->owningStruct();
             w << name << fieldType << " ( " << structType->name() << " . " << fieldType->name() << " ) " << sfOp->operand(0) << " " << sfOp->operand(1) << w.endl();
             }
             break;
@@ -298,8 +298,8 @@ TextWriter::writeOperation(Operation * op) {
         case aStoreIndirect :
             {
             StoreIndirect *siOp = static_cast<StoreIndirect *>(op);
-            FieldType *fieldType = siOp->getFieldType();
-            StructType *structType = fieldType->owningStruct();
+            const FieldType *fieldType = siOp->getFieldType();
+            const StructType *structType = fieldType->owningStruct();
             w << name << fieldType << " ( " << structType->name() << " -> " << fieldType->name() << " ) " << siOp->operand(0) << " " << siOp->operand(1) << w.endl();
             }
             break;

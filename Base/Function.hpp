@@ -150,10 +150,15 @@ public:
     Symbol * getSymbol(std::string name);
     void addLocation(Location *loc ) { _locations.push_back(loc); }
 
+    virtual void replaceTypes(TypeReplacer *repl);
+
 protected:
     Function(Compiler *compiler); // meant to be subclassed
     Function(Function *outerFunction);
 
+    void DefineParameter(ParameterSymbol *parm);
+    void DefineLocal(LocalSymbol *local);
+    void DefineFunction(FunctionSymbol *function);
     FunctionSymbol * internalDefineFunction(LOCATION, std::string name, std::string fileName, std::string lineNumber, void *entryPoint, const Type *returnType, int32_t numParms, const Type **parmTypes);
     void addInitialBuildersToWorklist(BuilderWorklist & worklist);
 
@@ -190,4 +195,3 @@ protected:
 } // namespace OMR
 
 #endif // defined(FUNCTION_INCL)
-

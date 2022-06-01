@@ -112,7 +112,7 @@ public:
     friend TextWriter & operator<<(TextWriter &w, const TypeDictionary *dict);
     friend TextWriter & operator<<(TextWriter &w, const Value *v);
 
-    void writeType(Type *type, bool indent=true);
+    void writeType(const Type *type, bool indent=true);
     void writeOperation(Operation *op);
 
     std::string endl() {
@@ -139,7 +139,7 @@ protected:
     virtual void visitBuilderPostOps(Builder * b);
     virtual void visitOperation(Operation * op);
 
-    void printTypePrefix(Type * type, bool indent=true);
+    void printTypePrefix(const Type * type, bool indent=true);
     void printOperationPrefix(Operation * op);
 
     std::ostream & _os;

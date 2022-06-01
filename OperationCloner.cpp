@@ -20,8 +20,9 @@
  *******************************************************************************/
 
 #include "CreateLoc.hpp"
-#include "OperationCloner.hpp"
 #include "Operation.hpp"
+#include "OperationCloner.hpp"
+#include "OperationReplacer.hpp"
 #include "Value.hpp"
 
 namespace OMR {
@@ -112,34 +113,5 @@ OperationCloner::clone(Builder *b) {
     return _op->clone(LOC, b, this);
 }
 
-Operation *
-OperationCloner::cloneTo(Builder *b,
-                         ValueMapper **resultMappers,
-                         ValueMapper **operandMappers,
-                         TypeMapper **typeMappers,
-                         LiteralMapper **literalMappers,
-                         SymbolMapper **symbolMappers,
-                         BuilderMapper **builderMappers) {
-
-    for (uint32_t i=0;i < _numOperands;i++)
-        changeOperand(operandMappers[i]->next(), i);
-    for (uint32_t i=0;i < _numTypes;i++)
-        changeType(typeMappers[i]->next(), i);
-    for (uint32_t i=0;i < _numLiterals;i++)
-        changeLiteral(literalMappers[i]->next(), i);
-    for (uint32_t i=0;i < _numSymbols;i++)
-        changeSymbol(symbolMappers[i]->next(), i);
-    for (uint32_t i=0;i < _numBuilders;i++)
-        changeBuilder(builderMappers[i]->next(), i);
-
-    Operation *clonedOp = clone(b);
-
-    for (uint32_t i=0;i < _numResults;i++)
-        resultMappers[i]->add( result(i) );
-
-    return clonedOp;
-}
- 
 } // namespace JitBuilder
 } // namespace OMR
-

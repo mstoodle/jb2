@@ -75,14 +75,7 @@ public:
         return this;
     }
 
-    Operation *clone(Builder *b);
-    Operation *cloneTo(Builder *b,
-                       ValueMapper **resultMappers,
-                       ValueMapper **operandMappers,
-                       TypeMapper **typeMappers,
-                       LiteralMapper **literalMapppers,
-                       SymbolMapper **symbolMappers,
-                       BuilderMapper **builderMappers);
+    virtual Operation *clone(Builder *b);
 
     uint32_t numResults() const {
         return _numResults;
@@ -136,7 +129,7 @@ public:
         return NULL;
     }
 
-private:
+protected:
 
     Operation *_op;
 
@@ -163,4 +156,3 @@ private:
 } // namespace OMR
 
 #endif // defined(OPERATIONCLONER_INCL)
-

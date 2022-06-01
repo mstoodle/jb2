@@ -25,6 +25,7 @@
 #include "TextWriter.hpp"
 #include "Type.hpp"
 #include "TypeDictionary.hpp"
+#include "TypeReplacer.hpp"
 
 namespace OMR {
 namespace JitBuilder {
@@ -43,6 +44,7 @@ Type::Type(LOCATION, TypeKind kind, Extension *ext, std::string name, size_t siz
     , _size(size)
     , _layout(layout) {
 
+    _dict->registerType(this);
 }
 
 Type::Type(LOCATION, TypeKind kind, Extension *ext, TypeDictionary *dict, std::string name, size_t size, const Type *layout)
@@ -55,6 +57,7 @@ Type::Type(LOCATION, TypeKind kind, Extension *ext, TypeDictionary *dict, std::s
     , _size(size)
     , _layout(layout) {
 
+    dict->registerType(this);
 }
 
 Literal *
@@ -87,6 +90,11 @@ Type::to_string(bool useHeader) const {
     if (_layout)
         s.append(" layout t").append(std::to_string(_layout->id())).append(" ").append(_layout->name());
     return s;
+}
+
+void
+Type::transformTypeIfNeeded(TypeReplacer *repl, const Type *type) const {
+    repl->transformTypeIfNeeded(type);
 }
 
 } // namespace JitBuilder

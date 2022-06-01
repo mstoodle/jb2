@@ -42,11 +42,6 @@ Extension::Extension(Compiler *compiler, std::string name)
     , aMergeDef(registerAction(std::string("MergeDef"))) {
 }
 
-void
-Extension::internalRegisterType(Type *type) {
-    this->_compiler->dict()->registerType(type);
-}
-
 const std::string
 Extension::actionName(ActionID id) const {
     return _compiler->actionName(id);

@@ -37,6 +37,7 @@ class Config;
 class JB1MethodBuilder;
 class TextWriter;
 class TypeDictionary;
+class TypeReplacer;
 
 namespace Base {
 
@@ -69,9 +70,10 @@ public:
     void registerFunctionType(const FunctionType * fType);
 
     void setNativeEntryPoint(void *entry, int i);
+
+    virtual void replaceTypes(TypeReplacer *repl);
 protected:
     virtual void addInitialBuildersToWorklist(BuilderWorklist & worklist);
-
 
     Function *_func;
     std::map<const Type *,const PointerType *> _pointerTypeFromBaseType;

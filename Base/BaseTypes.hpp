@@ -24,6 +24,7 @@
 
 #include <list>
 #include <map>
+#include "BaseExtension.hpp" // needed for static_cast in BaseType
 #include "Type.hpp"
 
 namespace OMR {
@@ -33,6 +34,7 @@ class Extension;
 class JB1MethodBuilder;
 class Literal;
 class TextWriter;
+class TypeReplacer;
 
 namespace Base {
 
@@ -40,7 +42,24 @@ class BaseExtension;
 class Function;
 class FunctionCompilation;
 
-class NoTypeType : public Type {
+class BaseType : public Type {
+    friend class BaseExtension;
+
+    protected:
+    BaseType(LOCATION, TypeKind kind, Extension *ext, std::string name, size_t size)
+        : Type(PASSLOC, kind, ext, name, size) {
+
+    }
+    BaseType(LOCATION, TypeKind kind, Extension *ext, TypeDictionary *dict, std::string name, size_t size)
+        : Type(PASSLOC, kind, ext, dict, name, size) {
+
+    }
+
+    BaseExtension *baseExt() { return static_cast<BaseExtension *>(_ext); }
+    BaseExtension *baseExt() const { return static_cast<BaseExtension * const>(_ext); }
+};
+
+class NoTypeType : public BaseType {
     friend class BaseExtension;
 
     public:
@@ -51,12 +70,12 @@ class NoTypeType : public Type {
 
     protected:
     NoTypeType(LOCATION, Extension *ext)
-        : Type(PASSLOC, TYPEKIND, ext, "NoType", 0) {
+        : BaseType(PASSLOC, TYPEKIND, ext, "NoType", 0) {
 
     }
 };
 
-class NumericType : public Type {
+class NumericType : public BaseType {
     friend class BaseExtension;
 
 public:
@@ -64,7 +83,7 @@ public:
 
 protected:
     NumericType(LOCATION, TypeKind kind, Extension *ext, std::string name, size_t size)
-        : Type(PASSLOC, TYPEKIND, ext, name, size) {
+        : BaseType(PASSLOC, TYPEKIND, ext, name, size) {
 
     }
 };
@@ -222,7 +241,7 @@ protected:
     Float64Type(LOCATION, Extension *ext) : FloatingPointType(PASSLOC, TYPEKIND, ext, "Float64", 64) { }
 };
 
-class AddressType : public Type {
+class AddressType : public BaseType {
     friend class BaseExtension;
 
 public:
@@ -277,7 +296,7 @@ class PointerType : public AddressType {
 public:
     static TypeKind TYPEKIND;
 
-    const Type * BaseType() const { return _baseType; }
+    const Type * baseType() const { return _baseType; }
 
     Literal *literal(LOCATION, Compilation *comp, const void * value) const;
     virtual bool literalsAreEqual(const LiteralBytes *l1, const LiteralBytes *l2) const;
@@ -285,6 +304,7 @@ public:
     virtual void printValue(TextWriter &w, const void *p) const;
     virtual void printLiteral(TextWriter &w, const Literal *lv) const;
     virtual bool registerJB1Type(JB1MethodBuilder *j1mb) const;
+    virtual const Type * replace(TypeReplacer *repl);
 
 protected:
     PointerType(LOCATION, PointerTypeBuilder *builder);
@@ -293,7 +313,7 @@ protected:
 
 struct StructType;
 
-class FieldType : public Type {
+class FieldType : public BaseType {
     friend class StructType;
     #if NEED_UNION
     friend class UnionType; // ?
@@ -315,7 +335,10 @@ public:
     virtual bool registerJB1Type(JB1MethodBuilder *j1mb) const;
 
 protected:
-    FieldType(LOCATION, Extension *ext, TypeDictionary *dict, const StructType *structType, std::string fieldName, const Type *type, size_t offset);
+    protected:
+    FieldType(LOCATION, BaseExtension *ext, TypeDictionary *dict, const StructType *structType, std::string fieldName, const Type *type, size_t offset);
+
+    std::string explodedName(TypeReplacer *repl, std::string & baseName) const;
 
     const StructType *_structType;
     std::string _fieldName;
@@ -332,6 +355,8 @@ class UnionType;
 #endif
 
 class StructTypeBuilder {
+    friend class StructType;
+
     // FieldInfo is used to record fields
     struct FieldInfo {
         std::string _name;
@@ -363,15 +388,21 @@ public:
     size_t size() const { return _size; }
     StructHelperFunction *helper() const { return _helper; }
 
-    void createFields(LOCATION, StructType *structType);
-    bool verifyFields(const StructType *sType);
-
     const StructType * create(LOCATION);
+protected:
     #if NEED_UNION
     const UnionType *createUnion();
     #endif
+    virtual void innerCreate(const StructType *sType) {
+        // TODO: eliminate helper field and just use this virtual function
+        if (_helper != NULL)
+            _helper(sType, this);
+    };
 
-protected:
+    void createFields(LOCATION);
+    bool verifyFields(const StructType *sType);
+    void setStructType(StructType *structType) { _structType = structType; }
+
     BaseExtension * _ext;
     Function * _func;
     FunctionCompilation * _comp;
@@ -383,10 +414,12 @@ protected:
     #endif
     std::list<FieldInfo> _fields;
     StructHelperFunction *_helper;
+    StructType *_structType;
 };
 
-class StructType : public Type {
+class StructType : public BaseType {
     friend class StructTypeBuilder;
+    friend class TypeReplacer;
 
 public:
     static TypeKind TYPEKIND;
@@ -410,10 +443,16 @@ public:
         return it->second;
         }
 
+    virtual const Type * replace(TypeReplacer *repl);
+    virtual bool canBeLayout() const { return true; }
+    virtual void explodeAsLayout(TypeReplacer *repl, size_t baseOffset, TypeMapper *m) const;
+
 protected:
     StructType(LOCATION, StructTypeBuilder *builder);
     virtual const FieldType * addField(LOCATION, Extension *ext, TypeDictionary *dict, std::string name, const Type *type, size_t offset);
     void registerAllFields(JB1MethodBuilder *j1mb, std::string structName, std::string fNamePrefix, size_t baseOffset) const;
+    void transformFields(TypeReplacer *repl, StructTypeBuilder *stb, StructType *origStruct, std::string baseName, size_t baseOffset) const;
+    void mapTransformedFields(TypeReplacer *repl, const StructType *type, std::string baseName, TypeMapper *mapper) const;
 
     size_t _structSize;
 
@@ -439,13 +478,10 @@ class UnionType : public StructType {
         }
 
     virtual void printValue(TextWriter *w, const void *p) const;
-
-    protected:
-    UnionType(LOCATION, StructBuilder *builder);
 };
 #endif
 
-class FunctionType : public Type {
+class FunctionType : public BaseType {
     friend class BaseExtension;
     friend class TypeDictionary;
 
@@ -515,6 +551,8 @@ public:
     const Type **parmTypes() const { return _parmTypes; }
 
     virtual void printValue(TextWriter &w, const void *p) const;
+
+    virtual const Type * replace(TypeReplacer *repl);
 
     static std::string typeName(const Type *returnType, int32_t numParms, const Type **parmTypes);
 

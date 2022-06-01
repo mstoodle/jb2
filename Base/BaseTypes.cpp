@@ -30,6 +30,7 @@
 #include "Type.hpp"
 #include "TextWriter.hpp"
 #include "TypeDictionary.hpp"
+#include "TypeReplacer.hpp"
 
 namespace OMR {
 namespace JitBuilder {
@@ -303,20 +304,20 @@ Float64Type::createJB1ConstOp(Location *loc, JB1MethodBuilder *j1mb, Builder *b,
 TypeKind AddressType::TYPEKIND = Type::kindService.assignKind(KindService::AnyKind, "Address");
 
 AddressType::AddressType(LOCATION, Extension *ext)
-    : Type(PASSLOC, TYPEKIND, ext, "Address", ext->compiler()->platformWordSize()) {
+    : BaseType(PASSLOC, TYPEKIND, ext, "Address", ext->compiler()->platformWordSize()) {
 
 }
 
 AddressType::AddressType(LOCATION, Extension *ext, std::string name)
-    : Type(PASSLOC, TYPEKIND, ext, name, ext->compiler()->platformWordSize() ) {
+    : BaseType(PASSLOC, TYPEKIND, ext, name, ext->compiler()->platformWordSize() ) {
 }
 
 AddressType::AddressType(LOCATION, Extension *ext, TypeDictionary *dict, std::string name)
-    : Type(PASSLOC, TYPEKIND, ext, dict, name, dict->compiler()->platformWordSize() ) {
+    : BaseType(PASSLOC, TYPEKIND, ext, dict, name, dict->compiler()->platformWordSize() ) {
 }
 
 AddressType::AddressType(LOCATION, Extension *ext, TypeDictionary *dict, TypeKind kind, std::string name)
-    : Type(PASSLOC, kind, ext, dict, name, dict->compiler()->platformWordSize() ) {
+    : BaseType(PASSLOC, kind, ext, dict, name, dict->compiler()->platformWordSize() ) {
 }
 
 
@@ -370,7 +371,6 @@ PointerTypeBuilder::create(LOCATION) {
         return existingType;
 
     const PointerType *newType = new PointerType(PASSLOC, this);
-    _dict->registerType(newType);
     return newType;
 }
 
@@ -425,11 +425,20 @@ PointerType::registerJB1Type(JB1MethodBuilder *j1mb) const {
     return true;
 }
 
+const Type *
+PointerType::replace(TypeReplacer *repl) {
+    const Type *currentBaseType = baseType();
+    const Type *newBaseType = repl->replacedType(currentBaseType);
+    FunctionCompilation *comp = static_cast<FunctionCompilation *>(repl->comp());
+    const Type *newPtrType = baseExt()->PointerTo(LOC, comp, newBaseType);
+    return newPtrType;
+}
+
 
 TypeKind FieldType::TYPEKIND = Type::kindService.assignKind(KindService::AnyKind, "Field");
 
-FieldType::FieldType(LOCATION, Extension *ext, TypeDictionary *dict, const StructType *structType, std::string name, const Type *type, size_t offset)
-    : Type(PASSLOC, TYPEKIND, ext, dict, structType->name() + std::string(".") + name, type->size())
+FieldType::FieldType(LOCATION, BaseExtension *ext, TypeDictionary *dict, const StructType *structType, std::string name, const Type *type, size_t offset)
+    : BaseType(PASSLOC, TYPEKIND, ext, dict, name, type->size())
     , _structType(structType)
     , _fieldName(name)
     , _type(type)
@@ -454,6 +463,15 @@ FieldType::registerJB1Type(JB1MethodBuilder *j1mb) const {
     return true;
 }
 
+std::string
+FieldType::explodedName(TypeReplacer *repl, std::string & baseName) const {
+    std::string fName = _fieldName;
+    if (fName == _type->name())
+        fName = repl->replacedType(_type)->name();
+    if (baseName.length() > 0)
+        return baseName + "." + fName;
+    return fName;
+}
 
 StructTypeBuilder::StructTypeBuilder(BaseExtension *ext, Function *func)
     : _ext(ext)
@@ -466,10 +484,10 @@ StructTypeBuilder::StructTypeBuilder(BaseExtension *ext, Function *func)
 }
 
 void
-StructTypeBuilder::createFields(LOCATION, StructType *structType) {
+StructTypeBuilder::createFields(LOCATION) {
     for (auto it = _fields.begin(); it != _fields.end(); it++) {
         FieldInfo info = *it;
-        structType->addField(PASSLOC, _ext, _dict, info._name, info._type, info._offset);
+        _structType->addField(PASSLOC, _ext, _dict, info._name, info._type, info._offset);
     }
 }
 
@@ -497,13 +515,13 @@ StructTypeBuilder::create(LOCATION) {
 TypeKind StructType::TYPEKIND = Type::kindService.assignKind(KindService::AnyKind, "Struct");
 
 StructType::StructType(LOCATION, StructTypeBuilder *builder)
-    : Type(PASSLOC, TYPEKIND, builder->extension(), builder->dict(), builder->name(), builder->size())
+    : BaseType(PASSLOC, TYPEKIND, builder->extension(), builder->dict(), builder->name(), builder->size())
     , _structSize(0) {
 
-    _dict->registerType(this); // proactive: other types may be created before we're done
     if (builder->helper())
         builder->helper()(this, builder);
-    builder->createFields(PASSLOC, this);
+    builder->setStructType(this);
+    builder->createFields(PASSLOC);
     builder->comp()->registerStructType(this);
 }
 
@@ -516,14 +534,13 @@ StructType::addField(LOCATION, Extension *ext, TypeDictionary *dict, std::string
         return NULL;
     }
 
-    FieldType *field = new FieldType(PASSLOC, ext, dict, this, name, type, offset);
+    FieldType *field = new FieldType(PASSLOC, baseExt(), dict, this, name, type, offset);
     _fieldsByName.insert({name, field});
     _fieldsByOffset.insert({offset, field});
 
     if (_structSize < offset + type->size())
         _structSize = offset + type->size();
 
-    _dict->registerType(field);
     return field;
 }
 
@@ -569,7 +586,7 @@ StructType::registerAllFields(JB1MethodBuilder *j1mb, std::string structName, st
         if (fType->isKind<StructType>()) {
             // define a "dummy" field corresponding to the struct field itself, so we can ask for its address easily
             // in case this field's struct needs to be passed to anything
-            j1mb->registerField(structName, fieldName, static_cast<BaseExtension *>(_ext)->NoType, fieldOffset);
+            j1mb->registerField(structName, fieldName, baseExt()->NoType, fieldOffset);
             const StructType *innerStructType = fType->type()->refine<StructType>();
             registerAllFields(j1mb, structName, fieldName + ".", fieldOffset);
         }
@@ -591,6 +608,119 @@ StructType::registerJB1Type(JB1MethodBuilder *j1mb) const {
     return true;
 }
 
+void
+StructType::explodeAsLayout(TypeReplacer *repl, size_t baseOffset, TypeMapper *m) const {
+    for (auto fIt = this->FieldsBegin(); fIt != this->FieldsEnd(); fIt++) {
+        const FieldType *fType = fIt->second;
+        const Type *t = fType->type();
+        transformTypeIfNeeded(repl, t);
+ 
+        size_t fieldOffset = baseOffset + fType->offset();
+        if (repl->isExploded(t)) {
+            //if (_typesToExplode.find(t->id()) != _typesToExplode.end())
+            const StructType *innerLayout = static_cast<const StructType *>(t->layout());
+            assert(innerLayout);
+            innerLayout->explodeAsLayout(repl, fieldOffset, m);
+        }
+        else {
+            const Type *mappedType = repl->replacedType(t);
+            std::string fieldName = mappedType->name();
+            m->add(mappedType, fieldName, fieldOffset);
+        }
+    }
+}
+ 
+void
+StructType::transformFields(TypeReplacer *repl,
+                            StructTypeBuilder *stb,
+                            StructType *origStruct,
+                            std::string baseName,
+                            size_t baseOffset) const {
+
+    bool removeFields = true;
+    if (origStruct == this && repl->isRemovedType(origStruct))
+       removeFields = false;
+
+    for (auto fIt = FieldsBegin(); fIt != FieldsEnd(); fIt++) {
+        const FieldType *fType = fIt->second;
+        std::string fieldName = fType->explodedName(repl, baseName);
+        const Type *t = fType->type();
+        repl->transformTypeIfNeeded(t);
+
+        if (repl->isExploded(t)) {
+            const StructType *layout = static_cast<const StructType *>(t->layout());
+            layout->transformFields(repl, stb, origStruct, fieldName, fType->offset());
+        }
+        else {
+            const Type *mappedType = repl->replacedType(t);
+            stb->addField(fieldName, mappedType, baseOffset + fType->offset());
+            if (removeFields)
+                repl->removeType(fType);
+        }
+    }
+}
+
+void
+StructType::mapTransformedFields(TypeReplacer *repl,
+                                 const StructType *type,
+                                 std::string baseName,
+                                 TypeMapper *mapper) const {
+
+    for (auto fIt = FieldsBegin(); fIt != FieldsEnd(); fIt++) {
+        const FieldType *fType = fIt->second;
+        std::string fieldName = fType->explodedName(repl, baseName);
+        const Type *t = fType->type();
+        if (repl->isExploded(t)) {
+            TypeMapper *m = new TypeMapper();
+            const StructType *layout = static_cast<const StructType *>(t->layout());
+            layout->mapTransformedFields(repl, type, fieldName, m);
+            repl->recordMapper(fType, m);
+        }
+        else {
+            const FieldType *newType = type->LookupField(fieldName);
+            repl->recordMapper(fType, new TypeMapper(newType));
+            if (mapper)
+                mapper->add(newType);
+        }
+    }
+}
+
+const Type *
+StructType::replace(TypeReplacer *repl) {
+    Base::BaseExtension *base = baseExt();
+
+    bool needToReplace = false;
+    if (repl->isReplacedType(this)) {
+        needToReplace = true;
+    } else {
+        for (auto it = FieldsBegin(); it != FieldsEnd();it++) {
+            const FieldType *fieldType = it->second;
+            const Type *fType = fieldType->type();
+            if (repl->isModified(fType) || repl->isExploded(fType))
+                needToReplace = true;
+        }
+    }
+
+    if (!needToReplace) 
+        return this;
+
+    std::string newName = std::string("_X_::").append(name());
+    StructTypeBuilder stb(base, static_cast<FunctionCompilation *>(repl->comp())->func());
+    stb.setName(newName)
+       ->setSize(this->size());
+
+    // TODO: don't believe this works for recursive Types...need to move this work into the Helper function
+
+    std::string baseName("");
+    transformFields(repl, &stb, this, baseName, 0);
+
+    const StructType *newType = stb.create(LOC);
+
+    mapTransformedFields(repl, this, baseName, NULL);
+
+    return newType;
+}
+
 #if NEED_UNION
 void
 UnionType::printValue(TextWriter &w, const void *p) const {
@@ -602,7 +732,7 @@ UnionType::printValue(TextWriter &w, const void *p) const {
 TypeKind FunctionType::TYPEKIND = Type::kindService.assignKind(KindService::AnyKind, "Function");
 
 FunctionType::FunctionType(LOCATION, Extension *ext, TypeDictionary *dict, const Type *returnType, int32_t numParms, const Type ** parmTypes)
-    : Type(PASSLOC, TYPEKIND, ext, dict, typeName(returnType, numParms, parmTypes), 0)
+    : BaseType(PASSLOC, TYPEKIND, ext, dict, typeName(returnType, numParms, parmTypes), 0)
     , _returnType(returnType)
     , _numParms(numParms)
     , _parmTypes(parmTypes) {
@@ -633,6 +763,39 @@ FunctionType::to_string(bool useHeader) const {
 void
 FunctionType::printValue(TextWriter &w, const void *p) const {
     // TODO
+}
+
+const Type *
+FunctionType::replace(TypeReplacer *repl) {
+    const Type *returnType = _returnType;
+    assert(!repl->isExploded(returnType)); // can't explode return types yet
+    const Type *newReturnType = repl->singleMappedType(returnType);
+
+    // count how many parameters are needed after exploding types
+    int32_t numParms = _numParms;
+    int32_t numNewParms = 0; // each original parameter explodes to at least one remapped parameter
+    for (int32_t p=0;p < numParms;p++) {
+        const Type *parmType = _parmTypes[p];
+        TypeMapper *parmMapper = repl->mapperForType(parmType);
+        assert(parmMapper != NULL);
+        numNewParms += parmMapper->size();
+    }
+
+    // allocate array and then assign the mapped parameter types
+    const Type **newParmTypes = new const Type *[numNewParms];
+    int parmNum = 0;
+    for (int32_t p=0;p < numParms;p++) {
+        const Type *parmType = _parmTypes[p];
+        TypeMapper *parmMapper = repl->mapperForType(parmType);
+        assert(parmMapper != NULL);
+        for (int i=0;i < parmMapper->size();i++)
+            newParmTypes[parmNum++] = parmMapper->next();
+    }
+
+    assert(parmNum == numNewParms);
+
+    const FunctionType *newType = new FunctionType(LOC, _ext, repl->comp()->dict(), newReturnType, numNewParms, newParmTypes);
+    return newType;
 }
 
 } // namespace Base

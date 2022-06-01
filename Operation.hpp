@@ -61,6 +61,7 @@ public:
 
     OperationID id() const                              { return _id; }
     ActionID action() const                             { return _action; }
+    Extension *ext() const                              { return _ext; }
     Builder * parent() const                            { return _parent; }
     Location * location() const                         { return _location; }
 

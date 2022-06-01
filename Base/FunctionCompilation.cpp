@@ -51,7 +51,7 @@ FunctionCompilation::pointerTypeFromBaseType(const Type *baseType) {
 
 void
 FunctionCompilation::registerPointerType(const PointerType *pType) {
-    const Type *baseType = pType->BaseType();
+    const Type *baseType = pType->baseType();
     _pointerTypeFromBaseType.insert({baseType, pType});
 }
 
@@ -125,6 +125,11 @@ FunctionCompilation::buildIL() {
     return success;
 }
 
-} // namespace FunctionCompilation
+void
+FunctionCompilation::replaceTypes(TypeReplacer *repl) {
+    _func->replaceTypes(repl);
+}
+
+} // namespace Base
 } // namespace JitBuilder
 } // namespace OMR

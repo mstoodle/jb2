@@ -133,7 +133,7 @@ class Symbol;
 typedef Mapper<Symbol> SymbolMapper;
 
 class Type;
-typedef Mapper<Type> TypeMapper;
+typedef Mapper<const Type> TypeMapper;
 
 class Value;
 typedef Mapper<Value> ValueMapper;

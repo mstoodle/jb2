@@ -71,13 +71,6 @@ protected:
     CompilerReturnCode registerReturnCode(std::string name);
     PassID addPass(Pass *pass); 
 
-    template<typename T>
-    T * registerType(Type *type) {
-        internalRegisterType(type);
-        return static_cast<T *>(type);
-    }
-    void internalRegisterType(Type *type);
-
     Value *createValue(const Builder *parent, const Type *type);
     void addOperation(Builder *b, Operation *op);
 

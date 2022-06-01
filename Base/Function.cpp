@@ -27,11 +27,11 @@
 #include "Function.hpp"
 #include "FunctionCompilation.hpp"
 #include "JB1MethodBuilder.hpp"
-#include "JitBuilder.hpp"
 #include "NativeCallableContext.hpp"
 #include "Operation.hpp"
 #include "TextWriter.hpp"
 #include "TypeDictionary.hpp"
+#include "TypeReplacer.hpp"
 #include "Value.hpp"
 
 
@@ -117,6 +117,11 @@ Function::DefineParameter(std::string name, const Type * type) {
 }
 
 void
+Function::DefineParameter(ParameterSymbol * parm) {
+    this->_nativeContext->DefineParameter(parm);
+}
+
+void
 Function::DefineReturnType(const Type * type) {
     this->_nativeContext->DefineReturnType(type);
 }
@@ -124,6 +129,11 @@ Function::DefineReturnType(const Type * type) {
 LocalSymbol *
 Function::DefineLocal(std::string name, const Type * type) {
     return _nativeContext->DefineLocal(name, type);
+}
+
+void
+Function::DefineLocal(LocalSymbol *local) {
+    _nativeContext->DefineLocal(local);
 }
 
 FunctionSymbol *
@@ -163,6 +173,11 @@ Function::DefineFunction(LOCATION,
         copiedParmTypes[p] = parmTypes[p];
 
     return internalDefineFunction(PASSLOC, name, fileName, lineNumber, entryPoint, returnType, numParms, copiedParmTypes);
+}
+
+void
+Function::DefineFunction(FunctionSymbol *function) {
+    _functions.push_back(function);
 }
 
 // maybe move to Compilation?
@@ -337,6 +352,162 @@ Function::Compile(TextWriter *logger, StrategyID strategy) {
         return _ext->jb1cgCompile(_comp);
     else
         return _compiler->compile(_comp, strategy);
+}
+
+void
+Function::replaceTypes(TypeReplacer *repl) {
+    TextWriter *log = _comp->logger(repl->traceEnabled());
+
+    // replace return type if needed
+    const Type *returnType = this->returnType();
+    const Type *newReturnType = repl->singleMappedType(returnType);
+    if (newReturnType != returnType) {
+        DefineReturnType(newReturnType);
+        if (log) log->indent() << "Return type t" << returnType->id() << " -> t" << newReturnType->id() << log->endl();
+    }
+
+    // replace parameters if needed, creating new Symbols if needed
+    bool changeSomeParm = false;
+    for (auto pIt = ParametersBegin(); pIt != ParametersEnd(); pIt++) {
+        ParameterSymbol *parm = *pIt;
+        if (repl->isModified(parm->type())) {
+            changeSomeParm = true;
+            break;
+        }
+    }
+
+    if (changeSomeParm) {
+        ParameterSymbolVector prevParameters = ResetParameters();
+        int32_t parmIndex = 0;
+        for (auto pIt = prevParameters.begin(); pIt != prevParameters.end(); pIt++) {
+            ParameterSymbol *parm = *pIt;
+            const Type *type = parm->type();
+            SymbolMapper *parmSymMapper = new SymbolMapper();
+            if (repl->isModified(type)) {
+                TypeMapper *parmTypeMapper = repl->mapperForType(type);
+                std::string baseName("");
+                if (parmTypeMapper->size() > 1)
+                    baseName = parm->name() + ".";
+
+                LOG_INDENT_REGION(log) {
+                    for (int i=0;i < parmTypeMapper->size();i++) {
+                        std::string newName = baseName + parmTypeMapper->name();
+                        const Type *newType = parmTypeMapper->next();
+                        ParameterSymbol *newSym = DefineParameter(newName, newType);
+                        parmIndex++;
+                        parmSymMapper->add(newSym);
+                        repl->recordSymbolMapper(newSym, new SymbolMapper(newSym));
+                        if (log) log->indent() << "now DefineParameter " << newName << " (" << newType->name() << " t" << newType->id() << ")" << log->endl();
+                    }
+                } LOG_OUTDENT
+            }
+            else if (parmIndex > parm->index()) {
+                // no type change but recreate because parameter index needs to change due to early parameter expansion
+                ParameterSymbol *newSym = DefineParameter(parm->name(), parm->type());
+                parmSymMapper->add(newSym);
+                parmIndex++;
+            }
+            else {
+                // no change in parameter at all, so reuse existing parameter symbol
+                DefineParameter(parm);
+                parmSymMapper->add(parm);
+                parmIndex++;
+            }
+            repl->recordSymbolMapper(parm, parmSymMapper);
+        }
+    }
+
+    // replace locals if needed, creating new Symbols if needed
+    bool changeSomeLocal = false;
+    for (auto lIt = LocalsBegin(); lIt != LocalsEnd(); lIt++) {
+        Symbol *local = *lIt;
+        if (repl->isModified(local->type())) {
+            changeSomeLocal = true;
+            break;
+        }
+    }
+
+    if (changeSomeLocal) {
+        LocalSymbolVector locals = ResetLocals();
+        for (auto lIt = locals.begin(); lIt != locals.end(); lIt++) {
+            LocalSymbol *local = *lIt;
+            const Type *type = local->type();
+            if (log) log->indent() << "Local " << local->name() << " (" << type->name() << " t" << type->id() << "):" << log->endl();
+
+            SymbolMapper *symMapper = new SymbolMapper();
+            if (repl->isModified(type)) {
+                TypeMapper *typeMapper = repl->mapperForType(type);
+                std::string baseName("");
+                if (typeMapper->size() > 1)
+                    baseName = local->name() + ".";
+
+                LOG_INDENT_REGION(log) {
+                    for (int i=0;i < typeMapper->size();i++) {
+                        std::string newName = baseName + typeMapper->name();
+                        const Type *newType = typeMapper->next();
+                        Symbol *newSym = DefineLocal(newName, newType);
+                        symMapper->add(newSym);
+                        repl->recordSymbolMapper(newSym, new SymbolMapper(newSym));
+                        if (log) log->indent() << "now DefineLocal " << newName << " (" << newType->name() << " t" << newType->id() << ")" << log->endl();
+                    }
+                } LOG_OUTDENT
+            }
+            else  {
+                // no type change so can reuse existing local symbol
+                DefineLocal(local);
+                symMapper->add(local);
+            }
+            repl->recordSymbolMapper(local, symMapper);
+        }
+    }
+
+    // replace functions if needed, creating new Symbols if needed
+    bool changeSomeFunction = false;
+    for (auto fnIt = FunctionsBegin(); fnIt != FunctionsEnd(); fnIt++) {
+        FunctionSymbol *function = *fnIt;
+        if (repl->isModified(function->functionType())) {
+            changeSomeFunction = true;
+            break;
+        }
+    }
+ 
+    if (changeSomeFunction) {
+        FunctionSymbolVector functions = ResetFunctions();
+        for (auto fnIt = functions.begin(); fnIt != functions.end(); fnIt++) {
+            FunctionSymbol *function = *fnIt;
+            const FunctionType *type = function->functionType();
+            if (log) log->indent() << "Function " << function->name() << " (" << type->name() << " t" << type->id() << "):" << log->endl();
+
+            SymbolMapper *symMapper = new SymbolMapper();
+            if (repl->isModified(type)) {
+                TypeMapper *typeMapper = repl->mapperForType(type);
+                assert(typeMapper->size() == 1); // shouldn't be multiple FunctionTypes
+
+                const Type *newType = typeMapper->next();
+                assert(newType->isKind<FunctionType>() && newType != type);
+                const FunctionType *newFnType = newType->refine<FunctionType>();
+                FunctionSymbol *newSym = DefineFunction(LOC,
+                                                        function->name(), // maybe not right
+                                                        function->fileName(), // not quite right
+                                                        function->lineNumber(), // not quite right
+                                                        function->entryPoint(), // unlikely to be right
+                                                        newFnType->returnType(),
+                                                        newFnType->numParms(),
+                                                        newFnType->parmTypes());
+                repl->recordSymbolMapper(newSym, new SymbolMapper(newSym));
+                symMapper->add(newSym);
+                LOG_INDENT_REGION(log) {
+                    if (log) log->indent() << "now DefineFunction " << function->name() << " (" << newType->name() << " t" << newType->id() << ")" << log->endl();
+                } LOG_OUTDENT
+            }
+            else {
+                // type not modified, so just reuse existing symbol
+                DefineFunction(function);
+                symMapper->add(function);
+            }
+            repl->recordSymbolMapper(function, symMapper);
+        }
+    }
 }
 
 #if 0

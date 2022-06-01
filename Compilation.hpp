@@ -46,6 +46,7 @@ class Symbol;
 class SymbolDictionary;
 class TextWriter;
 class TypeDictionary;
+class TypeReplacer;
 class Visitor;
 
 class Compilation {
@@ -98,6 +99,8 @@ class Compilation {
     virtual void constructJB1Function(JB1MethodBuilder *j1mb) { }
     virtual void jbgenProlog(JB1MethodBuilder *j1mb) { }
     virtual void setNativeEntryPoint(void *entry, int i=0) { }
+
+    virtual void replaceTypes(TypeReplacer *repl) { }
 
     protected:
     virtual void addInitialBuildersToWorklist(BuilderWorklist & worklist);

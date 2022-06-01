@@ -85,6 +85,9 @@ protected:
 
     }
 
+    void DefineParameter(ParameterSymbol *parm);
+    void DefineLocal(LocalSymbol *local);
+
     ParameterSymbolVector _parameters;
     LocalSymbolVector _locals;
     std::vector<const Type *> _returnTypes;

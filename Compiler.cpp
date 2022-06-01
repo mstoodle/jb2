@@ -25,7 +25,6 @@
 #include "Config.hpp"
 #include "Extension.hpp"
 #include "JB1.hpp"
-#include "JitBuilder.hpp"
 #include "Pass.hpp"
 #include "SemanticVersion.hpp"
 #include "Strategy.hpp"

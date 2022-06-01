@@ -25,7 +25,6 @@
 #include "Config.hpp"
 #include "JB1CodeGenerator.hpp"
 #include "JB1MethodBuilder.hpp"
-#include "JitBuilder.hpp"
 #include "Location.hpp"
 #include "Operation.hpp"
 #include "TextWriter.hpp"

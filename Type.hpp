@@ -48,6 +48,7 @@ class Location;
 class TextWriter;
 class Type;
 class TypeDictionary;
+class TypeReplacer;
 
 typedef KindService::Kind TypeKind;
 
@@ -110,21 +111,27 @@ public:
     
     // create a JB1 Const operation for a Literal of this Type
     virtual void createJB1ConstOp(Location *loc, JB1MethodBuilder *j1mb, Builder *b, Value *result, Literal *lv) const {
-        assert(0); return; // default must be to assert TODO convert to CompilationException
+        assert(0); // default must be to assert TODO convert to CompilationException
+    }
+
+    // if this Type should be mapped to another, use repl and create that Type if needed and return it (NULL if not mapped to another Type)
+    //virtual const Type * mapIfNeeded(TypeReplacer *repl);
+
+    // return true if this Type can be used as a layout
+    virtual bool canBeLayout() const { return false; }
+
+    // if this Type can be a layout, break its parts into the given TypeMapper using individual offsets starting at baseOffset
+    virtual void explodeAsLayout(TypeReplacer *repl, size_t baseOffset, TypeMapper *m) const {
+        assert(0); // default must be to assert TODO convert to CompilationException
     }
 
     static TypeKind TYPEKIND;
 
 protected:
-    //static Type * create(LOCATION, TypeKind kind, Extension *ext, std::string name, size_t size, const Type * layout=NULL) {
-    //    return new Type(PASSLOC, kind, ext, name, size, layout);
-    //}
-    //static Type * create(LOCATION, TypeKind kind, TypeDictionary *dict, std::string name, size_t size, const Type * layout=NULL) {
-    //    return new Type(PASSLOC, kind, dict, name, size, layout);
-    //}
-
     Type(LOCATION, TypeKind kind, Extension *ext, std::string name, size_t size, const Type *layout=NULL);
     Type(LOCATION, TypeKind kind, Extension *ext, TypeDictionary *dict, std::string name, size_t size, const Type *layout=NULL);
+
+    void transformTypeIfNeeded(TypeReplacer *repl, const Type *type) const;
 
     Extension *_ext;
     CreateLocation _createLoc;
