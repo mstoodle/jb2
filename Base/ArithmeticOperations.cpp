@@ -59,6 +59,25 @@ Op_Add::jbgen(JB1MethodBuilder *j1mb) const {
 
 
 //
+// ConvertTo
+//
+Op_ConvertTo::Op_ConvertTo(LOCATION, Extension *ext, Builder * parent, ActionID aConvertTo, Value *result, const Type *type, Value *value)
+    : OperationR1V1T1(PASSLOC, aConvertTo, ext, parent, result, type, value) {
+
+}
+
+Operation *
+Op_ConvertTo::clone(LOCATION, Builder *b, OperationCloner *cloner) const {
+    return new Op_ConvertTo(PASSLOC, this->_ext, b, this->action(), cloner->result(), cloner->type(), cloner->operand());
+}
+
+void
+Op_ConvertTo::jbgen(JB1MethodBuilder *j1mb) const {
+    j1mb->ConvertTo(location(), this->parent(), this->_result, this->_type, this->_value);
+}
+
+
+//
 // Mul
 //
 Op_Mul::Op_Mul(LOCATION, Extension *ext, Builder * parent, ActionID aMul, Value *result, Value *left, Value *right)

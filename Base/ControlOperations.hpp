@@ -33,46 +33,215 @@ class BaseExtension;
 class Op_ForLoopUp;
 class LocalSymbol;
 
-class ForLoopBuilder {
+class Op_Call : public OperationR1S1VN {
     friend class BaseExtension;
-    friend class Op_ForLoopUp;
 
 public:
-    ForLoopBuilder()
-        : _loopVariable(NULL)
-        , _initial(NULL)
-        , _final(NULL)
-        , _bump(NULL)
-        , _loopBody(NULL)
-        , _loopBreak(NULL)
-        , _loopContinue(NULL) {
+    virtual Operation * clone(LOCATION, Builder *b, OperationCloner *cloner) const;
+    virtual void write(TextWriter &w) const;
+    virtual void jbgen(JB1MethodBuilder *j1mb) const;
+
+protected:
+    Op_Call(LOCATION, Extension *ext, Builder * parent, ActionID aCall, Value *result, FunctionSymbol *target, std::va_list & args);
+    Op_Call(LOCATION, Extension *ext, Builder * parent, ActionID aCall, FunctionSymbol *target, std::va_list & args);
+    Op_Call(LOCATION, Extension *ext, Builder * parent, ActionID aCall, OperationCloner *cloner)
+        : OperationR1S1VN(PASSLOC, aCall, ext, parent, cloner) {
+    }
+};
+
+class Op_Goto : public OperationB1 {
+    friend class BaseExtension;
+
+public:
+    virtual Operation * clone(LOCATION, Builder *b, OperationCloner *cloner) const;
+    virtual void write(TextWriter &w) const;
+    virtual void jbgen(JB1MethodBuilder *j1mb) const;
+
+protected:
+    Op_Goto(LOCATION, Extension *ext, Builder * parent, ActionID aGoto, Builder *target)
+        : OperationB1(PASSLOC, aGoto, ext, parent, target) {
 
     }
+};
 
-    LocalSymbol * loopVariable() const { return _loopVariable; }
-    Value *initialValue() const { return _initial; }
-    Value *finalValue() const { return _final; }
-    Value *bumpValue() const { return _bump; }
-    Builder *loopBody() const { return _loopBody; }
-    Builder *loopBreak() const { return _loopBreak; }
-    Builder *loopContinue()const { return _loopContinue; }
+class Op_IfCmpEqual : public OperationB1R0V2 {
+    friend class BaseExtension;
 
-private:
-    ForLoopBuilder *setLoopVariable(LocalSymbol *s) { _loopVariable = s; return this; }
-    ForLoopBuilder *setInitialValue(Value *v) { _initial = v; return this; }
-    ForLoopBuilder *setFinalValue(Value *v) { _final = v; return this; }
-    ForLoopBuilder *setBumpValue(Value *v) { _bump = v; return this; }
-    ForLoopBuilder *setLoopBody(Builder *b) { _loopBody = b; return this; }
-    ForLoopBuilder *setLoopBreak(Builder *b) { _loopBreak = b; return this; }
-    ForLoopBuilder *setLoopContinue(Builder *b) { _loopContinue = b; return this; }
+public:
+    virtual Operation * clone(LOCATION, Builder *b, OperationCloner *cloner) const;
+    virtual void write(TextWriter &w) const;
+    virtual void jbgen(JB1MethodBuilder *j1mb) const;
 
-    LocalSymbol * _loopVariable;
-    Value * _initial;
-    Value * _final;
-    Value * _bump;
-    Builder * _loopBody;
-    Builder * _loopBreak;
-    Builder * _loopContinue;
+protected:
+    Op_IfCmpEqual(LOCATION, Extension *ext, Builder * parent, ActionID aIfCmpEqual, Builder *target, Value *left, Value *right)
+        : OperationB1R0V2(PASSLOC, aIfCmpEqual, ext, parent, target, left, right) {
+
+    }
+};
+
+class Op_IfCmpEqualZero : public OperationB1R0V1 {
+    friend class BaseExtension;
+
+public:
+    virtual Operation * clone(LOCATION, Builder *b, OperationCloner *cloner) const;
+    virtual void write(TextWriter &w) const;
+    virtual void jbgen(JB1MethodBuilder *j1mb) const;
+
+protected:
+    Op_IfCmpEqualZero(LOCATION, Extension *ext, Builder * parent, ActionID aIfCmpEqualZero, Builder *target, Value *value)
+        : OperationB1R0V1(PASSLOC, aIfCmpEqualZero, ext, parent, target, value) {
+
+    }
+};
+
+class Op_IfCmpGreaterThan : public OperationB1R0V2 {
+    friend class BaseExtension;
+
+public:
+    virtual Operation * clone(LOCATION, Builder *b, OperationCloner *cloner) const;
+    virtual void write(TextWriter &w) const;
+    virtual void jbgen(JB1MethodBuilder *j1mb) const;
+
+protected:
+    Op_IfCmpGreaterThan(LOCATION, Extension *ext, Builder * parent, ActionID aIfCmpGreaterThan, Builder *target, Value *left, Value *right)
+        : OperationB1R0V2(PASSLOC, aIfCmpGreaterThan, ext, parent, target, left, right) {
+
+    }
+};
+
+class Op_IfCmpGreaterOrEqual : public OperationB1R0V2 {
+    friend class BaseExtension;
+
+public:
+    virtual Operation * clone(LOCATION, Builder *b, OperationCloner *cloner) const;
+    virtual void write(TextWriter &w) const;
+    virtual void jbgen(JB1MethodBuilder *j1mb) const;
+
+protected:
+    Op_IfCmpGreaterOrEqual(LOCATION, Extension *ext, Builder * parent, ActionID aIfCmpGreaterOrEqual, Builder *target, Value *left, Value *right)
+        : OperationB1R0V2(PASSLOC, aIfCmpGreaterOrEqual, ext, parent, target, left, right) {
+
+    }
+};
+
+class Op_IfCmpLessThan : public OperationB1R0V2 {
+    friend class BaseExtension;
+
+public:
+    virtual Operation * clone(LOCATION, Builder *b, OperationCloner *cloner) const;
+    virtual void write(TextWriter &w) const;
+    virtual void jbgen(JB1MethodBuilder *j1mb) const;
+
+protected:
+    Op_IfCmpLessThan(LOCATION, Extension *ext, Builder * parent, ActionID aIfCmpLessThan, Builder *target, Value *left, Value *right)
+        : OperationB1R0V2(PASSLOC, aIfCmpLessThan, ext, parent, target, left, right) {
+
+    }
+};
+
+class Op_IfCmpLessOrEqual : public OperationB1R0V2 {
+    friend class BaseExtension;
+
+public:
+    virtual Operation * clone(LOCATION, Builder *b, OperationCloner *cloner) const;
+    virtual void write(TextWriter &w) const;
+    virtual void jbgen(JB1MethodBuilder *j1mb) const;
+
+protected:
+    Op_IfCmpLessOrEqual(LOCATION, Extension *ext, Builder * parent, ActionID aIfCmpLessOrEqual, Builder *target, Value *left, Value *right)
+        : OperationB1R0V2(PASSLOC, aIfCmpLessOrEqual, ext, parent, target, left, right) {
+
+    }
+};
+
+class Op_IfCmpNotEqual : public OperationB1R0V2 {
+    friend class BaseExtension;
+
+public:
+    virtual Operation * clone(LOCATION, Builder *b, OperationCloner *cloner) const;
+    virtual void write(TextWriter &w) const;
+    virtual void jbgen(JB1MethodBuilder *j1mb) const;
+
+protected:
+    Op_IfCmpNotEqual(LOCATION, Extension *ext, Builder * parent, ActionID aIfCmpNotEqual, Builder *target, Value *left, Value *right)
+        : OperationB1R0V2(PASSLOC, aIfCmpNotEqual, ext, parent, target, left, right) {
+
+    }
+};
+
+class Op_IfCmpNotEqualZero : public OperationB1R0V1 {
+    friend class BaseExtension;
+
+public:
+    virtual Operation * clone(LOCATION, Builder *b, OperationCloner *cloner) const;
+    virtual void write(TextWriter &w) const;
+    virtual void jbgen(JB1MethodBuilder *j1mb) const;
+
+protected:
+    Op_IfCmpNotEqualZero(LOCATION, Extension *ext, Builder * parent, ActionID aIfCmpNotEqualZero, Builder *target, Value *value)
+        : OperationB1R0V1(PASSLOC, aIfCmpNotEqualZero, ext, parent, target, value) {
+
+    }
+};
+
+class Op_IfCmpUnsignedGreaterThan : public OperationB1R0V2 {
+    friend class BaseExtension;
+
+public:
+    virtual Operation * clone(LOCATION, Builder *b, OperationCloner *cloner) const;
+    virtual void write(TextWriter &w) const;
+    virtual void jbgen(JB1MethodBuilder *j1mb) const;
+
+protected:
+    Op_IfCmpUnsignedGreaterThan(LOCATION, Extension *ext, Builder * parent, ActionID aIfCmpUnsignedGreaterThan, Builder *target, Value *left, Value *right)
+        : OperationB1R0V2(PASSLOC, aIfCmpUnsignedGreaterThan, ext, parent, target, left, right) {
+
+    }
+};
+
+class Op_IfCmpUnsignedGreaterOrEqual : public OperationB1R0V2 {
+    friend class BaseExtension;
+
+public:
+    virtual Operation * clone(LOCATION, Builder *b, OperationCloner *cloner) const;
+    virtual void write(TextWriter &w) const;
+    virtual void jbgen(JB1MethodBuilder *j1mb) const;
+
+protected:
+    Op_IfCmpUnsignedGreaterOrEqual(LOCATION, Extension *ext, Builder * parent, ActionID aIfCmpUnsignedGreaterOrEqual, Builder *target, Value *left, Value *right)
+        : OperationB1R0V2(PASSLOC, aIfCmpUnsignedGreaterOrEqual, ext, parent, target, left, right) {
+
+    }
+};
+
+class Op_IfCmpUnsignedLessThan : public OperationB1R0V2 {
+    friend class BaseExtension;
+
+public:
+    virtual Operation * clone(LOCATION, Builder *b, OperationCloner *cloner) const;
+    virtual void write(TextWriter &w) const;
+    virtual void jbgen(JB1MethodBuilder *j1mb) const;
+
+protected:
+    Op_IfCmpUnsignedLessThan(LOCATION, Extension *ext, Builder * parent, ActionID aIfCmpUnsignedLessThan, Builder *target, Value *left, Value *right)
+        : OperationB1R0V2(PASSLOC, aIfCmpUnsignedLessThan, ext, parent, target, left, right) {
+
+    }
+};
+
+class Op_IfCmpUnsignedLessOrEqual : public OperationB1R0V2 {
+    friend class BaseExtension;
+
+public:
+    virtual Operation * clone(LOCATION, Builder *b, OperationCloner *cloner) const;
+    virtual void write(TextWriter &w) const;
+    virtual void jbgen(JB1MethodBuilder *j1mb) const;
+
+protected:
+    Op_IfCmpUnsignedLessOrEqual(LOCATION, Extension *ext, Builder * parent, ActionID aIfCmpUnsignedLessOrEqual, Builder *target, Value *left, Value *right)
+        : OperationB1R0V2(PASSLOC, aIfCmpUnsignedLessOrEqual, ext, parent, target, left, right) {
+
+    }
 };
 
 class Op_ForLoopUp : public Operation {

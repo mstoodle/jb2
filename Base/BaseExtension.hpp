@@ -22,8 +22,9 @@
 #ifndef BASEEXTENSION_INCL
 #define BASEEXTENSION_INCL
 
-#include <stdint.h>
+#include <cstdarg>
 #include <map>
+#include <stdint.h>
 #include "CreateLoc.hpp"
 #include "Extension.hpp"
 #include "IDs.hpp"
@@ -68,6 +69,7 @@ class FunctionType;
 class BaseExtensionChecker;
 class ForLoopBuilder;
 class FunctionCompilation;
+class FunctionSymbol;
 class LocalSymbol;
 
 class BaseExtension : public Extension {
@@ -109,7 +111,7 @@ public:
     const FunctionType * DefineFunctionType(LOCATION, FunctionTypeBuilder *builder);
     #endif
     // deprecated
-    const FunctionType * DefineFunctionType(LOCATION, std::string name, const Type *returnType, int32_t numParms, const Type **parmTypes);
+    const FunctionType * DefineFunctionType(LOCATION, FunctionCompilation *comp, const Type *returnType, int32_t numParms, const Type **parmTypes);
 
     //
     // Actions
@@ -120,11 +122,26 @@ public:
 
     // Arithmetic actions
     const ActionID aAdd;
+    const ActionID aConvertTo;
     const ActionID aMul;
     const ActionID aSub;
 
     // Control actions
+    const ActionID aCall;
     const ActionID aForLoopUp;
+    const ActionID aGoto;
+    const ActionID aIfCmpEqual;
+    const ActionID aIfCmpEqualZero;
+    const ActionID aIfCmpGreaterThan;
+    const ActionID aIfCmpGreaterOrEqual;
+    const ActionID aIfCmpLessThan;
+    const ActionID aIfCmpLessOrEqual;
+    const ActionID aIfCmpNotEqual;
+    const ActionID aIfCmpNotEqualZero;
+    const ActionID aIfCmpUnsignedGreaterThan;
+    const ActionID aIfCmpUnsignedGreaterOrEqual;
+    const ActionID aIfCmpUnsignedLessThan;
+    const ActionID aIfCmpUnsignedLessOrEqual;
     const ActionID aReturn;
 
     // Memory actions
@@ -146,9 +163,24 @@ public:
     //
 
     const CompilerReturnCode CompileFail_BadInputTypes_Add;
+    const CompilerReturnCode CompileFail_BadInputTypes_ConvertTo;
     const CompilerReturnCode CompileFail_BadInputTypes_Mul;
     const CompilerReturnCode CompileFail_BadInputTypes_Sub;
+    const CompilerReturnCode CompileFail_BadInputTypes_IfCmpEqual;
+    const CompilerReturnCode CompileFail_BadInputTypes_IfCmpEqualZero;
+    const CompilerReturnCode CompileFail_BadInputTypes_IfCmpGreaterThan;
+    const CompilerReturnCode CompileFail_BadInputTypes_IfCmpGreaterOrEqual;
+    const CompilerReturnCode CompileFail_BadInputTypes_IfCmpLessThan;
+    const CompilerReturnCode CompileFail_BadInputTypes_IfCmpLessOrEqual;
+    const CompilerReturnCode CompileFail_BadInputTypes_IfCmpNotEqual;
+    const CompilerReturnCode CompileFail_BadInputTypes_IfCmpNotEqualZero;
+    const CompilerReturnCode CompileFail_BadInputTypes_IfCmpUnsignedGreaterThan;
+    const CompilerReturnCode CompileFail_BadInputTypes_IfCmpUnsignedGreaterOrEqual;
+    const CompilerReturnCode CompileFail_BadInputTypes_IfCmpUnsignedLessThan;
+    const CompilerReturnCode CompileFail_BadInputTypes_IfCmpUnsignedLessOrEqual;
     const CompilerReturnCode CompileFail_BadInputTypes_ForLoopUp;
+    const CompilerReturnCode CompileFail_BadInputArray_OffsetAt;
+    const CompilerReturnCode CompileFail_MismatchedArgumentTypes_Call;
 
 
     //
@@ -160,11 +192,27 @@ public:
 
     // Arithmetic operations
     Value * Add(LOCATION, Builder *b, Value *left, Value *right);
+    Value * ConvertTo(LOCATION, Builder *b, const Type *type, Value *value);
     Value * Mul(LOCATION, Builder *b, Value *left, Value *right);
     Value * Sub(LOCATION, Builder *b, Value *left, Value *right);
 
     // Control operations
+    Value *Call(LOCATION, Builder *b, FunctionSymbol *funcSym, ...);
+    Value *CallWithArgArray(LOCATION, Builder *b, FunctionSymbol *funcSym, int32_t numArgs, Value **args);
     ForLoopBuilder *ForLoopUp(LOCATION, Builder *b, LocalSymbol *loopVariable, Value *initial, Value *final, Value *bump);
+    void Goto(LOCATION, Builder *b, Builder *target);
+    void IfCmpEqual(LOCATION, Builder *b, Builder *target, Value *left, Value *right);
+    void IfCmpEqualZero(LOCATION, Builder *b, Builder *target, Value *condition);
+    void IfCmpLessOrEqual(LOCATION, Builder *b, Builder *target, Value *left, Value *right);
+    void IfCmpLessThan(LOCATION, Builder *b, Builder *target, Value *left, Value *right);
+    void IfCmpGreaterOrEqual(LOCATION, Builder *b, Builder *target, Value *left, Value *right);
+    void IfCmpGreaterThan(LOCATION, Builder *b, Builder *target, Value *left, Value *right);
+    void IfCmpNotEqual(LOCATION, Builder *b, Builder *target, Value *left, Value *right);
+    void IfCmpNotEqualZero(LOCATION, Builder *b, Builder *target, Value *condition);
+    void IfCmpUnsignedLessOrEqual(LOCATION, Builder *b, Builder *target, Value *left, Value *right);
+    void IfCmpUnsignedLessThan(LOCATION, Builder *b, Builder *target, Value *left, Value *right);
+    void IfCmpUnsignedGreaterOrEqual(LOCATION, Builder *b, Builder *target, Value *left, Value *right);
+    void IfCmpUnsignedGreaterThan(LOCATION, Builder *b, Builder *target, Value *left, Value *right);
     void Return(LOCATION, Builder *b);
     void Return(LOCATION, Builder *b, Value *v);
 
@@ -182,10 +230,10 @@ public:
     Value * IndexAt(LOCATION, Builder *b, Value *base, Value *index);
 
     // Pseudo operations
-    void Increment(LOCATION, Builder *b, Symbol *sym, Value *bump);
     Location * SourceLocation(LOCATION, Builder *b, std::string func);
     Location * SourceLocation(LOCATION, Builder *b, std::string func, std::string lineNumber);
     Location * SourceLocation(LOCATION, Builder *b, std::string func, std::string lineNumber, int32_t bcIndex);
+
     Value * ConstInt8(LOCATION, Builder *b, int8_t v);
     Value * ConstInt16(LOCATION, Builder *b, int16_t v);
     Value * ConstInt32(LOCATION, Builder *b, int32_t v);
@@ -193,16 +241,27 @@ public:
     Value * ConstFloat32(LOCATION, Builder *b, float v);
     Value * ConstFloat64(LOCATION, Builder *b, double v);
     Value * ConstAddress(LOCATION, Builder *b, void *v);
-    //Deprecated:
-    //Value * ConstFloat(LOCATION, Builder *b, float v) { return ConstFloat32(PASSLOC, b, v); } // deprecated
-    //Value * ConstDouble(LOCATION, Builder *b, double v) { return ConstFloat64(PASSLOC, b, v); } // deprecated
-    Value * Zero(LOCATION, Compilation *comp, Builder *b, const Type *type);
-    Value * One(LOCATION, Compilation *comp, Builder *b, const Type *type);
-    void Increment(LOCATION, Compilation *comp, Builder *b, LocalSymbol *sym);
+    Value * ConstPointer(LOCATION, Builder *b, const PointerType *type, void *v);
 
+    Value * Zero(LOCATION, Builder *b, const Type *type);
+    Value * One(LOCATION, Builder *b, const Type *type);
+
+    void Increment(LOCATION, Builder *b, Symbol *sym, Value *bump);
+    void Increment(LOCATION, Builder *b, LocalSymbol *sym);
+
+    Value * OffsetAt(LOCATION, Builder *b, Value *array, size_t elementIndex);
+    Value * LoadArray(LOCATION, Builder *b, Value *array, size_t elementIndex);
+    void StoreArray(LOCATION, Builder *b, Value *array, size_t elementIndex, Value *value);
+    Value * OffsetAt(LOCATION, Builder *b, Value *array, Value *indexValue);
+    Value * LoadArray(LOCATION, Builder *b, Value *array, Value *indexValue);
+    void StoreArray(LOCATION, Builder *b, Value *array, Value *indexValue, Value *value);
+
+    // JB1 compilation support
     CompilerReturnCode jb1cgCompile(Compilation *comp);
 
 protected:
+    void failValidateOffsetAt(LOCATION, Builder *b, Value *array);
+
     StrategyID _jb1cgStrategyID;
     std::vector<BaseExtensionChecker *> _checkers;
 
@@ -217,17 +276,69 @@ public:
     }
 
     virtual bool validateAdd(LOCATION, Builder *b, Value *left, Value *right);
+    virtual bool validateCall(LOCATION, Builder *b, FunctionSymbol *target, std::va_list & args);
+    //virtual bool validateCallWithArgArray(LOCATION, Builder *b, FunctionSymbol *target, int32_t numArgs, Value **args);
+    virtual bool validateConvertTo(LOCATION, Builder *b, const Type *type, Value *value);
     virtual bool validateMul(LOCATION, Builder *b, Value *left, Value *right);
     virtual bool validateSub(LOCATION, Builder *b, Value *left, Value *right);
+    virtual bool validateIfCmp(LOCATION, Builder *b, Builder *target, Value *left, Value *right, CompilerReturnCode failCode, std::string opCodeName);
+    virtual bool validateIfCmpZero(LOCATION, Builder *b, Builder *target, Value *value, CompilerReturnCode failCode, std::string opCodeName);
     virtual bool validateForLoopUp(LOCATION, Builder *b, LocalSymbol *loopVariable, Value *initial, Value *final, Value *bump);
 
 protected:
     virtual void failValidateAdd(LOCATION, Builder *b, Value *left, Value *right);
+    virtual void failValidateCall(LOCATION, Builder *b, FunctionSymbol *target, std::va_list & args);
+    //virtual void failValidateCallWithArgArray(LOCATION, Builder *b, FunctionSymbol *target, int32_t numArgs, Value **args);
+    virtual void failValidateConvertTo(LOCATION, Builder *b, const Type *type, Value *value);
     virtual void failValidateMul(LOCATION, Builder *b, Value *left, Value *right);
     virtual void failValidateSub(LOCATION, Builder *b, Value *left, Value *right);
+    virtual void failValidateIfCmp(LOCATION, Builder *b, Builder *target, Value *left, Value *right, CompilerReturnCode failCode, std::string opCodeName);
+    virtual void failValidateIfCmpZero(LOCATION, Builder *b, Builder *target, Value *value, CompilerReturnCode failCode, std::string opCodeName);
     virtual void failValidateForLoopUp(LOCATION, Builder *b, LocalSymbol *loopVariable, Value *initial, Value *final, Value *bump);
 
     BaseExtension *_base;
+};
+
+class ForLoopBuilder {
+    friend class BaseExtension;
+    friend class Op_ForLoopUp;
+
+public:
+    ForLoopBuilder()
+        : _loopVariable(NULL)
+        , _initial(NULL)
+        , _final(NULL)
+        , _bump(NULL)
+        , _loopBody(NULL)
+        , _loopBreak(NULL)
+        , _loopContinue(NULL) {
+
+    }
+
+    LocalSymbol * loopVariable() const { return _loopVariable; }
+    Value *initialValue() const { return _initial; }
+    Value *finalValue() const { return _final; }
+    Value *bumpValue() const { return _bump; }
+    Builder *loopBody() const { return _loopBody; }
+    Builder *loopBreak() const { return _loopBreak; }
+    Builder *loopContinue()const { return _loopContinue; }
+
+private:
+    ForLoopBuilder *setLoopVariable(LocalSymbol *s) { _loopVariable = s; return this; }
+    ForLoopBuilder *setInitialValue(Value *v) { _initial = v; return this; }
+    ForLoopBuilder *setFinalValue(Value *v) { _final = v; return this; }
+    ForLoopBuilder *setBumpValue(Value *v) { _bump = v; return this; }
+    ForLoopBuilder *setLoopBody(Builder *b) { _loopBody = b; return this; }
+    ForLoopBuilder *setLoopBreak(Builder *b) { _loopBreak = b; return this; }
+    ForLoopBuilder *setLoopContinue(Builder *b) { _loopContinue = b; return this; }
+
+    LocalSymbol * _loopVariable;
+    Value * _initial;
+    Value * _final;
+    Value * _bump;
+    Builder * _loopBody;
+    Builder * _loopBreak;
+    Builder * _loopContinue;
 };
 
 } // namespace Base

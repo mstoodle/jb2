@@ -19,6 +19,8 @@
  * SPDX-License-Identifier: EPL-2.0 OR Apache-2.0 OR GPL-2.0 WITH Classpath-exception-2.0 OR LicenseRef-GPL-2.0 WITH Assembly-exception
  *******************************************************************************/
 
+#include <cstdarg>
+
 #include "ArithmeticOperations.hpp"
 #include "BaseExtension.hpp"
 #include "BaseSymbols.hpp"
@@ -29,6 +31,7 @@
 #include "Compilation.hpp"
 #include "Compiler.hpp"
 #include "Context.hpp"
+#include "FunctionCompilation.hpp"
 #include "JB1CodeGenerator.hpp"
 #include "Literal.hpp"
 #include "Location.hpp"
@@ -45,8 +48,8 @@ const SemanticVersion BaseExtension::version(BASEEXT_MAJOR,BASEEXT_MINOR,BASEEXT
 const std::string BaseExtension::NAME("base");
 
 extern "C" {
-    Extension *create(Compiler *comp) {
-        return new BaseExtension(comp);
+    Extension *create(Compiler *compiler) {
+        return new BaseExtension(compiler);
     }
 }
 
@@ -60,9 +63,10 @@ BaseExtension::BaseExtension(Compiler *compiler, bool extended, std::string exte
     , Float32(registerType<Float32Type>(new Float32Type(LOC, this)))
     , Float64(registerType<Float64Type>(new Float64Type(LOC, this)))
     , Address(registerType<AddressType>(new AddressType(LOC, this)))
-    , Word(compiler->platformWordSize() == 64 ? static_cast<const Type *>(this->Int64) : static_cast<const Type *>(this->Int32))
-    , aConst(registerAction(std::string("ConstInt8")))
+    , Word(compiler->platformWordSize() == 64 ? this->Int64->refine<Type>() : this->Int32->refine<Type>())
+    , aConst(registerAction(std::string("Const")))
     , aAdd(registerAction(std::string("Add")))
+    , aConvertTo(registerAction(std::string("ConvertTo")))
     , aMul(registerAction(std::string("Mul")))
     , aSub(registerAction(std::string("Sub")))
     , aLoad(registerAction(std::string("Load")))
@@ -76,12 +80,41 @@ BaseExtension::BaseExtension(Compiler *compiler, bool extended, std::string exte
     , aCreateLocalArray(registerAction(std::string("CreateLocalArray")))
     , aCreateLocalStruct(registerAction(std::string("CreateLocalStruct")))
     , aIndexAt(registerAction(std::string("IndexAt")))
+    , aCall(registerAction(std::string("Call")))
     , aForLoopUp(registerAction(std::string("ForLoopUp")))
+    , aGoto(registerAction(std::string("Goto")))
+    , aIfCmpEqual(registerAction(std::string("IfCmpEqual")))
+    , aIfCmpEqualZero(registerAction(std::string("IfCmpEqualZero")))
+    , aIfCmpGreaterThan(registerAction(std::string("IfCmpGreaterThan")))
+    , aIfCmpGreaterOrEqual(registerAction(std::string("IfCmpGreaterOrEqual")))
+    , aIfCmpLessThan(registerAction(std::string("IfCmpLessThan")))
+    , aIfCmpLessOrEqual(registerAction(std::string("IfCmpLessOrEqual")))
+    , aIfCmpNotEqual(registerAction(std::string("IfCmpNotEqual")))
+    , aIfCmpNotEqualZero(registerAction(std::string("IfCmpNotEqualZero")))
+    , aIfCmpUnsignedGreaterThan(registerAction(std::string("IfCmpUnsignedGreaterThan")))
+    , aIfCmpUnsignedGreaterOrEqual(registerAction(std::string("IfCmpUnsignedGreaterOrEqual")))
+    , aIfCmpUnsignedLessThan(registerAction(std::string("IfCmpUnsignedLessThan")))
+    , aIfCmpUnsignedLessOrEqual(registerAction(std::string("IfCmpUnsignedLessOrEqual")))
     , aReturn(registerAction(std::string("Return")))
     , CompileFail_BadInputTypes_Add(registerReturnCode("CompileFail_BadInputTypes_Add"))
+    , CompileFail_BadInputTypes_ConvertTo(registerReturnCode("CompileFail_BadInputTypes_ConvertTo"))
     , CompileFail_BadInputTypes_Mul(registerReturnCode("CompileFail_BadInputTypes_Mul"))
     , CompileFail_BadInputTypes_Sub(registerReturnCode("CompileFail_BadInputTypes_Sub"))
-    , CompileFail_BadInputTypes_ForLoopUp(registerReturnCode("CompileFail_BadInputTypes_ForLoopUp")) {
+    , CompileFail_BadInputTypes_IfCmpEqual(registerReturnCode("CompileFail_BadInputTypes_IfCmpEqual"))
+    , CompileFail_BadInputTypes_IfCmpEqualZero(registerReturnCode("CompileFail_BadInputTypes_IfCmpEqualZero"))
+    , CompileFail_BadInputTypes_IfCmpGreaterThan(registerReturnCode("CompileFail_BadInputTypes_IfCmpGreaterThan"))
+    , CompileFail_BadInputTypes_IfCmpGreaterOrEqual(registerReturnCode("CompileFail_BadInputTypes_IfCmpGreaterOrEqual"))
+    , CompileFail_BadInputTypes_IfCmpLessThan(registerReturnCode("CompileFail_BadInputTypes_IfCmpLessThan"))
+    , CompileFail_BadInputTypes_IfCmpLessOrEqual(registerReturnCode("CompileFail_BadInputTypes_IfCmpLessOrEqual"))
+    , CompileFail_BadInputTypes_IfCmpNotEqual(registerReturnCode("CompileFail_BadInputTypes_IfCmpNotEqual"))
+    , CompileFail_BadInputTypes_IfCmpNotEqualZero(registerReturnCode("CompileFail_BadInputTypes_IfCmpNotEqualZero"))
+    , CompileFail_BadInputTypes_IfCmpUnsignedGreaterThan(registerReturnCode("CompileFail_BadInputTypes_IfCmpUnsignedGreaterThan"))
+    , CompileFail_BadInputTypes_IfCmpUnsignedGreaterOrEqual(registerReturnCode("CompileFail_BadInputTypes_IfCmpUnsignedGreaterOrEqual"))
+    , CompileFail_BadInputTypes_IfCmpUnsignedLessThan(registerReturnCode("CompileFail_BadInputTypes_IfCmpUnsignedLessThan"))
+    , CompileFail_BadInputTypes_IfCmpUnsignedLessOrEqual(registerReturnCode("CompileFail_BadInputTypes_IfCmpUnsignedLessOrEqual"))
+    , CompileFail_BadInputTypes_ForLoopUp(registerReturnCode("CompileFail_BadInputTypes_ForLoopUp"))
+    , CompileFail_BadInputArray_OffsetAt(registerReturnCode("CompileFail_BadInputArray_OffsetAt"))
+    , CompileFail_MismatchedArgumentTypes_Call(registerReturnCode("CompileFail_MismatchedArgumentTypes_Call")) {
 
     if (!extended) {
         Strategy *jb1cgStrategy = new Strategy(compiler, "jb1cg");
@@ -150,7 +183,9 @@ BaseExtensionChecker::validateAdd(LOCATION, Builder *b, Value *left, Value *righ
         return true;
     }
 
-    return false;
+    // we defined this operation, so if we can't validate it we have to fail it
+    failValidateAdd(PASSLOC, b, left, right);
+    return true;
 }
 
 void
@@ -186,6 +221,59 @@ BaseExtension::Add(LOCATION, Builder *b, Value *left, Value *right) {
 }
 
 bool
+BaseExtensionChecker::validateConvertTo(LOCATION, Builder *b, const Type *type, Value *value) {
+    // TODO: enhance type checking
+    const Type *vType = value->type();
+    if (type == _base->Int8
+     || type == _base->Int16
+     || type == _base->Int32
+     || type == _base->Int64
+     || type == _base->Float32
+     || type == _base->Float64
+     || type == _base->Address) {
+        if (vType == _base->Int8
+         || vType == _base->Int16
+         || vType == _base->Int32
+         || vType == _base->Int64
+         || vType == _base->Float32
+         || vType == _base->Float64
+         || vType == _base->Address) {
+
+            return true;
+        }
+    }
+
+    // we defined this operation, so if we can't validate it we have to fail it
+    failValidateConvertTo(PASSLOC, b, type, value);
+    return true;
+}
+
+void
+BaseExtensionChecker::failValidateConvertTo(LOCATION, Builder *b, const Type *type, Value *value) {
+    CompilationException e(PASSLOC, _base->compiler(), _base->CompileFail_BadInputTypes_ConvertTo);
+    const Type *vType = value->type();
+    e.setMessageLine(std::string("ConvertTo: invalid input types"))
+     .appendMessageLine(std::string("    type ").append(type->to_string()))
+     .appendMessageLine(std::string("   value ").append(vType->to_string()))
+     .appendMessageLine(std::string("Source value and destination types must be a primitive type (Int8,Int16,Int32,Int64,Float32,Float64,Address)"));
+    throw e;
+}
+
+Value *
+BaseExtension::ConvertTo(LOCATION, Builder *b, const Type *type, Value *value) {
+    for (auto it = _checkers.begin(); it != _checkers.end(); it++) {
+        BaseExtensionChecker *checker = *it;
+        if (checker->validateConvertTo(PASSLOC, b, type, value))
+            break;
+    }
+
+    Value *result = createValue(b, type);
+    addOperation(b, new Op_ConvertTo(PASSLOC, this, b, aConvertTo, result, type, value));
+    return result;
+}
+
+
+bool
 BaseExtensionChecker::validateMul(LOCATION, Builder *b, Value *left, Value *right) {
     const Type *lType = left->type();
     const Type *rType = right->type();
@@ -204,7 +292,9 @@ BaseExtensionChecker::validateMul(LOCATION, Builder *b, Value *left, Value *righ
         return true;
     }
 
-    return false;
+    // we defined this operation, so if we can't validate it we have to fail it
+    failValidateMul(PASSLOC, b, left, right);
+    return true;
 }
 
 void
@@ -259,7 +349,9 @@ BaseExtensionChecker::validateSub(LOCATION, Builder *b, Value *left, Value *righ
         return true;
     }
 
-    return false;
+    // we defined this operation, so if we can't validate it we have to fail it
+    failValidateSub(PASSLOC, b, left, right);
+    return true;
 }
 
 void
@@ -293,8 +385,70 @@ BaseExtension::Sub(LOCATION, Builder *b, Value *left, Value *right) {
 //
 
 bool
+BaseExtensionChecker::validateCall(LOCATION, Builder *b, FunctionSymbol *target, std::va_list & args) {
+    const FunctionType *tgtType = target->functionType();
+    for (auto a=0;a < tgtType->numParms();a++) {
+        Value *arg = va_arg(args, Value *);
+        if (arg->type() != tgtType->parmTypes()[a]) // should be more like "can be stored to"
+            failValidateCall(PASSLOC, b, target, args);
+    }
+    va_end(args);
+    return true;
+}
+
+void
+BaseExtensionChecker::failValidateCall(LOCATION, Builder *b, FunctionSymbol *target, std::va_list & args) {
+    const FunctionType *tgtType = target->functionType();
+    CompilationException e(PASSLOC, _base->compiler(), _base->CompileFail_MismatchedArgumentTypes_Call);
+    e.setMessageLine(std::string("Call: mismatched argument types"));
+    for (auto a=0;a < tgtType->numParms();a++) {
+        Value *arg = va_arg(args, Value *);
+        if (arg->type() != tgtType->parmTypes()[a])
+            e.appendMessageLine(std::string("  X  "));
+        else
+            e.appendMessageLine(std::string("     "));
+        e.appendMessage(std::string(" p").append(std::to_string(a)).append(std::string(" ")).append(tgtType->parmTypes()[a]->to_string())
+         .append(std::string(" : a")).append(std::to_string(a))
+         .append(std::string(" v")).append(std::to_string(arg->id()))
+         .append(std::string(" ")).append(arg->type()->to_string()));
+    }
+    e.appendMessageLine(std::string("Argument types must match corresponding parameter types (currently exact, should be assignable to)"));
+    throw e;
+}
+
+Value *
+BaseExtension::Call(LOCATION, Builder *b, FunctionSymbol *target, ...) {
+    const FunctionType *tgtType = target->functionType();
+    for (auto it = _checkers.begin(); it != _checkers.end(); it++) {
+        BaseExtensionChecker *checker = *it;
+        std::va_list args;
+        va_start(args, target);
+        if (checker->validateCall(PASSLOC, b, target, args))
+            break;
+        va_end(args);
+    }
+
+    std::va_list args;
+    va_start(args, target);
+
+    Value *result = NULL;
+    if (target->functionType()->returnType() != NULL) {
+        result = createValue(b, target->functionType()->returnType());
+        addOperation(b, new Op_Call(PASSLOC, this, b, aCall, result, target, args));
+    } else {
+        addOperation(b, new Op_Call(PASSLOC, this, b, aCall, target, args));
+    }
+    return result;
+}
+
+
+bool
 BaseExtensionChecker::validateForLoopUp(LOCATION, Builder *b, LocalSymbol *loopVariable, Value *initial, Value *final, Value *bump) {
-    if (loopVariable->type() != _base->Int32) // ->isInteger())
+    const Type *counterType = loopVariable->type();
+    if (counterType != _base->Int8
+     && counterType != _base->Int16
+     && counterType != _base->Int32
+     && counterType != _base->Int64)
         failValidateForLoopUp(PASSLOC, b, loopVariable, initial, final, bump);
 
     if (initial->type() != loopVariable->type())
@@ -317,7 +471,7 @@ BaseExtensionChecker::failValidateForLoopUp(LOCATION, Builder *b, LocalSymbol *l
      .appendMessageLine(std::string("   initial v").append(std::to_string(initial->id())).append(" ").append(initial->type()->to_string()))
      .appendMessageLine(std::string("     final v").append(std::to_string(final->id())).append(" ").append(final->type()->to_string()))
      .appendMessageLine(std::string("      bump v").append(std::to_string(final->id())).append(" ").append(bump->type()->to_string()))
-     .appendMessageLine(std::string("Loop variable must be Int32, and the types of initial, final, and bump must be same as the loop variable's type"));
+     .appendMessageLine(std::string("Loop variable must be one of Int8, Int16, Int32, or Int64, and the types of initial, final, and bump must be same as the loop variable's type"));
     throw e;
 }
 
@@ -337,6 +491,210 @@ BaseExtension::ForLoopUp(LOCATION, Builder *b, LocalSymbol *loopVariable,
                ->setBumpValue(bump);
     addOperation(b, new Op_ForLoopUp(PASSLOC, this, b, this->aForLoopUp, loopBuilder));
     return loopBuilder;
+}
+
+
+void
+BaseExtension::Goto(LOCATION, Builder *b, Builder *target) {
+    addOperation(b, new Op_Goto(PASSLOC, this, b, this->aGoto, target));
+}
+
+
+bool
+BaseExtensionChecker::validateIfCmp(LOCATION, Builder *b, Builder *target, Value *left, Value *right, CompilerReturnCode failCode, std::string opCodeName) {
+    const Type *lType = left->type();
+    const Type *rType = right->type();
+
+    if (lType == _base->Int8
+     || lType == _base->Int16
+     || lType == _base->Int32
+     || lType == _base->Int64
+     || lType == _base->Float32
+     || lType == _base->Float64
+     || lType == _base->Address) {
+        if (rType != lType)
+            failValidateIfCmp(PASSLOC, b, target, left, right, failCode, opCodeName);
+        return true;
+    }
+
+    // operation is declared by this extension, so if we can't validate it we have to fail it
+    failValidateIfCmp(PASSLOC, b, target, left, right, failCode, opCodeName);
+    return true;
+}
+
+void
+BaseExtensionChecker::failValidateIfCmp(LOCATION, Builder *b, Builder *target, Value *left, Value *right, CompilerReturnCode failCode, std::string opCodeName) {
+    CompilationException e(PASSLOC, _base->compiler(), failCode);
+    const Type *lType = left->type();
+    const Type *rType = right->type();
+    e.setMessageLine(opCodeName.append(std::string(": invalid input types")))
+     .appendMessageLine(std::string("    left ").append(lType->to_string()))
+     .appendMessageLine(std::string("   right ").append(rType->to_string()))
+     .appendMessageLine(std::string("  target ").append(target->to_string()))
+     .appendMessageLine(std::string("Left and right types are expected to be the same type (Int8,Int16,Int32,Int64,Float32,Float64,Address)"));
+    throw e;
+}
+
+bool
+BaseExtensionChecker::validateIfCmpZero(LOCATION, Builder *b, Builder *target, Value *value, CompilerReturnCode failCode, std::string opCodeName) {
+    const Type *type = value->type();
+
+    if (type == _base->Int8
+     || type == _base->Int16
+     || type == _base->Int32
+     || type == _base->Int64
+     || type == _base->Float32
+     || type == _base->Float64
+     || type == _base->Address) {
+        return true;
+    }
+
+    // operation is declared by this extension, so if we can't validate it we have to fail it
+    failValidateIfCmpZero(PASSLOC, b, target, value, failCode, opCodeName);
+    return true;
+}
+
+void
+BaseExtensionChecker::failValidateIfCmpZero(LOCATION, Builder *b, Builder *target, Value *value, CompilerReturnCode failCode, std::string opCodeName) {
+    CompilationException e(PASSLOC, _base->compiler(), failCode);
+    const Type *type = value->type();
+    e.setMessageLine(opCodeName.append(std::string(": invalid input types")))
+     .appendMessageLine(std::string("   value ").append(type->to_string()))
+     .appendMessageLine(std::string("  target ").append(target->to_string()))
+     .appendMessageLine(std::string("Value type is expected to be a primitive type (Int8,Int16,Int32,Int64,Float32,Float64,Address)"));
+    throw e;
+}
+
+void
+BaseExtension::IfCmpEqual(LOCATION, Builder *b, Builder *target, Value *left, Value *right) {
+    for (auto it = _checkers.begin(); it != _checkers.end(); it++) {
+        BaseExtensionChecker *checker = *it;
+        if (checker->validateIfCmp(PASSLOC, b, target, left, right, CompileFail_BadInputTypes_IfCmpEqual, "IfCmpEqual"))
+            break;
+    }
+
+    addOperation(b, new Op_IfCmpEqual(PASSLOC, this, b, aIfCmpEqual, target, left, right));
+}
+
+void
+BaseExtension::IfCmpEqualZero(LOCATION, Builder *b, Builder *target, Value *value) {
+    for (auto it = _checkers.begin(); it != _checkers.end(); it++) {
+        BaseExtensionChecker *checker = *it;
+        if (checker->validateIfCmpZero(PASSLOC, b, target, value, CompileFail_BadInputTypes_IfCmpEqualZero, "IfCmpEqualZero"))
+            break;
+    }
+
+    addOperation(b, new Op_IfCmpEqualZero(PASSLOC, this, b, aIfCmpEqualZero, target, value));
+}
+
+void
+BaseExtension::IfCmpGreaterThan(LOCATION, Builder *b, Builder *target, Value *left, Value *right) {
+    for (auto it = _checkers.begin(); it != _checkers.end(); it++) {
+        BaseExtensionChecker *checker = *it;
+        if (checker->validateIfCmp(PASSLOC, b, target, left, right, CompileFail_BadInputTypes_IfCmpGreaterThan, "IfCmpGreaterThan"))
+            break;
+    }
+
+    addOperation(b, new Op_IfCmpGreaterThan(PASSLOC, this, b, aIfCmpGreaterThan, target, left, right));
+}
+
+void
+BaseExtension::IfCmpGreaterOrEqual(LOCATION, Builder *b, Builder *target, Value *left, Value *right) {
+    for (auto it = _checkers.begin(); it != _checkers.end(); it++) {
+        BaseExtensionChecker *checker = *it;
+        if (checker->validateIfCmp(PASSLOC, b, target, left, right, CompileFail_BadInputTypes_IfCmpGreaterOrEqual, "IfCmpGreaterOrEqual"))
+            break;
+    }
+
+    addOperation(b, new Op_IfCmpGreaterOrEqual(PASSLOC, this, b, aIfCmpGreaterOrEqual, target, left, right));
+}
+
+void
+BaseExtension::IfCmpLessThan(LOCATION, Builder *b, Builder *target, Value *left, Value *right) {
+    for (auto it = _checkers.begin(); it != _checkers.end(); it++) {
+        BaseExtensionChecker *checker = *it;
+        if (checker->validateIfCmp(PASSLOC, b, target, left, right, CompileFail_BadInputTypes_IfCmpLessThan, "IfCmpLessThan"))
+            break;
+    }
+
+    addOperation(b, new Op_IfCmpLessThan(PASSLOC, this, b, aIfCmpLessThan, target, left, right));
+}
+
+void
+BaseExtension::IfCmpLessOrEqual(LOCATION, Builder *b, Builder *target, Value *left, Value *right) {
+    for (auto it = _checkers.begin(); it != _checkers.end(); it++) {
+        BaseExtensionChecker *checker = *it;
+        if (checker->validateIfCmp(PASSLOC, b, target, left, right, CompileFail_BadInputTypes_IfCmpLessOrEqual, "IfCmpLessOrEqual"))
+            break;
+    }
+
+    addOperation(b, new Op_IfCmpLessOrEqual(PASSLOC, this, b, aIfCmpLessOrEqual, target, left, right));
+}
+
+void
+BaseExtension::IfCmpNotEqual(LOCATION, Builder *b, Builder *target, Value *left, Value *right) {
+    for (auto it = _checkers.begin(); it != _checkers.end(); it++) {
+        BaseExtensionChecker *checker = *it;
+        if (checker->validateIfCmp(PASSLOC, b, target, left, right, CompileFail_BadInputTypes_IfCmpNotEqual, "IfCmpNotEqual"))
+            break;
+    }
+
+    addOperation(b, new Op_IfCmpNotEqual(PASSLOC, this, b, aIfCmpNotEqual, target, left, right));
+}
+
+void
+BaseExtension::IfCmpNotEqualZero(LOCATION, Builder *b, Builder *target, Value *value) {
+    for (auto it = _checkers.begin(); it != _checkers.end(); it++) {
+        BaseExtensionChecker *checker = *it;
+        if (checker->validateIfCmpZero(PASSLOC, b, target, value, CompileFail_BadInputTypes_IfCmpNotEqualZero, "IfCmpNotEqualZero"))
+            break;
+    }
+
+    addOperation(b, new Op_IfCmpNotEqualZero(PASSLOC, this, b, aIfCmpNotEqualZero, target, value));
+}
+
+void
+BaseExtension::IfCmpUnsignedGreaterThan(LOCATION, Builder *b, Builder *target, Value *left, Value *right) {
+    for (auto it = _checkers.begin(); it != _checkers.end(); it++) {
+        BaseExtensionChecker *checker = *it;
+        if (checker->validateIfCmp(PASSLOC, b, target, left, right, CompileFail_BadInputTypes_IfCmpUnsignedGreaterThan, "IfCmpUnsignedGreaterThan"))
+            break;
+    }
+
+    addOperation(b, new Op_IfCmpUnsignedGreaterThan(PASSLOC, this, b, aIfCmpUnsignedGreaterThan, target, left, right));
+}
+
+void
+BaseExtension::IfCmpUnsignedGreaterOrEqual(LOCATION, Builder *b, Builder *target, Value *left, Value *right) {
+    for (auto it = _checkers.begin(); it != _checkers.end(); it++) {
+        BaseExtensionChecker *checker = *it;
+        if (checker->validateIfCmp(PASSLOC, b, target, left, right, CompileFail_BadInputTypes_IfCmpUnsignedGreaterOrEqual, "IfCmpUnsignedGreaterOrEqual"))
+            break;
+    }
+
+    addOperation(b, new Op_IfCmpUnsignedGreaterOrEqual(PASSLOC, this, b, aIfCmpUnsignedGreaterOrEqual, target, left, right));
+}
+
+void
+BaseExtension::IfCmpUnsignedLessThan(LOCATION, Builder *b, Builder *target, Value *left, Value *right) {
+    for (auto it = _checkers.begin(); it != _checkers.end(); it++) {
+        BaseExtensionChecker *checker = *it;
+        if (checker->validateIfCmp(PASSLOC, b, target, left, right, CompileFail_BadInputTypes_IfCmpUnsignedLessThan, "IfCmpUnsignedLessThan"))
+            break;
+    }
+
+    addOperation(b, new Op_IfCmpUnsignedLessThan(PASSLOC, this, b, aIfCmpUnsignedLessThan, target, left, right));
+}
+
+void
+BaseExtension::IfCmpUnsignedLessOrEqual(LOCATION, Builder *b, Builder *target, Value *left, Value *right) {
+    for (auto it = _checkers.begin(); it != _checkers.end(); it++) {
+        BaseExtensionChecker *checker = *it;
+        if (checker->validateIfCmp(PASSLOC, b, target, left, right, CompileFail_BadInputTypes_IfCmpUnsignedLessOrEqual, "IfCmpUnsignedLessOrEqual"))
+            break;
+    }
+
+    addOperation(b, new Op_IfCmpUnsignedLessOrEqual(PASSLOC, this, b, aIfCmpUnsignedLessOrEqual, target, left, right));
 }
 
 void
@@ -367,8 +725,8 @@ BaseExtension::Store(LOCATION, Builder *b, Symbol * sym, Value *value) {
 
 Value *
 BaseExtension::LoadAt(LOCATION, Builder *b, Value *ptrValue) {
-    assert(ptrValue->type()->isPointer());
-    const Type *baseType = (static_cast<const PointerType *>(ptrValue->type()))->BaseType();
+    assert(ptrValue->type()->isKind<PointerType>());
+    const Type *baseType = ptrValue->type()->refine<PointerType>()->BaseType();
     Value * result = createValue(b, baseType);
     addOperation(b, new Op_LoadAt(PASSLOC, this, b, this->aLoadAt, result, ptrValue));
     return result;
@@ -376,15 +734,15 @@ BaseExtension::LoadAt(LOCATION, Builder *b, Value *ptrValue) {
 
 void
 BaseExtension::StoreAt(LOCATION, Builder *b, Value *ptrValue, Value *value) {
-    assert(ptrValue->type()->isPointer());
-    const Type *baseType = (static_cast<const PointerType *>(ptrValue->type()))->BaseType();
+    assert(ptrValue->type()->isKind<PointerType>());
+    const Type *baseType = ptrValue->type()->refine<PointerType>()->BaseType();
     assert(baseType == value->type());
     addOperation(b, new Op_StoreAt(PASSLOC, this, b, this->aStoreAt, ptrValue, value));
 }
 
 Value *
 BaseExtension::LoadField(LOCATION, Builder *b, const FieldType *fieldType, Value *structValue) {
-    assert(structValue->type()->isStruct());
+    assert(structValue->type()->isKind<StructType>());
     assert(fieldType->owningStruct() == structValue->type());
     Value * result = createValue(b, fieldType->type());
     addOperation(b, new Op_LoadField(PASSLOC, this, b, this->aLoadField, result, fieldType, structValue));
@@ -393,15 +751,15 @@ BaseExtension::LoadField(LOCATION, Builder *b, const FieldType *fieldType, Value
 
 void
 BaseExtension::StoreField(LOCATION, Builder *b, const FieldType *fieldType, Value *structValue, Value *value) {
-    assert(structValue->type()->isStruct());
+    assert(structValue->type()->isKind<StructType>());
     assert(fieldType->owningStruct() == structValue->type());
     addOperation(b, new Op_StoreField(PASSLOC, this, b, this->aStoreField, fieldType, structValue, value));
 }
 
 Value *
 BaseExtension::LoadFieldAt(LOCATION, Builder *b, const FieldType *fieldType, Value *pStruct) {
-    assert(pStruct->type()->isPointer());
-    const Type *structType = (static_cast<const PointerType *>(pStruct->type()))->BaseType();
+    assert(pStruct->type()->isKind<PointerType>());
+    const Type *structType = pStruct->type()->refine<PointerType>()->BaseType();
     assert(fieldType->owningStruct() == structType);
     Value * result = createValue(b, fieldType->type());
     addOperation(b, new Op_LoadFieldAt(PASSLOC, this, b, this->aLoadFieldAt, result, fieldType, pStruct));
@@ -410,15 +768,15 @@ BaseExtension::LoadFieldAt(LOCATION, Builder *b, const FieldType *fieldType, Val
 
 void
 BaseExtension::StoreFieldAt(LOCATION, Builder *b, const FieldType *fieldType, Value *pStruct, Value *value) {
-    assert(pStruct->type()->isPointer());
-    const Type *structType = (static_cast<const PointerType *>(pStruct->type()))->BaseType();
+    assert(pStruct->type()->isKind<PointerType>());
+    const Type *structType = pStruct->type()->refine<PointerType>()->BaseType();
     assert(fieldType->owningStruct() == structType);
     addOperation(b, new Op_StoreFieldAt(PASSLOC, this, b, this->aStoreFieldAt, fieldType, pStruct, value));
 }
 
 Value *
 BaseExtension::CreateLocalArray(LOCATION, Builder *b, Literal *numElements, const PointerType *pElementType) {
-   assert(numElements->type()->isInteger());
+   assert(numElements->type()->isKind<IntegerType>());
    Value * result = createValue(b, pElementType);
    const Type *elementType = pElementType->BaseType();
    // assert concrete type
@@ -429,8 +787,8 @@ BaseExtension::CreateLocalArray(LOCATION, Builder *b, Literal *numElements, cons
 Value *
 BaseExtension::CreateLocalStruct(LOCATION, Builder *b, const PointerType *pStructType) {
     const Type *baseType = pStructType->BaseType();
-    assert(baseType->isStruct());
-    const StructType *structType = static_cast<const StructType *>(baseType);
+    assert(baseType->isKind<StructType>());
+    const StructType *structType = baseType->refine<StructType>();
     Value * result = createValue(b, pStructType);
     addOperation(b, new Op_CreateLocalStruct(PASSLOC, this, b, this->aCreateLocalStruct, result, structType));
     return result;
@@ -439,7 +797,7 @@ BaseExtension::CreateLocalStruct(LOCATION, Builder *b, const PointerType *pStruc
 Value *
 BaseExtension::IndexAt(LOCATION, Builder *b, Value *base, Value *index) {
     const Type *pElementType = base->type();
-    assert(pElementType->isPointer());
+    assert(pElementType->isKind<PointerType>());
     Value *result = createValue(b, pElementType);
     addOperation(b, new Op_IndexAt(PASSLOC, this, b, aIndexAt, result, base, index));
     return result;
@@ -512,15 +870,21 @@ BaseExtension::ConstAddress(LOCATION, Builder *b, void * v) {
 }
 
 Value *
-BaseExtension::Zero(LOCATION, Compilation *comp, Builder *b, const Type *type) {
-    Literal *zero = type->zero(PASSLOC, comp);
+BaseExtension::ConstPointer(LOCATION, Builder *b, const PointerType *type, void * v) {
+    Literal *lv = type->literal(PASSLOC, b->comp(), v);
+    return Const(PASSLOC, b, lv);
+}
+
+Value *
+BaseExtension::Zero(LOCATION, Builder *b, const Type *type) {
+    Literal *zero = type->zero(PASSLOC, b->comp());
     assert(zero);
     return Const(PASSLOC, b, zero);
 }
 
 Value *
-BaseExtension::One(LOCATION, Compilation *comp, Builder *b, const Type *type) {
-    Literal *one = type->identity(PASSLOC, comp);
+BaseExtension::One(LOCATION, Builder *b, const Type *type) {
+    Literal *one = type->identity(PASSLOC, b->comp());
     assert(one);
     return Const(PASSLOC, b, one);
 }
@@ -533,11 +897,71 @@ BaseExtension::Increment(LOCATION, Builder *b, Symbol *sym, Value *bump) {
 }
 
 void
-BaseExtension::Increment(LOCATION, Compilation *comp, Builder *b, LocalSymbol *sym) {
+BaseExtension::Increment(LOCATION, Builder *b, LocalSymbol *sym) {
    Value *oldValue = Load(PASSLOC, b, sym);
-   Value *newValue = Add(PASSLOC, b, oldValue, One(PASSLOC, comp, b, sym->type()));
+   Value *newValue = Add(PASSLOC, b, oldValue, One(PASSLOC, b, sym->type()));
    Store(PASSLOC, b, sym, newValue);
 }
+
+void
+BaseExtension::failValidateOffsetAt(LOCATION, Builder *b, Value *array) {
+    CompilationException e(PASSLOC, _compiler, CompileFail_BadInputArray_OffsetAt);
+    const Type *arrayType = array->type();
+    e.setMessageLine(std::string("OffsetAt: invalid array type"))
+     .appendMessageLine(std::string("   array ").append(arrayType->to_string()))
+     .appendMessageLine(std::string("Array type must be a PointerType"));
+    throw e;
+}
+
+Value *
+BaseExtension::OffsetAt(LOCATION, Builder *b, Value *array, size_t elementIndex) {
+    const Type *pElement = array->type();
+    if (!pElement->isKind<Base::PointerType>())
+        failValidateOffsetAt(PASSLOC, b, array);
+
+    const Type *Element = pElement->refine<PointerType>()->BaseType();
+    size_t offset = elementIndex; // * Element->size()/8;
+    Literal *elementOffset = this->Word->literal(PASSLOC, b->comp(), reinterpret_cast<LiteralBytes *>(&offset));
+    return IndexAt(PASSLOC, b, array, Const(PASSLOC, b, elementOffset));
+}
+
+Value *
+BaseExtension::LoadArray(LOCATION, Builder *b, Value *array, size_t elementIndex) {
+    Value *pElement = OffsetAt(PASSLOC, b, array, elementIndex);
+    return this->LoadAt(PASSLOC, b, pElement);
+}
+
+void
+BaseExtension::StoreArray(LOCATION, Builder *b, Value *array, size_t elementIndex, Value *value) {
+    Value *pElement = this->OffsetAt(PASSLOC, b, array, elementIndex);
+    StoreAt(PASSLOC, b, pElement, value);
+}
+
+Value *
+BaseExtension::OffsetAt(LOCATION, Builder *b, Value *array, Value * indexValue) {
+    const Type *pElement = array->type();
+    if (!pElement->isKind<Base::PointerType>())
+        failValidateOffsetAt(PASSLOC, b, array);
+
+    //const Type *Element = pElement->refine<Base::PointerType>()->BaseType();
+    //size_t size = Element->size() / 8;
+    //Value *elementSize = this->Const(PASSLOC, b, this->Word->literal(PASSLOC, b->comp(), reinterpret_cast<LiteralBytes *>(&size)));
+    //Value *offsetValue = this->Mul(PASSLOC, b, indexValue, elementSize);
+    return this->IndexAt(PASSLOC, b, array, indexValue); //offsetValue);
+}
+
+Value *
+BaseExtension::LoadArray(LOCATION, Builder *b, Value *array, Value *indexValue) {
+    Value *pElement = this->OffsetAt(PASSLOC, b, array, indexValue);
+    return LoadAt(PASSLOC, b, pElement);
+}
+
+void
+BaseExtension::StoreArray(LOCATION, Builder *b, Value *array, Value *indexValue, Value *value) {
+    Value *pElement = OffsetAt(PASSLOC, b, array, indexValue);
+    StoreAt(PASSLOC, b, pElement, value);
+}
+
 
 const PointerType *
 BaseExtension::PointerTo(LOCATION, FunctionCompilation *comp, const Type *baseType) {
@@ -547,9 +971,13 @@ BaseExtension::PointerTo(LOCATION, FunctionCompilation *comp, const Type *baseTy
 }
 
 const FunctionType *
-BaseExtension::DefineFunctionType(LOCATION, std::string name, const Type *returnType, int32_t numParms, const Type **parmTypes) {
-    const FunctionType *f = FunctionType::create(PASSLOC, this, name, returnType, numParms, parmTypes);
-    // should register it somewhere!
+BaseExtension::DefineFunctionType(LOCATION, FunctionCompilation *comp, const Type *returnType, int32_t numParms, const Type **parmTypes) {
+    const FunctionType *fType = comp->lookupFunctionType(returnType, numParms, parmTypes);
+    if (fType)
+        return fType;
+
+    const FunctionType *f = new FunctionType(PASSLOC, this, comp->dict(), returnType, numParms, parmTypes);
+    comp->registerFunctionType(f);
     return f;
 }
 
@@ -776,11 +1204,11 @@ BuilderBase::AppendBuilder(Builder * b)
 Value *
 BuilderBase::Call(Value *func, int32_t numArgs, ...)
    {
-   assert(func->type()->isFunction());
+   assert(func->type()->isKind<FunctionType>());
 
    va_list args ;
    va_start(args, numArgs);
-   FunctionType *function = static_cast<FunctionType *>(func->type());
+   FunctionType *function = func->type()->refine<FunctionType>();
    Type *returnType = dict()->producedType(function, numArgs, args);
    if (returnType == NULL)
       creationError(aCall, "functionType", func, numArgs, args);
@@ -800,8 +1228,8 @@ BuilderBase::Call(Value *func, int32_t numArgs, ...)
 Value *
 BuilderBase::Call(Value *func, int32_t numArgs, Value **args)
    {
-   assert(func->type()->isFunction());
-   FunctionType *function = static_cast<FunctionType *>(func->type());
+   assert(func->type()->isKind<FunctionType>());
+   FunctionType *function = func->type()->refine<FunctionType>();
    Type *returnType = dict()->producedType(function, numArgs, args);
    if (returnType == NULL)
       creationError(aCall, "functionType", func, numArgs, args);
@@ -893,8 +1321,8 @@ BuilderBase::ForLoopUp(std::string loopVar, Builder * body, Value * initial, Val
    {
    LocalSymbol *loopSym = NULL;
    Symbol *sym = fb()->getSymbol(loopVar);
-   if (sym && sym->isLocal())
-      loopSym = static_cast<LocalSymbol *>(sym);
+   if (sym && sym->isKind<LocalSymbol>())
+      loopSym = sym->refine<LocalSymbol>();
    else
       loopSym = fb()->DefineLocal(loopVar, initial->type());
    ForLoopUp(loopSym, body, initial, end, bump);
@@ -918,8 +1346,8 @@ BuilderBase::ForLoop(bool countsUp, std::string loopVar, Builder * loopBody, Bui
    {
    LocalSymbol *loopSym = NULL;
    Symbol *sym = fb()->getSymbol(loopVar);
-   if (sym && sym->isLocal())
-      loopSym = static_cast<LocalSymbol *>(sym);
+   if (sym && sym->isKind<LocalSymbol>())
+      loopSym = sym->refine<LocalSymbol>();
    else
       loopSym = fb()->DefineLocal(loopVar, initial->type());
    ForLoop(countsUp, loopSym, loopBody, loopContinue, loopBreak, initial, end, bump);
@@ -1025,4 +1453,3 @@ BuilderBase::CreateLocalStruct(Type *structType)
 } // namespace Base
 } // namespace JitBuilder
 } // namespace OMR
-

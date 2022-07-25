@@ -35,6 +35,8 @@ namespace OMR {
 namespace JitBuilder {
 namespace Base {
 
+TypeKind NoTypeType::TYPEKIND = KindService::NoKind;
+
 void
 NoTypeType::printValue(TextWriter &w, const void *p) const {
     w << name();
@@ -46,6 +48,11 @@ NoTypeType::registerJB1Type(JB1MethodBuilder *j1mb) const {
     return true;
 }
 
+TypeKind NumericType::TYPEKIND = Type::kindService.assignKind(KindService::AnyKind, "NumericType");
+
+TypeKind IntegerType::TYPEKIND = Type::kindService.assignKind(NumericType::TYPEKIND, "IntegerType");
+
+TypeKind Int8Type::TYPEKIND = Type::kindService.assignKind(IntegerType::TYPEKIND, "Int8");
 
 Literal *
 Int8Type::literal(LOCATION, Compilation *comp, const int8_t value) const {
@@ -84,6 +91,9 @@ void
 Int8Type::createJB1ConstOp(Location *loc, JB1MethodBuilder *j1mb, Builder *b, Value *result, Literal *lv) const {
     j1mb->ConstInt8(loc, b, result, lv->value<const int8_t>());
 }
+
+
+TypeKind Int16Type::TYPEKIND = Type::kindService.assignKind(IntegerType::TYPEKIND, "Int16");
 
 Literal *
 Int16Type::literal(LOCATION, Compilation *comp, const int16_t value) const {
@@ -124,6 +134,8 @@ Int16Type::createJB1ConstOp(Location *loc, JB1MethodBuilder *j1mb, Builder *b, V
 }
 
 
+TypeKind Int32Type::TYPEKIND = Type::kindService.assignKind(IntegerType::TYPEKIND, "Int32");
+
 Literal *
 Int32Type::literal(LOCATION, Compilation *comp, const int32_t value) const {
     int32_t *pValue = new int32_t;
@@ -162,6 +174,8 @@ Int32Type::createJB1ConstOp(Location *loc, JB1MethodBuilder *j1mb, Builder *b, V
     j1mb->ConstInt32(loc, b, result, lv->value<const int32_t>());
 }
 
+
+TypeKind Int64Type::TYPEKIND = Type::kindService.assignKind(IntegerType::TYPEKIND, "Int64");
 
 Literal *
 Int64Type::literal(LOCATION, Compilation *comp, const int64_t value) const {
@@ -202,6 +216,10 @@ Int64Type::createJB1ConstOp(Location *loc, JB1MethodBuilder *j1mb, Builder *b, V
 }
 
 
+TypeKind FloatingPointType::TYPEKIND = Type::kindService.assignKind(NumericType::TYPEKIND, "FloatingPoint");
+
+TypeKind Float32Type::TYPEKIND = Type::kindService.assignKind(FloatingPointType::TYPEKIND, "Float32");
+
 Literal *
 Float32Type::literal(LOCATION, Compilation *comp, const float value) const {
     float *pValue = new float[1];
@@ -240,6 +258,8 @@ Float32Type::createJB1ConstOp(Location *loc, JB1MethodBuilder *j1mb, Builder *b,
     j1mb->ConstFloat(loc, b, result, lv->value<const float>());
 }
 
+
+TypeKind Float64Type::TYPEKIND = Type::kindService.assignKind(FloatingPointType::TYPEKIND, "Float64");
 
 Literal *
 Float64Type::literal(LOCATION, Compilation *comp, const double value) const {
@@ -280,13 +300,23 @@ Float64Type::createJB1ConstOp(Location *loc, JB1MethodBuilder *j1mb, Builder *b,
 }
 
 
+TypeKind AddressType::TYPEKIND = Type::kindService.assignKind(KindService::AnyKind, "Address");
+
 AddressType::AddressType(LOCATION, Extension *ext)
-    : Type(PASSLOC, ext, "Address", ext->compiler()->platformWordSize()) {
+    : Type(PASSLOC, TYPEKIND, ext, "Address", ext->compiler()->platformWordSize()) {
 
 }
 
 AddressType::AddressType(LOCATION, Extension *ext, std::string name)
-    : Type(PASSLOC, ext, name, ext->compiler()->platformWordSize() ) {
+    : Type(PASSLOC, TYPEKIND, ext, name, ext->compiler()->platformWordSize() ) {
+}
+
+AddressType::AddressType(LOCATION, Extension *ext, TypeDictionary *dict, std::string name)
+    : Type(PASSLOC, TYPEKIND, ext, dict, name, dict->compiler()->platformWordSize() ) {
+}
+
+AddressType::AddressType(LOCATION, Extension *ext, TypeDictionary *dict, TypeKind kind, std::string name)
+    : Type(PASSLOC, kind, ext, dict, name, dict->compiler()->platformWordSize() ) {
 }
 
 
@@ -344,13 +374,18 @@ PointerTypeBuilder::create(LOCATION) {
     return newType;
 }
 
+
+TypeKind PointerType::TYPEKIND = Type::kindService.assignKind(AddressType::TYPEKIND, "Pointer");
+
 PointerType::PointerType(LOCATION, PointerTypeBuilder *builder)
-    : Type(PASSLOC, builder->dict(), builder->name(), builder->extension()->compiler()->platformWordSize() ) {
+    : AddressType(PASSLOC, builder->extension(), builder->dict(), TYPEKIND, builder->name()) {
 
     if (builder->helper())
         builder->helper()(this, builder);
     _baseType = builder->baseType();
     assert(_baseType);
+
+    builder->comp()->registerPointerType(this);
 }
 
 Literal *
@@ -366,8 +401,8 @@ PointerType::literalsAreEqual(const LiteralBytes *l1, const LiteralBytes *l2) co
 }
 
 std::string
-PointerType::to_string() const {
-    std::string s = Type::base_string();
+PointerType::to_string(bool useHeader) const {
+    std::string s = Type::base_string(useHeader);
     return s.append(std::string("pointerType base t")).append(std::to_string(_baseType->id()));
 }
 
@@ -390,8 +425,11 @@ PointerType::registerJB1Type(JB1MethodBuilder *j1mb) const {
     return true;
 }
 
-FieldType::FieldType(LOCATION, TypeDictionary *dict, const StructType *structType, std::string name, const Type *type, size_t offset)
-    : Type(PASSLOC, dict, name, type->size())
+
+TypeKind FieldType::TYPEKIND = Type::kindService.assignKind(KindService::AnyKind, "Field");
+
+FieldType::FieldType(LOCATION, Extension *ext, TypeDictionary *dict, const StructType *structType, std::string name, const Type *type, size_t offset)
+    : Type(PASSLOC, TYPEKIND, ext, dict, structType->name() + std::string(".") + name, type->size())
     , _structType(structType)
     , _fieldName(name)
     , _type(type)
@@ -400,9 +438,9 @@ FieldType::FieldType(LOCATION, TypeDictionary *dict, const StructType *structTyp
 }
 
 std::string
-FieldType::to_string() const {
-    std::string s = Type::base_string();
-    s.append(std::string("fieldType ")).append(_name);
+FieldType::to_string(bool useHeader) const {
+    std::string s = Type::base_string(useHeader);
+    s.append(std::string("fieldType ")).append(_fieldName);
     s.append(std::string(" size ")).append(std::to_string(_type->size()));
     s.append(std::string(" t")).append(std::to_string(_type->id()));
     s.append(std::string("@")).append(std::to_string(_offset));
@@ -431,7 +469,7 @@ void
 StructTypeBuilder::createFields(LOCATION, StructType *structType) {
     for (auto it = _fields.begin(); it != _fields.end(); it++) {
         FieldInfo info = *it;
-        structType->addField(PASSLOC, _dict, info._name, info._type, info._offset);
+        structType->addField(PASSLOC, _ext, _dict, info._name, info._type, info._offset);
     }
 }
 
@@ -455,17 +493,22 @@ StructTypeBuilder::create(LOCATION) {
     return newType;
 }
 
+
+TypeKind StructType::TYPEKIND = Type::kindService.assignKind(KindService::AnyKind, "Struct");
+
 StructType::StructType(LOCATION, StructTypeBuilder *builder)
-    : Type(PASSLOC, builder->dict(), builder->name(), builder->size()) {
+    : Type(PASSLOC, TYPEKIND, builder->extension(), builder->dict(), builder->name(), builder->size())
+    , _structSize(0) {
 
     _dict->registerType(this); // proactive: other types may be created before we're done
     if (builder->helper())
         builder->helper()(this, builder);
     builder->createFields(PASSLOC, this);
+    builder->comp()->registerStructType(this);
 }
 
 const FieldType *
-StructType::addField(LOCATION, TypeDictionary *dict, std::string name, const Type *type, size_t offset) {
+StructType::addField(LOCATION, Extension *ext, TypeDictionary *dict, std::string name, const Type *type, size_t offset) {
     const FieldType *preExistingField = LookupField(name);
     if (preExistingField) {
         if (preExistingField->type() == type && preExistingField->offset() == offset)
@@ -473,22 +516,21 @@ StructType::addField(LOCATION, TypeDictionary *dict, std::string name, const Typ
         return NULL;
     }
 
-    FieldType *field = new FieldType(PASSLOC, dict, this, name, type, offset);
+    FieldType *field = new FieldType(PASSLOC, ext, dict, this, name, type, offset);
     _fieldsByName.insert({name, field});
     _fieldsByOffset.insert({offset, field});
 
-    if (_size < offset + type->size())
-        _size = offset + type->size();
+    if (_structSize < offset + type->size())
+        _structSize = offset + type->size();
 
     _dict->registerType(field);
     return field;
 }
 
 std::string
-StructType::to_string() const {
-    std::string s = Type::base_string();
-    s.append(std::string("structType ")).append(_name);
-    s.append(std::string(" size ")).append(std::to_string(size()));
+StructType::to_string(bool useHeader) const {
+    std::string s = Type::base_string(useHeader);
+    s.append(std::string("structType size ")).append(std::to_string(size()));
     for (auto it = FieldsBegin(); it != FieldsEnd(); it++) {
         auto field = it->second;
         s.append(std::string(" t")).append(std::to_string(field->id()));
@@ -524,11 +566,11 @@ StructType::registerAllFields(JB1MethodBuilder *j1mb, std::string structName, st
         std::string fieldName = fNamePrefix + fType->name();
         size_t fieldOffset = baseOffset + fType->offset();
 
-        if (fType->isStruct()) {
+        if (fType->isKind<StructType>()) {
             // define a "dummy" field corresponding to the struct field itself, so we can ask for its address easily
             // in case this field's struct needs to be passed to anything
             j1mb->registerField(structName, fieldName, static_cast<BaseExtension *>(_ext)->NoType, fieldOffset);
-            const StructType *innerStructType = static_cast<const StructType *>(fType->type());
+            const StructType *innerStructType = fType->type()->refine<StructType>();
             registerAllFields(j1mb, structName, fieldName + ".", fieldOffset);
         }
         else {
@@ -551,29 +593,41 @@ StructType::registerJB1Type(JB1MethodBuilder *j1mb) const {
 
 #if NEED_UNION
 void
-UnionType::printType(TextWriter &w) {
-    // TODO
-}
-
-void
 UnionType::printValue(TextWriter &w, const void *p) const {
     // TODO
 }
 #endif
 
-FunctionType *
-FunctionType::create(LOCATION,
-                     Extension *ext,
-                     std::string name,
-                     const Type *returnType,
-                     int32_t numParms,
-                     const Type ** parmTypes) {
-    return new FunctionType(PASSLOC, ext, name, returnType, numParms, parmTypes);
+
+TypeKind FunctionType::TYPEKIND = Type::kindService.assignKind(KindService::AnyKind, "Function");
+
+FunctionType::FunctionType(LOCATION, Extension *ext, TypeDictionary *dict, const Type *returnType, int32_t numParms, const Type ** parmTypes)
+    : Type(PASSLOC, TYPEKIND, ext, dict, typeName(returnType, numParms, parmTypes), 0)
+    , _returnType(returnType)
+    , _numParms(numParms)
+    , _parmTypes(parmTypes) {
+
+    dict->registerType(this);
 }
 
-void
-FunctionType::printType(TextWriter &w) {
-    // TODO
+std::string
+FunctionType::typeName(const Type * returnType, int32_t numParms, const Type **parmTypes) {
+    std::string s = std::string("t").append(std::to_string(returnType->id())).append(std::string(" <- ("));
+    if (numParms > 0)
+        s.append(std::string("0:t")).append(std::to_string(parmTypes[0]->id()));
+    for (auto p = 1; p < numParms; p++) {
+        const Type *type = parmTypes[p];
+        s.append(std::string(" ")).append(std::to_string(p)).append(std::string(":t")).append(std::to_string(type->id()));
+    }
+    s.append(std::string(")"));
+    return s;
+}
+
+std::string
+FunctionType::to_string(bool useHeader) const {
+    std::string s = Type::base_string(useHeader);
+    s.append(std::string("functionType"));
+    return s;
 }
 
 void
@@ -584,4 +638,3 @@ FunctionType::printValue(TextWriter &w, const void *p) const {
 } // namespace Base
 } // namespace JitBuilder
 } // namespace OMR
-

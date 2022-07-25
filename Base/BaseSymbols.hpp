@@ -38,11 +38,15 @@ class LocalSymbol : public Symbol {
 
 public:
     LocalSymbol(std::string name, const Type * type)
-        : Symbol(name, type) {
-
+        : Symbol(SYMBOLKIND, name, type) {
     }
 
-    virtual bool isLocal() const { return true; }
+    static SymbolKind SYMBOLKIND;
+
+protected:
+    LocalSymbol(SymbolKind kind, std::string name, const Type * type)
+        : Symbol(kind, name, type) {
+    }
 };
 
 class FieldSymbol : public Symbol {
@@ -54,8 +58,7 @@ public:
     const StructType *structType() const { return _structType; }
     const FieldType *fieldType() const { return _fieldType; }
 
-    virtual bool isLocal() const { return false; }
-    virtual bool isField() const { return false; }
+    static SymbolKind SYMBOLKIND;
 
 protected:
     const StructType *_structType;
@@ -73,8 +76,7 @@ public:
     std::string lineNumber() const { return _lineNumber; }
     void *entryPoint() const { return _entryPoint; }
 
-    virtual bool isFunction() const { return true; }
-
+    static SymbolKind SYMBOLKIND;
 protected:
     std::string _fileName;
     std::string _lineNumber;
@@ -84,14 +86,14 @@ protected:
 class ParameterSymbol : public LocalSymbol {
 public:
     ParameterSymbol(std::string name, const Type * type, int index)
-        : LocalSymbol(name, type)
+        : LocalSymbol(SYMBOLKIND, name, type)
         , _index(index) {
 
     }
 
     int index() const { return _index; }
 
-    virtual bool isParameter() const { return true; }
+    static SymbolKind SYMBOLKIND;
 
 protected:
     int _index;

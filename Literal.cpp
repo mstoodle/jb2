@@ -32,8 +32,13 @@ Literal::Literal(LOCATION, Compilation *comp, const Type *type, const LiteralByt
     : _id(comp->getLiteralID())
     , _creator(PASSLOC)
     , _comp(comp)
-    , _type(type)
-    , _pValue(v) {
+    , _type(type) {
+
+    // privatize the literal value
+    size_t numBytes = (type->size() / 8) + ((type->size() & 7 > 0) ? 1 : 0);
+    LiteralBytes *newBytes = new LiteralBytes[numBytes];
+    memcpy(newBytes, v, numBytes);
+    _pValue = newBytes;
 }
 
 Literal::~Literal() {
@@ -50,22 +55,21 @@ Literal::operator==(Literal & other) {
 
 void
 Literal::write(TextWriter & w) const {
+    w.indent() << this;
+    #if 0
     w.indent() << this << " ";
     _type->printLiteral(w, this);
     w << " ]";
+    #endif
 }
 
 const int64_t
 Literal::getInteger() const {
-    // TODO: convert to CompilationException
-    assert(_type->isInteger());
     return _type->getInteger(this);
 }
 
 const double
 Literal::getFloatingPoint() const {
-    // TODO: convert to CompilationException
-    assert(_type->isFloatingPoint());
     return _type->getFloatingPoint(this);
 }
 

@@ -94,7 +94,7 @@ class Compilation {
     TextWriter * logger(bool enabled=true) const { return enabled ? _logger : NULL; }
     virtual void write(TextWriter &w) const;
 
-    virtual bool buildIL() { return true; }
+    virtual bool buildIL() { _ilBuilt=true; return true; }
     virtual void constructJB1Function(JB1MethodBuilder *j1mb) { }
     virtual void jbgenProlog(JB1MethodBuilder *j1mb) { }
     virtual void setNativeEntryPoint(void *entry, int i=0) { }

@@ -65,8 +65,8 @@ public:
     ParameterSymbol * DefineParameter(std::string name, const Type * type);
     void DefineReturnType(const Type * type);
     LocalSymbol * DefineLocal(std::string name, const Type * type);
-    void DefineFunction(LOCATION, std::string name, std::string fileName, std::string lineNumber, void *entryPoint, const Type *returnType, int32_t numParms, ...);
-    void DefineFunction(LOCATION, std::string name, std::string fileName, std::string lineNumber, void *entryPoint, const Type *returnType, int32_t numParms, const Type **parmTypes);
+    FunctionSymbol * DefineFunction(LOCATION, std::string name, std::string fileName, std::string lineNumber, void *entryPoint, const Type *returnType, int32_t numParms, ...);
+    FunctionSymbol * DefineFunction(LOCATION, std::string name, std::string fileName, std::string lineNumber, void *entryPoint, const Type *returnType, int32_t numParms, const Type **parmTypes);
     const PointerType * PointerTo(LOCATION, const Type *baseType);
 
     std::string name() const { return _givenName; }
@@ -87,11 +87,12 @@ public:
     FunctionSymbolVector ResetFunctions();
     FunctionSymbol *LookupFunction(std::string name) {
         Symbol *sym = getSymbol(name);
-        if (sym == NULL || !sym->isFunction())
+        if (sym == NULL || !sym->isKind<FunctionSymbol>())
             return NULL;
-        return static_cast<FunctionSymbol *>(sym);
+        return sym->refine<FunctionSymbol>();
     }
 
+    int32_t numEntryPoints() const { return _numEntryPoints; }
     Builder *builderEntry(int32_t i=0) const { return this->_entryPoints[i]; }
 
     int32_t numValues() const;
@@ -105,13 +106,10 @@ public:
 
     bool constructIL() {
         bool rc = buildIL();
-        _ilBuilt = true;
         return rc;
     }
-    bool ilBuilt() const { return _ilBuilt; }
 
     virtual bool buildIL() {
-        _ilBuilt = true;
         return true;
     }
 
@@ -156,7 +154,7 @@ protected:
     Function(Compiler *compiler); // meant to be subclassed
     Function(Function *outerFunction);
 
-    void internalDefineFunction(LOCATION, std::string name, std::string fileName, std::string lineNumber, void *entryPoint, const Type *returnType, int32_t numParms, const Type **parmTypes);
+    FunctionSymbol * internalDefineFunction(LOCATION, std::string name, std::string fileName, std::string lineNumber, void *entryPoint, const Type *returnType, int32_t numParms, const Type **parmTypes);
     void addInitialBuildersToWorklist(BuilderWorklist & worklist);
 
     #if 0
@@ -177,8 +175,6 @@ protected:
     FunctionSymbolVector    _functions; // move to compiler?
 
     std::vector<Location *> _locations;
-
-    bool                    _ilBuilt;
 
     int32_t                 _numEntryPoints;
     Builder              ** _entryPoints;

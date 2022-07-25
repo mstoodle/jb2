@@ -116,7 +116,6 @@ LiteralDictionary::registerLiteral(LOCATION, const Type *type, const LiteralByte
         for (auto it = typeList->begin(); it != typeList->end();it++) {
             Literal *other = *it;
             if (type->literalsAreEqual(value, other->value())) {
-                delete[] value;
                 return other;
             }
         }

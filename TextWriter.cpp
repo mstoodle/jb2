@@ -63,7 +63,10 @@ operator<<(TextWriter &w, const Case *c) {
 
 TextWriter &
 operator<<(TextWriter &w, const Literal *lv) {
-    return w << "l" << lv->id() << "_" << lv->type();
+    w << "[ l" << lv->id() << "_" << lv->type() << " ";
+    lv->type()->printLiteral(w, lv);
+    w << " ]";
+    return w;
 }
 
 TextWriter &
@@ -78,7 +81,8 @@ operator<< (TextWriter &w, const Operation *op) {
 
 TextWriter &
 operator<< (TextWriter &w, const Symbol *s) {
-    return w << "s" << s->id() << "_" << s->type();
+    w << "[ s" << s->id() << "_" << s->type() << " \"" << s->name() << "\" ]";
+    return w;
 }
 
 TextWriter &
@@ -120,51 +124,13 @@ TextWriter::visitPostCompilation(Compilation * comp) {
 void
 TextWriter::visitBuilderPreOps(Builder * b) {
     TextWriter &w = *this;
-
-    w.indent() << "[ Builder " << b;
-    if (b->name().length() > 0)
-        w << " \"" << b->name() << "\"";
-    w << w.endl();
-    w.indentIn();
-
-    if (b->parent())
-        w.indent() << "[ parent " << b->parent() << " ]" << w.endl();
-    else
-        w.indent() << "[ parent NULL ]" << w.endl();
-
-    if (b->numChildren() > 0) {
-        w.indent() << "[ children" << w.endl();
-        w.indentIn();
-        for (BuilderIterator bIt = b->ChildrenBegin(); bIt != b->ChildrenEnd(); bIt++) {
-             Builder *child = *bIt;
-             w.indent() << "[ " << child << " ]" << w.endl();
-         }
-         w.indentOut();
-         w.indent() << "]" << w.endl();
-    }
-
-    if (b->isBound())
-        w.indent() << "[ bound " << b->boundToOperation() << " ]" << w.endl();
-    else
-        w.indent() << "[ notBound ]" << w.endl();
-
-    if (b->isTarget())
-        w.indent() << "[ isTarget ]" << w.endl();
-    else
-        w.indent() << "[ notTarget ]" << w.endl();
-
-    w.indent() << "[ operations" << w.endl();
-    w.indentIn();
+    b->writePrefix(w);
 }
 
 void
 TextWriter::visitBuilderPostOps(Builder * b) {
     TextWriter &w = *this;
-
-    w.indentOut();
-    w.indent() << "]" << w.endl(); // operations
-    w.indentOut();
-    w.indent() << "]" << w.endl(); // builder
+    b->writeSuffix(w);
 }
 
 void

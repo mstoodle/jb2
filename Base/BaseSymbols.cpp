@@ -26,8 +26,13 @@ namespace OMR {
 namespace JitBuilder {
 namespace Base {
 
+SymbolKind LocalSymbol::SYMBOLKIND=Symbol::kindService.assignKind(KindService::AnyKind, "LocalSymbol");
+SymbolKind FieldSymbol::SYMBOLKIND=Symbol::kindService.assignKind(KindService::AnyKind, "FieldSymbol");
+SymbolKind FunctionSymbol::SYMBOLKIND=Symbol::kindService.assignKind(KindService::AnyKind, "FunctionSymbol");
+SymbolKind ParameterSymbol::SYMBOLKIND=Symbol::kindService.assignKind(LocalSymbol::SYMBOLKIND, "ParameterSymbol");
+
 FunctionSymbol::FunctionSymbol(const FunctionType *type, std::string name, std::string fileName, std::string lineNumber, void *entryPoint)
-    : Symbol(name, type)
+    : Symbol(SYMBOLKIND, name, type)
     , _fileName(fileName)
     , _lineNumber(lineNumber)
     , _entryPoint(entryPoint) {
@@ -40,7 +45,7 @@ FunctionSymbol::functionType() const {
 }
 
 FieldSymbol::FieldSymbol(std::string name, const StructType *structType, const FieldType *fieldType)
-    : Symbol(name, fieldType->type())
+    : Symbol(SYMBOLKIND, name, fieldType->type())
     , _structType(structType)
     , _fieldType(fieldType) {
 
@@ -49,4 +54,3 @@ FieldSymbol::FieldSymbol(std::string name, const StructType *structType, const F
 } // namespace Base
 } // namespace JitBuilder
 } // namespace OMR
-

@@ -35,12 +35,14 @@ namespace JitBuilder {
 class Compilation;
 class Context;
 class FunctionBuilder;
+class JB1MethodBuilder;
 class Location;
 class Operation;
 class OperationBuilder;
 class OperationCloner;
 class Type;
 class Value;
+class TextWriter;
 class Transformer;
 class TypeDictionary;
 
@@ -70,44 +72,9 @@ public:
     Value * Append(OperationBuilder *opBuilder, Value *v);
     Value * Append(OperationBuilder *opBuilder, Value *left, Value *right);
 
-    Value * ConstInt8(int8_t v);
-    Value * ConstInt16(int16_t v);
-    Value * ConstInt32(int32_t v);
-    Value * ConstInt64(int64_t v);
-    Value * ConstFloat(float v);
-    Value * ConstDouble(double v);
-    Value * ConstAddress(void *v);
-
     Value * CoercePointer(Type * t, Value * v);
 
-    Value * Add(Value * left, Value * right);
-    Value * Sub(Value * left, Value * right);
-    Value * Mul(Value * left, Value * right);
-
-    Value * IndexAt(Type * type, Value * base, Value * index);
-    Value * Load(std::string name);
-    Value * Load(Symbol *local);
-    Value * LoadAt(Type * type, Value * address);
-    Value * LoadField(std::string structName, std::string fieldName, Value * structBase);
-    Value * LoadField(FieldType *fieldType, Value * structBase);
-    Value * LoadIndirect(std::string structName, std::string fieldName, Value * pStructBase);
-    Value * LoadIndirect(FieldType *fieldType, Value * pStructBase);
-    void Store(std::string name, Value * value);
-    void Store(Symbol * local, Value * value);
-    void StoreAt(Value * address, Value * value);
-    void StoreField(std::string structName, std::string fieldName, Value * structBase, Value *value);
-    void StoreField(FieldType *fieldType, Value * structBase, Value *value);
-    void StoreIndirect(std::string structName, std::string fieldName, Value * pStructBase, Value *value);
-    void StoreIndirect(FieldType *fieldType, Value * pStructBase, Value *value);
-
     void AppendBuilder(Builder * b);
-    Value * Call(Value *function, int32_t numArgs, ...);
-    Value * Call(Value *function, int32_t numArgs, Value **args);
-    void Goto(Builder * b);
-    void IfCmpGreaterThan(Builder * gtBuilder, Value * left, Value * right);
-    void IfCmpLessThan(Builder * ltBuilder, Value * left, Value * right);
-    void IfCmpGreaterOrEqual(Builder * goeBuilder, Value * left, Value * right);
-    void IfCmpLessOrEqual(Builder * loeBuilder, Value * left, Value * right);
     void IfThenElse(Builder * thenB, Value * cond);
     void IfThenElse(Builder * thenB, Builder * elseB, Value * cond);
     void ForLoopUp(std::string loopVar, Builder * body, Value * initial, Value * end, Value * bump);
@@ -115,8 +82,6 @@ public:
     void ForLoop(bool countsUp, std::string loopVar, Builder * body, Builder * loopContinue, Builder * loopBreak, Value * initial, Value * end, Value * bump);
     void ForLoop(bool countsUp, LocalSymbol *loopSym, Builder * body, Builder * loopContinue, Builder * loopBreak, Value * initial, Value * end, Value * bump);
     void Switch(Value * selector, Builder * defaultBuilder, int numCases, Case ** cases);
-    void Return();
-    void Return(Value *v);
 
     Value * CreateLocalArray(int32_t numElements, Type *elementType);
     Value * CreateLocalStruct(Type *elementType);
@@ -125,17 +90,6 @@ public:
     Location * SourceLocation();
     Location * SourceLocation(std::string lineNumber);
     Location * SourceLocation(std::string lineNumber, int32_t bcIndex);
-
-#if 0
-    Type * NoType;
-    Type * Int8;
-    Type * Int16;
-    Type * Int32;
-    Type * Int64;
-    Type * Float;
-    Type * Double;
-    Type * Address;
-#endif
 
     int64_t id() const                                  { return _id; }
     std::string name() const                            { return _name; }
@@ -147,8 +101,8 @@ public:
     Context * context() const                           { return _context; }
 
     int32_t numChildren() const                         { return _children.size(); }
-    BuilderIterator ChildrenBegin()                     { return BuilderIterator(_children); }
-    BuilderIterator ChildrenEnd()                       { return BuilderIterator(); }
+    BuilderIterator ChildrenBegin() const               { return BuilderIterator(_children); }
+    BuilderIterator ChildrenEnd() const                 { return BuilderIterator(); }
 
     int32_t numOperations() const                       { return _operations.size(); }
     OperationVector & operations()                      { return _operations; }
@@ -156,13 +110,14 @@ public:
     OperationIterator OperationsEnd()                   { return _operations.end(); }
 
     bool isBound() const                                { return _isBound; }
-    Operation * boundToOperation()                      { assert(_isBound); return _boundToOperation; }
+    Operation * boundToOperation() const                { assert(_isBound); return _boundToOperation; }
     Builder * setBound(Operation *op)                   { _isBound = true; _boundToOperation = op; return this; }
 
     bool isTarget() const                               { return _isTarget; }
     Builder * setTarget(bool v=true);
 
     bool controlReachesEnd() const                      { return _controlReachesEnd; }
+    Builder * setControlReachesEnd(bool v=true)         { _controlReachesEnd = v; return this; }
 
     Location *location() const {
         return _currentLocation;
@@ -170,6 +125,18 @@ public:
     void setLocation(Location * loc) {
         _currentLocation = loc;
     }
+
+    virtual std::string to_string() const {
+        return std::string("B").append(std::to_string(_id));
+    }
+
+    virtual std::string logName() const { return "Builder"; }
+    virtual void writeProperties(TextWriter & w) const;
+    virtual void writePrefix(TextWriter & w) const;
+    virtual void writeSuffix(TextWriter & w) const;
+
+    virtual void jbgen(JB1MethodBuilder *j1mb) const;
+    virtual void jbgenSuccessors(JB1MethodBuilder *j1mb) const;
 
     protected:
     Builder(Compilation *comp, Context *context=NULL, std::string name="");

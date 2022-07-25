@@ -23,8 +23,7 @@
 #define VALUE_INCL
 
 #include <stdint.h>
-#include <vector>
-#include <iostream>
+#include <list>
 #include "IDs.hpp"
 
 namespace OMR {
@@ -40,6 +39,7 @@ class Value {
     friend class Builder;
     friend class BuilderBase;
     friend class Extension;
+    friend class Operation;
     friend class OperationCloner;
 
 public:
@@ -52,10 +52,12 @@ public:
 protected:
     static Value * create(const Builder * parent, const Type * type);
     Value(const Builder * parent, const Type * type);
+    void addDefinition(const Operation *op) { _definitions.push_back(op); }
 
     ValueID   _id;
     const Builder * _parent;
     const Type * _type;
+    std::list<const Operation *> _definitions;
 };
 
 } // namespace JitBuilder

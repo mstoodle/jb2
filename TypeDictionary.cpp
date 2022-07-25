@@ -98,7 +98,9 @@ TypeDictionary::write(TextWriter &w) {
         w.indent() << "[ linkedDictionary " << this->linkedDictionary() << " ]" << w.endl();
     for (TypeIterator typeIt = this->TypesBegin();typeIt != this->TypesEnd();typeIt++) {
         const Type *type = *typeIt;
-        type->writeType(w);
+        w.indent();
+        type->writeType(w, true);
+        w << w.endl();
     }
     w.indentOut();
     w.indent() << "]" << w.endl();

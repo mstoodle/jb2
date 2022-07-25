@@ -26,6 +26,7 @@
 #include <vector>
 #include "CreateLoc.hpp"
 #include "IDs.hpp"
+#include "Type.hpp" // for TypeKind
 
 namespace OMR {
 namespace JitBuilder {
@@ -37,7 +38,6 @@ class Operation;
 class Pass;
 class SemanticVersion;
 class TypeDictionary;
-class Type;
 class Value;
 
 class Extension {
@@ -52,6 +52,16 @@ public:
     std::string name() const { return _name; }
 
     const std::string actionName(ActionID a) const;
+
+    // 
+    // Core operations
+    //
+
+    void MergeDef(LOCATION, Builder *parent, Value *existingDef, Value *newDef);
+
+    //
+    // Core pseudo operations
+    //
 
     Builder *OrphanBuilder(LOCATION, Builder *parent, Context *context=NULL, std::string name="");
     Builder *BoundBuilder(LOCATION, Builder *parent, Operation *parentOp, std::string name="");
@@ -79,10 +89,19 @@ protected:
     std::vector<const Type *> _types;
 
     static const SemanticVersion version;
+    
+public:
+    // depends on _compiler being initialized
+
+    //
+    // Core actions
+    //
+
+    const ActionID aMergeDef;
+
 };
 
 } // namespace JitBuilder
 } // namespace OMR
 
 #endif // !defined(EXTENSION_INCL)
-

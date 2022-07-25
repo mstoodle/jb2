@@ -29,28 +29,33 @@
 namespace OMR {
 namespace JitBuilder {
 
-Type::Type(LOCATION, Extension *ext, std::string name, size_t size, const Type *layout)
+TypeKind Type::TYPEKIND=KindService::NoKind;
+
+KindService Type::kindService;
+
+Type::Type(LOCATION, TypeKind kind, Extension *ext, std::string name, size_t size, const Type *layout)
     : _ext(ext)
     , _createLoc(PASSLOC)
     , _dict(ext->compiler()->dict())
     , _id(ext->compiler()->dict()->getTypeID())
+    , _kind(kind)
     , _name(name)
     , _size(size)
     , _layout(layout) {
 
 }
 
-Type::Type(LOCATION, TypeDictionary *dict, std::string name, size_t size, const Type *layout)
-    : _ext(NULL)
+Type::Type(LOCATION, TypeKind kind, Extension *ext, TypeDictionary *dict, std::string name, size_t size, const Type *layout)
+    : _ext(ext)
     , _createLoc(PASSLOC)
     , _dict(dict)
     , _id(dict->getTypeID())
+    , _kind(kind)
     , _name(name)
     , _size(size)
     , _layout(layout) {
 
 }
-
 
 Literal *
 Type::literal(LOCATION, Compilation *comp, const LiteralBytes *value) const {
@@ -58,22 +63,25 @@ Type::literal(LOCATION, Compilation *comp, const LiteralBytes *value) const {
 }
 
 std::string
-Type::base_string() const {
+Type::base_string(bool useHeader) const {
     std::string s;
-    s.append("type t").append(std::to_string(this->id())).append(" ");
+    if (useHeader)
+        s.append("type ");
+    s.append("t").append(std::to_string(this->id())).append(" ");
     s.append(std::to_string(this->size())).append(" ");
     s.append(this->name()).append(" ");
     return s;
 }
 
 void
-Type::writeType(TextWriter &w) const {
-    w.indent() << "[ " << this->to_string() ;
-    w << " ]" << w.endl();
+Type::writeType(TextWriter &w, bool useHeader) const {
+    w << "[ ";
+    w << this->to_string(useHeader);
+    w << " ]";
 }
 
 std::string
-Type::to_string() const {
+Type::to_string(bool useHeader) const {
     std::string s;
     s.append(base_string()).append("primitiveType");
     if (_layout)
@@ -83,4 +91,3 @@ Type::to_string() const {
 
 } // namespace JitBuilder
 } // namespace OMR
-

@@ -46,6 +46,7 @@ Strategy::addPass(Pass *pass) {
 
 CompilerReturnCode
 Strategy::perform(Compilation *comp) {
+    CompilerReturnCode rc = _compiler->CompileSuccessful;
     for (auto it = _passes.begin(); it != _passes.end(); it++) {
         Pass *pass = *it;
 
@@ -55,23 +56,25 @@ Strategy::perform(Compilation *comp) {
             log.print(comp);
         }
 
-        CompilerReturnCode rc = pass->perform(comp);
+        rc = pass->perform(comp);
 
-        if (rc != _compiler->CompileSuccessful) {
-            if (comp->logger()) {
-                TextWriter &log = *comp->logger();
-                log << "Final IL" << log.endl();
-                log.print(comp);
-            }
-            return rc;
+        if (comp->logger()) { // TODO should have its own specific trace enabler
+            TextWriter &log = *comp->logger();
+            log << "IL after pass " << pass->name() << log.endl();
+            log.print(comp);
         }
+
+        if (rc != _compiler->CompileSuccessful)
+            break;
     }
+
     if (comp->logger()) { // TODO should have its own specific trace enabler
         TextWriter &log = *comp->logger();
         log << "Final IL" << log.endl();
         log.print(comp);
     }
-    return _compiler->CompileSuccessful;
+
+    return rc;
 }
 
 } // namespace JitBuilder

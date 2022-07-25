@@ -44,13 +44,14 @@ class NoTypeType : public Type {
     friend class BaseExtension;
 
     public:
+    static TypeKind TYPEKIND;
     static NoTypeType * create(LOCATION, Extension *ext) { return new NoTypeType(PASSLOC, ext); }
     virtual void printValue(TextWriter &w, const void *p) const;
     virtual bool registerJB1Type(JB1MethodBuilder *j1mb) const;
 
     protected:
     NoTypeType(LOCATION, Extension *ext)
-        : Type(PASSLOC, ext, "NoType", 0) {
+        : Type(PASSLOC, TYPEKIND, ext, "NoType", 0) {
 
     }
 };
@@ -58,21 +59,26 @@ class NoTypeType : public Type {
 class NumericType : public Type {
     friend class BaseExtension;
 
-    protected:
-    NumericType(LOCATION, Extension *ext, std::string name, size_t size)
-        : Type(PASSLOC, ext, name, size) {
+public:
+    static TypeKind TYPEKIND;
+
+protected:
+    NumericType(LOCATION, TypeKind kind, Extension *ext, std::string name, size_t size)
+        : Type(PASSLOC, TYPEKIND, ext, name, size) {
 
     }
 };
 
 class IntegerType : public NumericType {
     friend class BaseExtension;
+public:
 
     virtual bool isInteger() const { return true; }
+    static TypeKind TYPEKIND;
 
-    protected:
-    IntegerType(LOCATION, Extension *ext, std::string name, size_t size)
-        : NumericType(PASSLOC, ext, name, size) {
+protected:
+    IntegerType(LOCATION, TypeKind kind, Extension *ext, std::string name, size_t size)
+        : NumericType(PASSLOC, TYPEKIND, ext, name, size) {
 
     }
 };
@@ -80,91 +86,96 @@ class IntegerType : public NumericType {
 class Int8Type : public IntegerType {
     friend class BaseExtension;
 
-    public:
+public:
+    static TypeKind TYPEKIND;
+
     virtual size_t size() const { return 8; }
     Literal *literal(LOCATION, Compilation *comp, const int8_t value) const;
     Literal *zero(LOCATION, Compilation *comp) const { return literal(PASSLOC, comp, 0); }
     Literal *identity(LOCATION, Compilation *comp) const { return literal(PASSLOC, comp, 1); }
     virtual bool literalsAreEqual(const LiteralBytes *l1, const LiteralBytes *l2) const;
-    virtual bool isConcrete() const { return true; }
     virtual void printValue(TextWriter &w, const void *p) const;
     virtual void printLiteral(TextWriter &w, const Literal *lv) const;
     virtual bool registerJB1Type(JB1MethodBuilder *j1mb) const;
     virtual void createJB1ConstOp(Location *loc, JB1MethodBuilder *j1mb, Builder *b, Value *result, Literal *lv) const;
     virtual const int64_t getInteger(const Literal *lv) const;
 
-    protected:
-    Int8Type(LOCATION, Extension *ext) : IntegerType(PASSLOC, ext, "Int8", 8) { }
+protected:
+    Int8Type(LOCATION, Extension *ext) : IntegerType(PASSLOC, TYPEKIND, ext, "Int8", 8) { }
 };
 
 class Int16Type : public IntegerType {
     friend class BaseExtension;
 
-    public:
+public:
+    static TypeKind TYPEKIND;
+
     virtual size_t size() const { return 16; }
     Literal *literal(LOCATION, Compilation *comp, const int16_t value) const;
     Literal *zero(LOCATION, Compilation *comp) const { return literal(PASSLOC, comp, 0); }
     Literal *identity(LOCATION, Compilation *comp) const { return literal(PASSLOC, comp, 1); }
     virtual bool literalsAreEqual(const LiteralBytes *l1, const LiteralBytes *l2) const;
-    virtual bool isConcrete() const { return true; }
     virtual void printValue(TextWriter &w, const void *p) const;
     virtual void printLiteral(TextWriter &w, const Literal *lv) const;
     virtual bool registerJB1Type(JB1MethodBuilder *j1mb) const;
     virtual void createJB1ConstOp(Location *loc, JB1MethodBuilder *j1mb, Builder *b, Value *result, Literal *lv) const;
     virtual const int64_t getInteger(const Literal *lv) const;
 
-    protected:
-    Int16Type(LOCATION, Extension *ext) : IntegerType(PASSLOC, ext, "Int16", 16) { }
+protected:
+    Int16Type(LOCATION, Extension *ext) : IntegerType(PASSLOC, TYPEKIND, ext, "Int16", 16) { }
 };
 
 class Int32Type : public IntegerType {
     friend class BaseExtension;
 
-    public:
+public:
+    static TypeKind TYPEKIND;
+
     virtual size_t size() const { return 32; }
     Literal *literal(LOCATION, Compilation *comp, const int32_t value) const;
     Literal *zero(LOCATION, Compilation *comp) const { return literal(PASSLOC, comp, 0); }
     Literal *identity(LOCATION, Compilation *comp) const { return literal(PASSLOC, comp, 1); }
     virtual bool literalsAreEqual(const LiteralBytes *l1, const LiteralBytes *l2) const;
-    virtual bool isConcrete() const { return true; }
     virtual void printValue(TextWriter &w, const void *p) const;
     virtual void printLiteral(TextWriter &w, const Literal *lv) const;
     virtual bool registerJB1Type(JB1MethodBuilder *j1mb) const;
     virtual void createJB1ConstOp(Location *loc, JB1MethodBuilder *j1mb, Builder *b, Value *result, Literal *lv) const;
     virtual const int64_t getInteger(const Literal *lv) const;
 
-    protected:
-    Int32Type(LOCATION, Extension *ext) : IntegerType(PASSLOC, ext, "Int32", 32) { }
+protected:
+    Int32Type(LOCATION, Extension *ext) : IntegerType(PASSLOC, TYPEKIND, ext, "Int32", 32) { }
 };
 
 class Int64Type : public IntegerType {
     friend class BaseExtension;
 
-    public:
+public:
+    static TypeKind TYPEKIND;
+
     virtual size_t size() const { return 64; }
     Literal *literal(LOCATION, Compilation *comp, const int64_t value) const;
     Literal *zero(LOCATION, Compilation *comp) const { return literal(PASSLOC, comp, 0); }
     Literal *identity(LOCATION, Compilation *comp) const { return literal(PASSLOC, comp, 1); }
     virtual bool literalsAreEqual(const LiteralBytes *l1, const LiteralBytes *l2) const;
-    virtual bool isConcrete() const { return true; }
     virtual void printValue(TextWriter &w, const void *p) const;
     virtual void printLiteral(TextWriter &w, const Literal *lv) const;
     virtual bool registerJB1Type(JB1MethodBuilder *j1mb) const;
     virtual void createJB1ConstOp(Location *loc, JB1MethodBuilder *j1mb, Builder *b, Value *result, Literal *lv) const;
     virtual const int64_t getInteger(const Literal *lv) const;
 
-    protected:
-    Int64Type(LOCATION, Extension *ext) : IntegerType(PASSLOC, ext, "Int64", 64) { }
+protected:
+    Int64Type(LOCATION, Extension *ext) : IntegerType(PASSLOC, TYPEKIND, ext, "Int64", 64) { }
 };
 
 class FloatingPointType : public NumericType {
     friend class BaseExtension;
 
-    virtual bool isFloatingPoint() const { return true; }
+public:
+    static TypeKind TYPEKIND;
 
-    protected:
-    FloatingPointType(LOCATION, Extension *ext, std::string name, size_t size)
-        : NumericType(PASSLOC, ext, name, size) {
+protected:
+    FloatingPointType(LOCATION, TypeKind kind, Extension *ext, std::string name, size_t size)
+        : NumericType(PASSLOC, kind, ext, name, size) {
 
     }
 };
@@ -172,48 +183,51 @@ class FloatingPointType : public NumericType {
 class Float32Type : public FloatingPointType {
     friend class BaseExtension;
 
-    public:
+public:
+    static TypeKind TYPEKIND;
+
     virtual size_t size() const { return 32; }
     Literal *literal(LOCATION, Compilation *comp, const float value) const;
     Literal *zero(LOCATION, Compilation *comp) const { return literal(PASSLOC, comp, 0.0); }
     Literal *identity(LOCATION, Compilation *comp) const { return literal(PASSLOC, comp, 1.0); }
     virtual bool literalsAreEqual(const LiteralBytes *l1, const LiteralBytes *l2) const;
-    virtual bool isConcrete() const { return true; }
     virtual void printValue(TextWriter &w, const void *p) const;
     virtual void printLiteral(TextWriter &w, const Literal *lv) const;
     virtual bool registerJB1Type(JB1MethodBuilder *j1mb) const;
     virtual void createJB1ConstOp(Location *loc, JB1MethodBuilder *j1mb, Builder *b, Value *result, Literal *lv) const;
     virtual const double getFloatingPoint(const Literal *lv) const;
 
-    protected:
-    Float32Type(LOCATION, Extension *ext) : FloatingPointType(PASSLOC, ext, "Float32", 32) { }
+protected:
+    Float32Type(LOCATION, Extension *ext) : FloatingPointType(PASSLOC, TYPEKIND, ext, "Float32", 32) { }
 };
 
 class Float64Type : public FloatingPointType {
     friend class BaseExtension;
 
-    public:
+public:
+    static TypeKind TYPEKIND;
+
     virtual size_t size() const { return 64; }
     Literal *literal(LOCATION, Compilation *comp, const double value) const;
     Literal *zero(LOCATION, Compilation *comp) const { return literal(PASSLOC, comp, 0.0); }
     Literal *identity(LOCATION, Compilation *comp) const { return literal(PASSLOC, comp, 1.0); }
     virtual bool literalsAreEqual(const LiteralBytes *l1, const LiteralBytes *l2) const;
-    virtual bool isConcrete() const { return true; }
     virtual void printValue(TextWriter &w, const void *p) const;
     virtual void printLiteral(TextWriter &w, const Literal *lv) const;
     virtual bool registerJB1Type(JB1MethodBuilder *j1mb) const;
     virtual void createJB1ConstOp(Location *loc, JB1MethodBuilder *j1mb, Builder *b, Value *result, Literal *lv) const;
     virtual const double getFloatingPoint(const Literal *lv) const;
 
-    protected:
-    Float64Type(LOCATION, Extension *ext) : FloatingPointType(PASSLOC, ext, "Float64", 64) { }
+protected:
+    Float64Type(LOCATION, Extension *ext) : FloatingPointType(PASSLOC, TYPEKIND, ext, "Float64", 64) { }
 };
 
 class AddressType : public Type {
     friend class BaseExtension;
 
-    public:
-    virtual bool isConcrete() const { return true; }
+public:
+    static TypeKind TYPEKIND;
+
     virtual size_t size() const { return 64; } // should be platform specific
     Literal *literal(LOCATION, Compilation *comp, const void * value) const;
     Literal *zero(LOCATION, Compilation *comp) const { return literal(PASSLOC, comp, NULL); }
@@ -223,9 +237,11 @@ class AddressType : public Type {
     virtual bool registerJB1Type(JB1MethodBuilder *j1mb) const;
     virtual void createJB1ConstOp(Location *loc, JB1MethodBuilder *j1mb, Builder *b, Value *result, Literal *lv) const;
 
-    protected:
+protected:
     AddressType(LOCATION, Extension *ext);
     AddressType(LOCATION, Extension *ext, std::string name);
+    AddressType(LOCATION, Extension *ext, TypeDictionary *dict, std::string name);
+    AddressType(LOCATION, Extension *ext, TypeDictionary *dict, TypeKind kind, std::string name);
 };
 
 class PointerType;
@@ -239,6 +255,7 @@ public:
     PointerTypeBuilder *setHelper(PointerTypeHelper *helper) { _helper = helper; return this; }
 
     BaseExtension *extension() const { return _ext; }
+    FunctionCompilation *comp() const { return _comp; }
     TypeDictionary *dict() const { return _dict; }
     const Type *baseType() const { return _baseType; }
     PointerTypeHelper *helper() const { return _helper; }
@@ -254,21 +271,22 @@ protected:
     PointerTypeHelper *_helper;
 };
     
-class PointerType : public Type {
+class PointerType : public AddressType {
     friend class PointerTypeBuilder;
 
-    public:
-    virtual bool isPointer() const { return true; }
+public:
+    static TypeKind TYPEKIND;
+
     const Type * BaseType() const { return _baseType; }
 
     Literal *literal(LOCATION, Compilation *comp, const void * value) const;
     virtual bool literalsAreEqual(const LiteralBytes *l1, const LiteralBytes *l2) const;
-    virtual std::string to_string() const;
+    virtual std::string to_string(bool useHeader=false) const;
     virtual void printValue(TextWriter &w, const void *p) const;
     virtual void printLiteral(TextWriter &w, const Literal *lv) const;
     virtual bool registerJB1Type(JB1MethodBuilder *j1mb) const;
 
-    protected:
+protected:
     PointerType(LOCATION, PointerTypeBuilder *builder);
     const Type * _baseType;
 };
@@ -281,22 +299,23 @@ class FieldType : public Type {
     friend class UnionType; // ?
     #endif
 
-    public:
+public:
+    static TypeKind TYPEKIND;
+
     const StructType *owningStruct() const  { return _structType; }
     std::string fieldName() const { return _fieldName; }
     const Type *type() const { return _type; }
     size_t offset() const { return _offset; }
-    virtual bool isField() const { return true; }
 
     Literal *literal(LOCATION, Compilation *comp, const LiteralBytes * structValue) const { return NULL; };
     virtual bool literalsAreEqual(const LiteralBytes *l1, const LiteralBytes *l2) const { return false; }
-    virtual std::string to_string() const;
+    virtual std::string to_string(bool useHeader=false) const;
     virtual void printValue(TextWriter &w, const void *p) const { }
     virtual void printLiteral(TextWriter &w, const Literal *lv) const { }
     virtual bool registerJB1Type(JB1MethodBuilder *j1mb) const;
 
-    protected:
-    FieldType(LOCATION, TypeDictionary *dict, const StructType *structType, std::string fieldName, const Type *type, size_t offset);
+protected:
+    FieldType(LOCATION, Extension *ext, TypeDictionary *dict, const StructType *structType, std::string fieldName, const Type *type, size_t offset);
 
     const StructType *_structType;
     std::string _fieldName;
@@ -369,13 +388,14 @@ protected:
 class StructType : public Type {
     friend class StructTypeBuilder;
 
-    public:
-    virtual bool isStruct() const { return true; }
-    virtual bool isConcrete() const { return true; }
+public:
+    static TypeKind TYPEKIND;
+
+    virtual size_t size() const { return _structSize; }
 
     Literal *literal(LOCATION, Compilation *comp, const LiteralBytes * structValue) const;
     virtual bool literalsAreEqual(const LiteralBytes *l1, const LiteralBytes *l2) const;
-    virtual std::string to_string() const;
+    virtual std::string to_string(bool useHeader=false) const;
     virtual void printValue(TextWriter &w, const void *p) const;
     virtual void printLiteral(TextWriter &w, const Literal *lv) const;
     virtual bool registerJB1Type(JB1MethodBuilder *j1mb) const;
@@ -390,10 +410,12 @@ class StructType : public Type {
         return it->second;
         }
 
-    protected:
+protected:
     StructType(LOCATION, StructTypeBuilder *builder);
-    virtual const FieldType * addField(LOCATION, TypeDictionary *dict, std::string name, const Type *type, size_t offset);
+    virtual const FieldType * addField(LOCATION, Extension *ext, TypeDictionary *dict, std::string name, const Type *type, size_t offset);
     void registerAllFields(JB1MethodBuilder *j1mb, std::string structName, std::string fNamePrefix, size_t baseOffset) const;
+
+    size_t _structSize;
 
     std::map<std::string, const FieldType *> _fieldsByName;
     std::multimap<size_t, const FieldType *> _fieldsByOffset;
@@ -405,11 +427,9 @@ class UnionType : public StructType {
     friend class StructTypeBuilder;
 
     public:
-    virtual bool isStruct() const { return false; }
-    virtual bool isUnion() const { return true; }
+    static TypeKind TYPEKIND;
 
     Literal *literal(LOCATION, Compilation *comp, void * unionValue);
-    virtual bool isConcrete() const { return true; }
 
     virtual FieldType * addField(LOCATION, Literal *name, Type *type, size_t unused)
         {
@@ -418,7 +438,6 @@ class UnionType : public StructType {
         return this->StructType::addField(PASSLOC, name, type, 0);
         }
 
-    virtual void printType(TextWriter *w);
     virtual void printValue(TextWriter *w, const void *p) const;
 
     protected:
@@ -431,6 +450,8 @@ class FunctionType : public Type {
     friend class TypeDictionary;
 
 public:
+    static TypeKind TYPEKIND;
+
     #if 0
     // TODO: Move to separate class
     class TypeBuilder {
@@ -483,31 +504,22 @@ public:
     };
     #endif
     
-    static FunctionType * create(LOCATION, Extension *ext, std::string name, const Type *returnType, int32_t numParms, const Type ** parmTypes);
-
     ~FunctionType() { delete[] _parmTypes; }
 
-    virtual bool isFunction() const { return true; }
-
     Literal *literal(LOCATION, Compilation *comp, void * functionValue);
-    virtual bool isConcrete() const { return true; }
+    virtual std::string to_string(bool useHeader=false) const;
 
     const Type *returnType() const { return _returnType; }
     int32_t numParms() const { return _numParms; }
     const Type *parmType(int p) const { return _parmTypes[p]; }
     const Type **parmTypes() const { return _parmTypes; }
 
-    virtual void printType(TextWriter &w);
     virtual void printValue(TextWriter &w, const void *p) const;
 
-protected:
-    FunctionType(LOCATION, Extension *ext, std::string name, const Type *returnType, int32_t numParms, const Type ** parmTypes)
-        : Type(PASSLOC, ext, name, 0)
-        , _returnType(returnType)
-        , _numParms(numParms)
-        , _parmTypes(parmTypes) {
+    static std::string typeName(const Type *returnType, int32_t numParms, const Type **parmTypes);
 
-        }
+protected:
+    FunctionType(LOCATION, Extension *ext, TypeDictionary *dict, const Type *returnType, int32_t numParms, const Type ** parmTypes);
 
     const Type *_returnType;
     int32_t _numParms;
@@ -519,4 +531,3 @@ protected:
 } // namespace OMR
 
 #endif // !defined(BASETYPES_INCL)
-

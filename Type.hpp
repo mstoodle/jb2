@@ -33,6 +33,7 @@
 #include "typedefs.hpp"
 #include "CreateLoc.hpp"
 #include "IDs.hpp"
+#include "KindService.hpp"
 #include "Mapper.hpp"
 
 namespace OMR {
@@ -48,6 +49,8 @@ class TextWriter;
 class Type;
 class TypeDictionary;
 
+typedef KindService::Kind TypeKind;
+
 class Type {
     friend class Compiler;
     friend class Extension;
@@ -58,7 +61,7 @@ public:
     Extension *ext() const                   { return _ext; }
     TypeDictionary *owningDictionary() const { return _dict; }
     TypeID id() const                        { return _id; }
-    size_t size() const                      { return _size; }
+    virtual size_t size() const              { return _size; } // some Types cannot set size at construction
 
     bool operator!=(const Type & other) const {
         return _dict != other._dict || _id != other._id;
@@ -67,20 +70,21 @@ public:
         return _dict == other._dict && _id == other._id;
     }
 
-    // need to remove from Type
-    virtual bool isConcrete() const { return false; }
-    virtual bool isPointer() const { return false; }
-    virtual bool isStruct() const { return false; }
-    virtual bool isUnion() const { return false; }
-    virtual bool isField() const { return false; }
-    virtual bool isFunction() const { return false; }
-    virtual bool isDynamic() const { return false; }
-    virtual bool isInteger() const { return false; }
-    virtual bool isFloatingPoint() const { return false; }
+    virtual TypeKind kind() const { return TYPEKIND; }
+    template<typename T> bool isExactKind() const {
+        return kindService.isExactMatch(_kind, T::TYPEKIND);
+    }
+    template<typename T> bool isKind() const {
+        return kindService.isMatch(_kind, T::TYPEKIND);
+    }
+    template<typename T> const T *refine() const {
+        assert(isKind<T>());
+        return static_cast<const T *>(this);
+    }
 
-    std::string base_string() const;
-    virtual std::string to_string() const;
-    void writeType(TextWriter & w) const;
+    std::string base_string(bool useHeader=false) const;
+    virtual std::string to_string(bool useHeader=false) const;
+    void writeType(TextWriter & w, bool useHeader=false) const;
     virtual void printValue(TextWriter & w, const void *p) const { }
     virtual void printLiteral(TextWriter & w, const Literal *lv) const { }
     virtual bool literalsAreEqual(const LiteralBytes *lv1, const LiteralBytes *lv2) const { return false; }
@@ -109,24 +113,29 @@ public:
         assert(0); return; // default must be to assert TODO convert to CompilationException
     }
 
-protected:
-    static Type * create(LOCATION, Extension *ext, std::string name, size_t size, const Type * layout=NULL) {
-        return new Type(PASSLOC, ext, name, size, layout);
-    }
-    static Type * create(LOCATION, TypeDictionary *dict, std::string name, size_t size, const Type * layout=NULL) {
-        return new Type(PASSLOC, dict, name, size, layout);
-    }
+    static TypeKind TYPEKIND;
 
-    Type(LOCATION, Extension *ext, std::string name, size_t size, const Type *layout=NULL);
-    Type(LOCATION, TypeDictionary *dict, std::string name, size_t size, const Type *layout=NULL);
+protected:
+    //static Type * create(LOCATION, TypeKind kind, Extension *ext, std::string name, size_t size, const Type * layout=NULL) {
+    //    return new Type(PASSLOC, kind, ext, name, size, layout);
+    //}
+    //static Type * create(LOCATION, TypeKind kind, TypeDictionary *dict, std::string name, size_t size, const Type * layout=NULL) {
+    //    return new Type(PASSLOC, kind, dict, name, size, layout);
+    //}
+
+    Type(LOCATION, TypeKind kind, Extension *ext, std::string name, size_t size, const Type *layout=NULL);
+    Type(LOCATION, TypeKind kind, Extension *ext, TypeDictionary *dict, std::string name, size_t size, const Type *layout=NULL);
 
     Extension *_ext;
     CreateLocation _createLoc;
     TypeDictionary * _dict;
-    TypeID _id;
-    std::string _name;
-    size_t _size;
+    const TypeID _id;
+    const TypeKind _kind;
+    const std::string _name;
+    const size_t _size;
     const Type * _layout;
+
+    static KindService kindService;
 };
 
 } // namespace JitBuilder

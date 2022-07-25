@@ -37,7 +37,9 @@ const SemanticVersion Extension::version(0,0,0);
 Extension::Extension(Compiler *compiler, std::string name)
     : _id(compiler->getExtensionID())
     , _name(name)
-    , _compiler(compiler) {
+    , _compiler(compiler)
+    , _types()
+    , aMergeDef(registerAction(std::string("MergeDef"))) {
 }
 
 void
@@ -74,6 +76,21 @@ void
 Extension::addOperation(Builder *b, Operation *op) {
     b->add(op);
 }
+
+
+//
+// Const Operations
+//
+
+void
+Extension::MergeDef(LOCATION, Builder *b, Value *existingDef, Value *newDef) {
+    addOperation(b, new Op_MergeDef(PASSLOC, this, b, this->aMergeDef, existingDef, newDef));
+}
+
+
+//
+// Const Pseudo Operations
+//
 
 Builder *
 Extension::BoundBuilder(LOCATION, Builder *parent, Operation *parentOp, std::string name) {

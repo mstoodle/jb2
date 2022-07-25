@@ -26,6 +26,7 @@
 #include <string>
 #include <vector>
 #include "IDs.hpp"
+#include "KindService.hpp"
 
 namespace OMR {
 namespace JitBuilder {
@@ -33,6 +34,8 @@ namespace JitBuilder {
 class SymbolDictionary;
 class TextWriter;
 class Type;
+
+typedef KindService::Kind SymbolKind;
 
 class Symbol {
     friend class SymbolDictionary;
@@ -43,19 +46,42 @@ public:
     std::string name() const { return _name; }
     const Type * type() const { return _type; }
     SymbolID id() const { return _id; }
+    virtual SymbolKind kind() const { return SYMBOLKIND; }
 
-    virtual bool isLocal() const     { return false; }
-    virtual bool isParameter() const { return false; }
-    virtual bool isField() const     { return false; }
-    virtual bool isFunction() const  { return false; }
+    template<typename T>
+    bool isExactKind() const {
+        return (kindService.isExactMatch(_kind, T::SYMBOLKIND));
+    }
+
+    template<typename T>
+    bool isKind() const {
+        return (kindService.isMatch(_kind, T::SYMBOLKIND));
+    }
+
+    template<typename T>
+    T *refine() {
+        assert(isKind<T>());
+        return static_cast<T *>(this);
+    }
 
     virtual void write(TextWriter & w) const;
 
+    static SymbolKind assignSymbolKind(SymbolKind baseKind, std::string name);
+    static SymbolKind SYMBOLKIND;
+
 protected:
     Symbol(std::string name, const Type * type)
-        : _name(name)
-        , _type(type)
-        , _id(NoSymbol) {
+        : _id(NoSymbol)
+        , _kind(SYMBOLKIND)
+        , _name(name)
+        , _type(type) {
+
+    }
+    Symbol(SymbolKind kind, std::string name, const Type * type)
+        : _id(NoSymbol)
+        , _kind(kind)
+        , _name(name)
+        , _type(type) {
 
     }
 
@@ -66,9 +92,12 @@ protected:
        	_id = id;
     }
 
+    SymbolID _id;
+    SymbolKind _kind;
     std::string _name;
     const Type * _type;
-    SymbolID _id;
+
+    static KindService kindService;
 };
 
 } // namespace JitBuilder

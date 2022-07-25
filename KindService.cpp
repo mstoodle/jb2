@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2021, 2022 IBM Corp. and others
+ * Copyright (c) 2022, 2022 IBM Corp. and others
  *
  * This program and the accompanying materials are made available under
  * the terms of the Eclipse Public License 2.0 which accompanies this
@@ -19,43 +19,36 @@
  * SPDX-License-Identifier: EPL-2.0 OR Apache-2.0 OR GPL-2.0 WITH Classpath-exception-2.0 OR LicenseRef-GPL-2.0 WITH Assembly-exception
  *******************************************************************************/
 
-#include "BaseExtension.hpp"
-#include "BaseSymbols.hpp"
-#include "BaseTypes.hpp"
-#include "FunctionCompilation.hpp"
-#include "NativeCallableContext.hpp"
-#include "Operation.hpp"
-#include "TextWriter.hpp"
-
+#include "KindService.hpp"
 
 namespace OMR {
 namespace JitBuilder {
-namespace Base {
 
-LocalSymbolIterator NativeCallableContext::endLocalSymbolIterator;
-ParameterSymbolIterator NativeCallableContext::endParameterSymbolIterator;
+KindServiceID KindService::kindServiceID = 0;
 
-ParameterSymbol *
-NativeCallableContext::DefineParameter(std::string name, const Type * type) {
-    ParameterSymbol *parm = new ParameterSymbol(name, type, this->_parameters.size());
-    this->_parameters.push_back(parm);
-    addSymbol(parm);
-    return parm;
+KindService::Kind
+KindService::getNextKind(Kind k) {
+    if (k == NoKind) // 0 cannot be shifted
+        return AnyKind;
+    Kind _nextKind = k << 1;
+    return _nextKind;
 }
 
-LocalSymbol *
-NativeCallableContext::DefineLocal(std::string name, const Type * type) {
-    Symbol *sym = this->lookupSymbol(name);
-    if (sym && sym->isKind<LocalSymbol>())
-       return sym->refine<LocalSymbol>();
+KindService::Kind
+KindService::assignKind(Kind baseKind, std::string name) {
+    auto found = _kindFromNameMap.find(name);
+    if (found != _kindFromNameMap.end())
+        return found->second;
+            
+    Kind kind = _nextKind;
+    assert(kind != 0); // will eventually need a bit vector
+    _nextKind = getNextKind(_nextKind);
 
-    LocalSymbol *local = new LocalSymbol(name, type);
-    this->_locals.push_back(local);
-    addSymbol(local);
-    return local;
+    Kind fullKind = baseKind | kind;
+    _kindFromNameMap.insert({name, fullKind});
+    _nameFromKindMap.insert({fullKind, name});
+    return fullKind;
 }
 
-} // namespace Base
 } // namespace JitBuilder
 } // namespace OMR
-

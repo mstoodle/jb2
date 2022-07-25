@@ -24,10 +24,11 @@
 //#include "Case.hpp"
 #include "Compilation.hpp"
 #include "Extension.hpp"
+#include "JB1MethodBuilder.hpp"
 #include "Literal.hpp"
 #include "Location.hpp"
 #include "Operation.hpp"
-//#include "OperationCloner.hpp"
+#include "OperationCloner.hpp"
 //#include "OperationReplacer.hpp"
 #include "TypeDictionary.hpp"
 #include "Value.hpp"
@@ -72,14 +73,29 @@ Operation::addToBuilder(Extension *ext, Builder *b, Operation *op) {
 }
 
 void
+Operation::registerDefinition(Value *result) {
+    result->addDefinition(this);
+}
+
+void
 Operation::writeFull(TextWriter & w) const {
     w.indent() << _parent << "!o" << _id << " : ";
     write(w);
 }
 
 void
+OperationR0S1::write(TextWriter & w) const {
+    w << this->name() << " " << this->_symbol << w.endl();
+}
+
+void
 OperationR0S1V1::write(TextWriter & w) const {
     w << this->name() << " " << this->_symbol << " " << this->_value << w.endl();
+}
+
+void
+OperationR0V1::write(TextWriter & w) const {
+    w << this->name() << " " << this->_value << w.endl();
 }
 
 void
@@ -89,7 +105,9 @@ OperationR0V2::write(TextWriter & w) const {
 
 void
 OperationR0T1V2::write(TextWriter & w) const {
-    w << this->name() << " " << this->_type << " " << this->_base << " " << this->_value << w.endl();
+    w << this->name() << " ";
+    this->_type->writeType(w);
+    w << " " << this->_base << " " << this->_value << w.endl();
 }
 
 void
@@ -104,7 +122,9 @@ OperationR1S1::write(TextWriter & w) const {
 
 void
 OperationR1T1::write(TextWriter & w) const {
-    w << this->_result << " = " << this->name() << " " << this->_type << w.endl();
+    w << this->_result << " = " << this->name() << " ";
+    this->_type->writeType(w);
+    w << w.endl();
 }
 
 void
@@ -114,12 +134,16 @@ OperationR1V1::write(TextWriter & w) const {
 
 void
 OperationR1L1T1::write(TextWriter & w) const {
-    w << this->_result << " = " << this->name() << " " << this->_v << " " << this->_elementType << w.endl();
+    w << this->_result << " = " << this->name() << " " << this->_v << " ";
+    this->_elementType->writeType(w);
+    w << w.endl();
 }
 
 void
 OperationR1V1T1::write(TextWriter & w) const {
-    w << this->_result << " = " << this->name() << " " << this->_type << " " << this->_value << w.endl();
+    w << this->_result << " = " << this->name() << " ";
+    this->_type->writeType(w);
+    w << " " << this->_value << w.endl();
 }
 
 void
@@ -129,7 +153,44 @@ OperationR1V2::write(TextWriter & w) const {
 
 void
 OperationR1V2T1::write(TextWriter & w) const {
-    w << this->_result << " = " << this->name() << " " << this->_type << " " << this->_left << " " << this->_right << w.endl();
+    w << this->_result << " = " << this->name() << " ";
+    this->_type->writeType(w);
+    w << " " << this->_left << " " << this->_right << w.endl();
+}
+
+OperationR1S1VN::OperationR1S1VN(LOCATION, ActionID a, Extension *ext, Builder * parent, OperationCloner * cloner)
+    : OperationR1S1(PASSLOC, a, ext, parent, cloner->result(), cloner->symbol()) {
+
+    for (auto a=0;a < cloner->numOperands(); a++)
+        _values.push_back(cloner->operand(a));
+    }
+
+void
+OperationR1S1VN::write(TextWriter & w) const {
+    if (this->_result)
+        w << this->_result << " = ";
+    w << this->name() << " " << this->symbol();
+    for (auto a=0;a < this->numOperands(); a++)
+        w << " " << operand(a);
+    w << w.endl();
+}
+
+//
+// Core operations
+//
+
+Op_MergeDef::Op_MergeDef(LOCATION, Extension *ext, Builder * parent, ActionID aMergeDef, Value *existingDef, Value *newDef)
+    : OperationR1V1(PASSLOC, aMergeDef, ext, parent, existingDef, newDef) {
+}
+
+Operation *
+Op_MergeDef::clone(LOCATION, Builder *b, OperationCloner *cloner) const {
+    return new Op_MergeDef(PASSLOC, this->_ext, b, this->action(), cloner->result(), cloner->operand());
+}
+
+void
+Op_MergeDef::jbgen(JB1MethodBuilder *j1mb) const {
+    j1mb->StoreOver(location(), parent(), result(), operand());
 }
 
 #if 0

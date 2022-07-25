@@ -52,6 +52,9 @@ const ContextID NoContext=0;
 typedef uint64_t ExtensionID;
 const ExtensionID NoExtension=0;
 
+typedef uint64_t KindServiceID;
+// zero is not "special"
+
 typedef uint64_t LiteralID;
 const LiteralID NoLiteral=0;
 

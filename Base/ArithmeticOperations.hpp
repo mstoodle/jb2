@@ -39,6 +39,16 @@ protected:
     Op_Add(LOCATION, Extension *ext, Builder * parent, ActionID aAdd, Value *result, Value *left, Value *right);
     };
 
+class Op_ConvertTo : public OperationR1V1T1 {
+    friend class BaseExtension;
+public:
+    virtual Operation * clone(LOCATION, Builder *b, OperationCloner *cloner) const;
+    virtual void jbgen(JB1MethodBuilder *j1mb) const;
+
+protected:
+    Op_ConvertTo(LOCATION, Extension *ext, Builder * parent, ActionID aConvertTo, Value *result, const Type *type, Value *value);
+    };
+
 class Op_Mul : public OperationR1V2 {
     friend class BaseExtension;
 public:

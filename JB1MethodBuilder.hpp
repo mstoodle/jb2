@@ -26,6 +26,7 @@
 #include <string>
 #include "Transformer.hpp"
 
+namespace TR { class BytecodeBuilder; }
 namespace TR { class IlBuilder; }
 namespace TR { class IlType; }
 namespace TR { class IlValue; }
@@ -62,6 +63,11 @@ public:
     void registerTypes(TypeDictionary *dict);
     bool typeRegistered(const Type *t);
 
+    void createBuilder(const Builder * b);
+    void createBytecodeBuilder(const Builder * b, int32_t bcIndex, std::string name);
+    void addFallThroughBuilder(const Builder * b, const Builder * ftb);
+    void addSuccessorBuilder(const Builder * b, const Builder * sb);
+
     void registerNoType(const Type * t);
     void registerInt8(const Type * t);
     void registerInt16(const Type * t);
@@ -70,7 +76,8 @@ public:
     void registerFloat(const Type * t);
     void registerDouble(const Type * t);
     void registerAddress(const Type * t);
-    void registerBuilder(Builder * b, TR::IlBuilder *omr_b = NULL);
+    void registerBuilder(const Builder * b, TR::IlBuilder *omr_b = NULL);
+    void registerBytecodeBuilder(const Builder * bcb, TR::BytecodeBuilder *omr_bcb = NULL);
     void registerPointer(const Type *ptrType, const Type *baseType);
     void registerStruct(const Type *type);
     void registerField(std::string structName, std::string fieldName, const Type *type, size_t offset);
@@ -99,12 +106,28 @@ public:
     void ConstDouble(Location *loc, Builder *b, Value *result, const double v);
     void ConstAddress(Location *loc, Builder *b, Value *result, const void *v);
 
-    void Add(Location *log, Builder *b, Value *result, Value *left, Value *right);
-    void Mul(Location *log, Builder *b, Value *result, Value *left, Value *right);
-    void Sub(Location *log, Builder *b, Value *result, Value *left, Value *right);
+    void Add(Location *loc, Builder *b, Value *result, Value *left, Value *right);
+    void ConvertTo(Location *loc, Builder *b, Value *result, const Type *type, Value *value);
+    void Mul(Location *loc, Builder *b, Value *result, Value *left, Value *right);
+    void Sub(Location *loc, Builder *b, Value *result, Value *left, Value *right);
 
+    void Call(Location *loc, Builder *b, Value *result, std::string targetName, std::vector<Value *> arguments);
+    void Call(Location *loc, Builder *b, std::string targetName, std::vector<Value *> arguments);
     void EntryPoint(Builder *entryBuilder);
     void ForLoopUp(Location *loc, Builder *b, Symbol *loopVariable, Value *initial, Value *final, Value *bump, Builder *loopBody, Builder *loopBreak, Builder *loopContinue);
+    void Goto(Location *loc, Builder *b, Builder *target);
+    void IfCmpEqual(Location *loc, Builder *b, Builder *target, Value *left, Value *right);
+    void IfCmpEqualZero(Location *loc, Builder *b, Builder *target, Value *value);
+    void IfCmpGreaterThan(Location *loc, Builder *b, Builder *target, Value *left, Value *right);
+    void IfCmpGreaterOrEqual(Location *loc, Builder *b, Builder *target, Value *left, Value *right);
+    void IfCmpLessThan(Location *loc, Builder *b, Builder *target, Value *left, Value *right);
+    void IfCmpLessOrEqual(Location *loc, Builder *b, Builder *target, Value *left, Value *right);
+    void IfCmpNotEqual(Location *loc, Builder *b, Builder *target, Value *left, Value *right);
+    void IfCmpNotEqualZero(Location *loc, Builder *b, Builder *target, Value *value);
+    void IfCmpUnsignedGreaterThan(Location *loc, Builder *b, Builder *target, Value *left, Value *right);
+    void IfCmpUnsignedGreaterOrEqual(Location *loc, Builder *b, Builder *target, Value *left, Value *right);
+    void IfCmpUnsignedLessThan(Location *loc, Builder *b, Builder *target, Value *left, Value *right);
+    void IfCmpUnsignedLessOrEqual(Location *loc, Builder *b, Builder *target, Value *left, Value *right);
     void Return(Location *loc, Builder *b);
     void Return(Location *loc, Builder *b, Value *value);
 
@@ -114,6 +137,7 @@ public:
     void StoreAt(Location *loc, Builder *b, Value *ptrValue, Value *value);
     void LoadIndirect(Location *loc, Builder *b, Value *result, std::string structName, std::string fieldName, Value *pStruct);
     void StoreIndirect(Location *loc, Builder *b, std::string structName, std::string fieldName, Value *pStruct, Value *value);
+    void StoreOver(Location *loc, Builder *b, Value *target, Value *source);
     void CreateLocalArray(Location *loc, Builder *b, Value *result, Literal *numElements, const Type *elementType);
     void CreateLocalStruct(Location *loc, Builder *b, Value *result, const Type * structType);
     void IndexAt(Location *loc, Builder *b, Value *result, Value *base, Value *index);
@@ -128,10 +152,11 @@ protected:
 #endif
 
     char * findOrCreateString(std::string str);
-    void registerValue(Value * v, TR::IlValue *omr_v);
+    void registerValue(const Value * v, TR::IlValue *omr_v);
 
-    TR::IlBuilder *map(Builder * b, bool checkNull=true);
-    TR::IlValue *map(Value * v);
+    TR::IlBuilder *map(const Builder * b, bool checkNull=true);
+    TR::BytecodeBuilder *mapBytecodeBuilder(const Builder * b, bool checkNull=true);
+    TR::IlValue *map(const Value * v);
     TR::IlType *map(const Type * t);
 
 #if 0
@@ -142,6 +167,7 @@ protected:
     void printAllMaps();
 
     std::map<BuilderID,TR::IlBuilder *> _builders;
+    std::map<BuilderID,TR::BytecodeBuilder *> _bytecodeBuilders;
     //std::map<CaseID,void *> _cases; // void * so we don't need to include IlBuilder.hpp in this header
     std::map<TypeID,TR::IlType *> _types;
     std::map<ValueID,TR::IlValue *> _values;

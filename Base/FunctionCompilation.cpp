@@ -49,6 +49,12 @@ FunctionCompilation::pointerTypeFromBaseType(const Type *baseType) {
     return NULL;
 }
 
+void
+FunctionCompilation::registerPointerType(const PointerType *pType) {
+    const Type *baseType = pType->BaseType();
+    _pointerTypeFromBaseType.insert({baseType, pType});
+}
+
 const StructType *
 FunctionCompilation::structTypeFromName(std::string name) {
     auto found = _structTypeFromName.find(name);
@@ -60,10 +66,30 @@ FunctionCompilation::structTypeFromName(std::string name) {
 }
 
 void
+FunctionCompilation::registerStructType(const StructType *sType) {
+    _structTypeFromName.insert({sType->name(), sType});
+}
+
+const FunctionType *
+FunctionCompilation::lookupFunctionType(const Type *returnType, int32_t numParms, const Type **parmTypes) {
+    std::string name = FunctionType::typeName(returnType, numParms, parmTypes);
+    auto it = _functionTypesFromName.find(name);
+    if (it != _functionTypesFromName.end()) {
+        const FunctionType *fType = it->second;
+        return fType;
+    }
+    return NULL;
+}
+
+void
+FunctionCompilation::registerFunctionType(const FunctionType *fType) {
+    _functionTypesFromName.insert({fType->name(), fType});
+}
+
+void
 FunctionCompilation::write(TextWriter &w) const {
     w << "Function" << w.endl();
 
-    w.indentIn();
     TypeDictionary *td = dict();
     td->write(w);
 
@@ -93,15 +119,12 @@ FunctionCompilation::setNativeEntryPoint(void *entry, int i) {
 
 bool
 FunctionCompilation::buildIL() {
-    return _func->buildIL();
-}
-
-bool
-FunctionCompilation::ilBuilt() const {
-    return _func->ilBuilt();
+    bool success = _func->buildIL();
+    if (success)
+        _ilBuilt = true;
+    return success;
 }
 
 } // namespace FunctionCompilation
 } // namespace JitBuilder
 } // namespace OMR
-

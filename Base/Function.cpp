@@ -48,7 +48,6 @@ Function::Function(Compiler *compiler) // , int32_t numEntries)
     , _dict(new TypeDictionary(compiler, "Function", compiler->dict()))
     , _comp(new FunctionCompilation(compiler, this, _dict))
     , _nativeContext(new NativeCallableContext(_comp))
-    , _ilBuilt(false)
     , _numEntryPoints(1)
     , _entryPoints(new Builder *[1])
     , _nativeEntryPoints(new void *[1])
@@ -65,7 +64,6 @@ Function::Function(Function *outerFunc) // , int32_t numEntries)
     , _dict(outerFunc->dict())
     , _comp(outerFunc->comp())
     , _nativeContext(new NativeCallableContext(_comp, outerFunc->_nativeContext))
-    , _ilBuilt(false)
     , _numEntryPoints(1)
     , _entryPoints(new Builder *[1])
     , _nativeEntryPoints(new void *[1])
@@ -128,7 +126,7 @@ Function::DefineLocal(std::string name, const Type * type) {
     return _nativeContext->DefineLocal(name, type);
 }
 
-void
+FunctionSymbol *
 Function::DefineFunction(LOCATION,
                          std::string name,
                          std::string fileName,
@@ -146,10 +144,10 @@ Function::DefineFunction(LOCATION,
         parmTypes[p] = (const Type *) va_arg(parms, const Type *);
     va_end(parms);
 
-    internalDefineFunction(PASSLOC, name, fileName, lineNumber, entryPoint, returnType, numParms, parmTypes);
+    return internalDefineFunction(PASSLOC, name, fileName, lineNumber, entryPoint, returnType, numParms, parmTypes);
 }
 
-void
+FunctionSymbol *
 Function::DefineFunction(LOCATION,
                          std::string name,
                          std::string fileName,
@@ -164,11 +162,11 @@ Function::DefineFunction(LOCATION,
     for (int32_t p=0;p < numParms;p++)
         copiedParmTypes[p] = parmTypes[p];
 
-    internalDefineFunction(PASSLOC, name, fileName, lineNumber, entryPoint, returnType, numParms, copiedParmTypes);
+    return internalDefineFunction(PASSLOC, name, fileName, lineNumber, entryPoint, returnType, numParms, copiedParmTypes);
 }
 
 // maybe move to Compilation?
-void
+FunctionSymbol *
 Function::internalDefineFunction(LOCATION,
                                  std::string name,
                                  std::string fileName,
@@ -178,11 +176,10 @@ Function::internalDefineFunction(LOCATION,
                                  int32_t numParms,
                                  const Type **parmTypes) {
 
-    const FunctionType *type = _ext->DefineFunctionType(PASSLOC, name, returnType, numParms, parmTypes);
+    const FunctionType *type = _ext->DefineFunctionType(PASSLOC, _comp, returnType, numParms, parmTypes);
     FunctionSymbol *sym = new FunctionSymbol(type, name, fileName, lineNumber, entryPoint);
-
-    // TODO: Why? _locals.push_back(sym);
     _functions.push_back(sym);
+    return sym;
 }
 
 const PointerType *
@@ -280,6 +277,7 @@ Function::write(TextWriter &w) const {
     w.indent() << "[ Function" /*<< _id*/ << w.endl();
     w.indentIn();
 
+    w.indent() << "[ name " << name() << " ]" << w.endl();
     w.indent() << "[ origin " << fileName() + "::" + lineNumber() << " ]" << w.endl();
     w.indent() << "[ returnType " << returnType() << "]" << w.endl();
     for (ParameterSymbolIterator paramIt = ParametersBegin();paramIt != ParametersEnd(); paramIt++) {
@@ -317,16 +315,13 @@ Function::constructJB1Function(JB1MethodBuilder *j1mb) {
     for (FunctionSymbolIterator fnIt = FunctionsBegin();fnIt != FunctionsEnd();fnIt++) {
         const FunctionSymbol *fSym = *fnIt;
         const FunctionType *fType = fSym->functionType();
-        const Type *parmTypes[fType->numParms()];
-        for (int32_t p=0;p < fType->numParms();p++)
-            parmTypes[p] = fType->parmType(p);
-        j1mb->DefineFunction(fType->name(),
+        j1mb->DefineFunction(fSym->name(),
                              fSym->fileName(),
                              fSym->lineNumber(),
                              fSym->entryPoint(),
                              fType->returnType(),
                              fType->numParms(),
-                             parmTypes);
+                             fType->parmTypes());
      }
 }
 

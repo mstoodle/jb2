@@ -53,6 +53,7 @@ public:
 protected:
     virtual void visitPreCompilation(Compilation * comp);
     virtual void visitBuilderPreOps(Builder * b);
+    virtual void visitBuilderPostOps(Builder * b);
     virtual void visitOperation(Operation * op);
     virtual void visitPostCompilation(Compilation *comp);
 

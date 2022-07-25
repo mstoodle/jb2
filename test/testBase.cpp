@@ -929,7 +929,7 @@ TESTBADSUBTYPES(Float64,Float64,Int8,Int16,Int32,Int64,Float32)
             }, \
         b, { \
            auto counterSym=LookupLocal("counter"); \
-           _x->Store(LOC, b, counterSym, _x->Zero(LOC, _comp, b, counterSym->type())); \
+           _x->Store(LOC, b, counterSym, _x->Zero(LOC, b, counterSym->type())); \
            auto iterVarSym = LookupLocal("i"); \
            auto initialSym=LookupLocal("initial"); \
            Value * initial = _x->Load(LOC, b, initialSym); \
@@ -939,7 +939,7 @@ TESTBADSUBTYPES(Float64,Float64,Int8,Int16,Int32,Int64,Float32)
            Value * bump = _x->Load(LOC, b, bumpSym); \
            Base::ForLoopBuilder *loop = _x->ForLoopUp(LOC, b, iterVarSym, initial, final, bump); { \
                Builder *loopBody = loop->loopBody(); \
-               _x->Increment(LOC, _comp, loopBody, counterSym); \
+               _x->Increment(LOC, loopBody, counterSym); \
            } \
            _x->Return(LOC, b, _x->Load(LOC, b, counterSym)); \
            })

@@ -19,32 +19,52 @@
  * SPDX-License-Identifier: EPL-2.0 OR Apache-2.0 OR GPL-2.0 WITH Classpath-exception-2.0 OR LicenseRef-GPL-2.0 WITH Assembly-exception
  *******************************************************************************/
 
-#ifndef JITBUILDER_INCL
-#define JITBUILDER_INCL
+#ifndef KINDSERVICE_INCL
+#define KINDSERVICE_INCL
 
-#define TOSTR(x)     #x
-#define LINETOSTR(x) TOSTR(x)
+#include <cassert>
+#include <cstddef>
+#include <string>
+#include <map>
+#include "IDs.hpp"
 
-#include "Builder.hpp"
-#include "Compilation.hpp"
-#include "Compiler.hpp"
-#include "Config.hpp"
-#include "Context.hpp"
-#include "Extension.hpp"
-#include "Literal.hpp"
-#include "LiteralDictionary.hpp"
-#include "Location.hpp"
-#include "Operation.hpp"
-#include "Pass.hpp"
-#include "SemanticVersion.hpp"
-#include "Strategy.hpp"
-#include "Symbol.hpp"
-#include "SymbolDictionary.hpp"
-#include "TextWriter.hpp"
-#include "Transformer.hpp"
-#include "Type.hpp"
-#include "TypeDictionary.hpp"
-#include "Value.hpp"
-#include "Visitor.hpp"
+namespace OMR {
+namespace JitBuilder {
 
-#endif // defined(JITBUILDER_INCL)
+
+class KindService {
+public:
+    typedef uint64_t Kind;
+    KindService()
+        : _id(kindServiceID++)
+        , _nextKind(AnyKind+1) {
+    }
+
+    const static Kind NoKind=0;
+    const static Kind AnyKind=1;
+
+    Kind getNextKind(Kind k);
+
+    Kind assignKind(Kind baseKind, std::string name);
+    bool isExactMatch(Kind matchee, Kind matcher) {
+        return (matchee == matcher);
+    }
+    bool isMatch(Kind matchee, Kind matcher) {
+        return ((matchee & matcher) == matcher);
+    }
+
+protected:
+
+    KindServiceID _id;
+    Kind _nextKind;
+    std::map<std::string,Kind> _kindFromNameMap;
+    std::map<Kind,std::string> _nameFromKindMap;
+
+    static KindServiceID kindServiceID;
+};
+
+} // namespace JitBuilder
+} // namespace OMR
+
+#endif // defined(KINDSERVICE_INCL)
+

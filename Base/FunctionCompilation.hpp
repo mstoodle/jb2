@@ -22,6 +22,7 @@
 #ifndef FUNCTIONCOMPILATION_INCL
 #define FUNCTIONCOMPILATION_INCL
 
+#include <map>
 #include <stdint.h>
 #include <string>
 #include <vector>
@@ -40,6 +41,8 @@ class TypeDictionary;
 namespace Base {
 
 class Function;
+class PointerType;
+class StructType;
 
 class FunctionCompilation : public Compilation {
 public:
@@ -53,16 +56,19 @@ public:
 
     virtual void write(TextWriter & w) const;
 
+    virtual bool buildIL();
+
     virtual void constructJB1Function(JB1MethodBuilder *j1mb);
     virtual void jbgenProlog(JB1MethodBuilder *j1mb);
 
-    virtual bool buildIL();
-    virtual bool ilBuilt() const;
-    virtual void setNativeEntryPoint(void *entry, int i=0);
-
     const PointerType * pointerTypeFromBaseType(const Type * baseType);
+    void registerPointerType(const PointerType * pType);
     const StructType * structTypeFromName(std::string name);
+    void registerStructType(const StructType * sType);
+    const FunctionType * lookupFunctionType(const Type *returnType, int32_t numParms, const Type **parmTypes);
+    void registerFunctionType(const FunctionType * fType);
 
+    void setNativeEntryPoint(void *entry, int i);
 protected:
     virtual void addInitialBuildersToWorklist(BuilderWorklist & worklist);
 
@@ -70,6 +76,7 @@ protected:
     Function *_func;
     std::map<const Type *,const PointerType *> _pointerTypeFromBaseType;
     std::map<std::string,const StructType *> _structTypeFromName;
+    std::map<std::string,const FunctionType *> _functionTypesFromName;
 };
 
 } // namespace FunctionCompilation

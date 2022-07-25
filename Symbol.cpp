@@ -25,9 +25,13 @@
 namespace OMR {
 namespace JitBuilder {
 
+SymbolKind Symbol::SYMBOLKIND=KindService::NoKind;
+
+KindService Symbol::kindService;
+
 void
 Symbol::write(TextWriter &w) const {
-    w << "[ " << this << " \"" << this->name() << "\" ]" << w.endl();
+    w << this << w.endl();
 }
 
 } // namespace JitBuilder

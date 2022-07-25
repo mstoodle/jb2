@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2021, 2022 IBM Corp. and others
+ * Copyright (c) 2022, 2022 IBM Corp. and others
  *
  * This program and the accompanying materials are made available under
  * the terms of the Eclipse Public License 2.0 which accompanies this
@@ -15,47 +15,24 @@
  *
  * [1] https://www.gnu.org/software/classpath/license.html
  * [2] http://openjdk.java.net/legal/assembly-exception.html
- *
+ *   
  * SPDX-License-Identifier: EPL-2.0 OR Apache-2.0 OR GPL-2.0 WITH Classpath-exception-2.0 OR LicenseRef-GPL-2.0 WITH Assembly-exception
  *******************************************************************************/
 
-#include "BaseExtension.hpp"
-#include "BaseSymbols.hpp"
-#include "BaseTypes.hpp"
-#include "FunctionCompilation.hpp"
-#include "NativeCallableContext.hpp"
-#include "Operation.hpp"
-#include "TextWriter.hpp"
+#ifndef OMR_JITBUILDER_Base_INCL
+#define OMR_JITBUILDER_Base_INCL
 
+#include "Base/ArithmeticOperations.hpp"
+#include "Base/BaseExtension.hpp"
+#include "Base/BaseIterator.hpp"
+#include "Base/BaseSymbols.hpp"
+#include "Base/BaseTypes.hpp"
+#include "Base/ConstOperations.hpp"
+#include "Base/ControlOperations.hpp"
+#include "Base/Function.hpp"
+#include "Base/FunctionCompilation.hpp"
+#include "Base/MemoryOperations.hpp"
+#include "Base/NativeCallableContext.hpp"
 
-namespace OMR {
-namespace JitBuilder {
-namespace Base {
-
-LocalSymbolIterator NativeCallableContext::endLocalSymbolIterator;
-ParameterSymbolIterator NativeCallableContext::endParameterSymbolIterator;
-
-ParameterSymbol *
-NativeCallableContext::DefineParameter(std::string name, const Type * type) {
-    ParameterSymbol *parm = new ParameterSymbol(name, type, this->_parameters.size());
-    this->_parameters.push_back(parm);
-    addSymbol(parm);
-    return parm;
-}
-
-LocalSymbol *
-NativeCallableContext::DefineLocal(std::string name, const Type * type) {
-    Symbol *sym = this->lookupSymbol(name);
-    if (sym && sym->isKind<LocalSymbol>())
-       return sym->refine<LocalSymbol>();
-
-    LocalSymbol *local = new LocalSymbol(name, type);
-    this->_locals.push_back(local);
-    addSymbol(local);
-    return local;
-}
-
-} // namespace Base
-} // namespace JitBuilder
-} // namespace OMR
+#endif // defined(OMR_JITBUILDER_Base_INCL)
 

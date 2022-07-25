@@ -43,6 +43,49 @@ namespace Base {
 #define A_UNLESS_B(A,B) (((B) != NULL) ? (B) : (A))
 
 //
+// Call
+//
+
+Op_Call::Op_Call(LOCATION, Extension *ext, Builder * parent, ActionID aCall, Value *result, FunctionSymbol *target, std::va_list & args)
+    : OperationR1S1VN(PASSLOC, aCall, ext, parent, result, target, target->functionType()->numParms(), args) {
+
+}
+
+
+Op_Call::Op_Call(LOCATION, Extension *ext, Builder * parent, ActionID aCall, FunctionSymbol *target, std::va_list & args)
+    : OperationR1S1VN(PASSLOC, aCall, ext, parent, NULL, target, target->functionType()->numParms(), args) {
+
+}
+
+Operation *
+Op_Call::clone(LOCATION, Builder *b, OperationCloner *cloner) const {
+    return new Op_Call(PASSLOC, this->_ext, b, this->action(), cloner);
+}
+
+void
+Op_Call::write(TextWriter & w) const {
+    if (_result)
+        w << this->_result << " = ";
+    w << name() << " " << this->_symbol;
+    for (auto a=0;a < _values.size(); a++) {
+        w << " " << this->_values[a];
+    }
+    w << w.endl();
+}
+
+void
+Op_Call::jbgen(JB1MethodBuilder *j1mb) const {
+    FunctionSymbol *funcSym = symbol()->refine<FunctionSymbol>();
+    const FunctionType *funcType = funcSym->functionType();
+    //j1mb->DefineFunction(funcSym->name(), funcSym->fileName(), funcSym->lineNumber(), funcSym->entryPoint(), funcType->returnType(), funcType->numParms(), funcType->parmTypes());
+    if (result())
+        j1mb->Call(location(), parent(), result(), funcSym->name(), _values);
+    else
+        j1mb->Call(location(), parent(), funcSym->name(), _values);
+}
+
+
+//
 // ForLoopUp
 //
 Op_ForLoopUp::Op_ForLoopUp(LOCATION, Extension *ext, Builder * parent, ActionID aForLoopUp, ForLoopBuilder *loopBuilder)
@@ -98,14 +141,250 @@ Op_ForLoopUp::jbgen(JB1MethodBuilder *j1mb) const {
 
 
 //
+// Goto
+//
+Operation *
+Op_Goto::clone(LOCATION, Builder *b, OperationCloner *cloner) const {
+    return new Op_Goto(PASSLOC, this->_ext, b, this->action(), cloner->builder());
+}
+
+void
+Op_Goto::write(TextWriter & w) const {
+    w << name() << " " << builder() << w.endl();
+}
+
+void
+Op_Goto::jbgen(JB1MethodBuilder *j1mb) const {
+    j1mb->Goto(location(), parent(), builder());
+}
+
+//
+// IfCmpEqual
+//
+Operation *
+Op_IfCmpEqual::clone(LOCATION, Builder *b, OperationCloner *cloner) const {
+    return new Op_IfCmpEqual(PASSLOC, this->_ext, b, this->action(), cloner->builder(), cloner->operand(0), cloner->operand(1));
+}
+
+void
+Op_IfCmpEqual::write(TextWriter & w) const {
+    w << name() << " " << builder() << " " << operand(0) << " " << operand(1) << w.endl();
+}
+
+void
+Op_IfCmpEqual::jbgen(JB1MethodBuilder *j1mb) const {
+    j1mb->IfCmpEqual(location(), parent(), builder(), operand(0), operand(1));
+}
+
+//
+// IfCmpEqualZero
+//
+Operation *
+Op_IfCmpEqualZero::clone(LOCATION, Builder *b, OperationCloner *cloner) const {
+    return new Op_IfCmpEqualZero(PASSLOC, this->_ext, b, this->action(), cloner->builder(), cloner->operand());
+}
+
+void
+Op_IfCmpEqualZero::write(TextWriter & w) const {
+    w << name() << " " << builder() << " " << operand(0) << w.endl();
+}
+
+void
+Op_IfCmpEqualZero::jbgen(JB1MethodBuilder *j1mb) const {
+    j1mb->IfCmpEqualZero(location(), parent(), builder(), operand());
+}
+
+//
+// IfCmpGreaterThan
+//
+Operation *
+Op_IfCmpGreaterThan::clone(LOCATION, Builder *b, OperationCloner *cloner) const {
+    return new Op_IfCmpGreaterThan(PASSLOC, this->_ext, b, this->action(), cloner->builder(), cloner->operand(0), cloner->operand(1));
+}
+
+void
+Op_IfCmpGreaterThan::write(TextWriter & w) const {
+    w << name() << " " << builder() << " " << operand(0) << " " << operand(1) << w.endl();
+}
+
+void
+Op_IfCmpGreaterThan::jbgen(JB1MethodBuilder *j1mb) const {
+    j1mb->IfCmpGreaterThan(location(), parent(), builder(), operand(0), operand(1));
+}
+
+//
+// IfCmpGreaterOrEqual
+//
+Operation *
+Op_IfCmpGreaterOrEqual::clone(LOCATION, Builder *b, OperationCloner *cloner) const {
+    return new Op_IfCmpGreaterOrEqual(PASSLOC, this->_ext, b, this->action(), cloner->builder(), cloner->operand(0), cloner->operand(1));
+}
+
+void
+Op_IfCmpGreaterOrEqual::write(TextWriter & w) const {
+    w << name() << " " << builder() << " " << operand(0) << " " << operand(1) << w.endl();
+}
+
+void
+Op_IfCmpGreaterOrEqual::jbgen(JB1MethodBuilder *j1mb) const {
+    j1mb->IfCmpGreaterOrEqual(location(), parent(), builder(), operand(0), operand(1));
+}
+
+//
+// IfCmpLessThan
+//
+Operation *
+Op_IfCmpLessThan::clone(LOCATION, Builder *b, OperationCloner *cloner) const {
+    return new Op_IfCmpLessThan(PASSLOC, this->_ext, b, this->action(), cloner->builder(), cloner->operand(0), cloner->operand(1));
+}
+
+void
+Op_IfCmpLessThan::write(TextWriter & w) const {
+    w << name() << " " << builder() << " " << operand(0) << " " << operand(1) << w.endl();
+}
+
+void
+Op_IfCmpLessThan::jbgen(JB1MethodBuilder *j1mb) const {
+    j1mb->IfCmpLessThan(location(), parent(), builder(), operand(0), operand(1));
+}
+
+//
+// IfCmpLessOrEqual
+//
+Operation *
+Op_IfCmpLessOrEqual::clone(LOCATION, Builder *b, OperationCloner *cloner) const {
+    return new Op_IfCmpLessOrEqual(PASSLOC, this->_ext, b, this->action(), cloner->builder(), cloner->operand(0), cloner->operand(1));
+}
+
+void
+Op_IfCmpLessOrEqual::write(TextWriter & w) const {
+    w << name() << " " << builder() << " " << operand(0) << " " << operand(1) << w.endl();
+}
+
+void
+Op_IfCmpLessOrEqual::jbgen(JB1MethodBuilder *j1mb) const {
+    j1mb->IfCmpLessOrEqual(location(), parent(), builder(), operand(0), operand(1));
+}
+
+//
+// IfCmpNotEqual
+//
+Operation *
+Op_IfCmpNotEqual::clone(LOCATION, Builder *b, OperationCloner *cloner) const {
+    return new Op_IfCmpNotEqual(PASSLOC, this->_ext, b, this->action(), cloner->builder(), cloner->operand(0), cloner->operand(1));
+}
+
+void
+Op_IfCmpNotEqual::write(TextWriter & w) const {
+    w << name() << " " << builder() << " " << operand(0) << " " << operand(1) << w.endl();
+}
+
+void
+Op_IfCmpNotEqual::jbgen(JB1MethodBuilder *j1mb) const {
+    j1mb->IfCmpNotEqual(location(), parent(), builder(), operand(0), operand(1));
+}
+
+//
+// IfCmpNotEqualZero
+//
+Operation *
+Op_IfCmpNotEqualZero::clone(LOCATION, Builder *b, OperationCloner *cloner) const {
+    return new Op_IfCmpNotEqualZero(PASSLOC, this->_ext, b, this->action(), cloner->builder(), cloner->operand());
+}
+
+void
+Op_IfCmpNotEqualZero::write(TextWriter & w) const {
+    w << name() << " " << builder() << " " << operand(0) << w.endl();
+}
+
+void
+Op_IfCmpNotEqualZero::jbgen(JB1MethodBuilder *j1mb) const {
+    j1mb->IfCmpNotEqualZero(location(), parent(), builder(), operand());
+}
+
+//
+// IfCmpUnsignedGreaterThan
+//
+Operation *
+Op_IfCmpUnsignedGreaterThan::clone(LOCATION, Builder *b, OperationCloner *cloner) const {
+    return new Op_IfCmpUnsignedGreaterThan(PASSLOC, this->_ext, b, this->action(), cloner->builder(), cloner->operand(0), cloner->operand(1));
+}
+
+void
+Op_IfCmpUnsignedGreaterThan::write(TextWriter & w) const {
+    w << name() << " " << builder() << " " << operand(0) << " " << operand(1) << w.endl();
+}
+
+void
+Op_IfCmpUnsignedGreaterThan::jbgen(JB1MethodBuilder *j1mb) const {
+    j1mb->IfCmpUnsignedGreaterThan(location(), parent(), builder(), operand(0), operand(1));
+}
+
+//
+// IfCmpUnsignedGreaterOrEqual
+//
+Operation *
+Op_IfCmpUnsignedGreaterOrEqual::clone(LOCATION, Builder *b, OperationCloner *cloner) const {
+    return new Op_IfCmpUnsignedGreaterOrEqual(PASSLOC, this->_ext, b, this->action(), cloner->builder(), cloner->operand(0), cloner->operand(1));
+}
+
+void
+Op_IfCmpUnsignedGreaterOrEqual::write(TextWriter & w) const {
+    w << name() << " " << builder() << " " << operand(0) << " " << operand(1) << w.endl();
+}
+
+void
+Op_IfCmpUnsignedGreaterOrEqual::jbgen(JB1MethodBuilder *j1mb) const {
+    j1mb->IfCmpUnsignedGreaterOrEqual(location(), parent(), builder(), operand(0), operand(1));
+}
+
+//
+// IfCmpUnsignedLessThan
+//
+Operation *
+Op_IfCmpUnsignedLessThan::clone(LOCATION, Builder *b, OperationCloner *cloner) const {
+    return new Op_IfCmpUnsignedLessThan(PASSLOC, this->_ext, b, this->action(), cloner->builder(), cloner->operand(0), cloner->operand(1));
+}
+
+void
+Op_IfCmpUnsignedLessThan::write(TextWriter & w) const {
+    w << name() << " " << builder() << " " << operand(0) << " " << operand(1) << w.endl();
+}
+
+void
+Op_IfCmpUnsignedLessThan::jbgen(JB1MethodBuilder *j1mb) const {
+    j1mb->IfCmpUnsignedLessThan(location(), parent(), builder(), operand(0), operand(1));
+}
+
+//
+// IfCmpUnsignedLessOrEqual
+//
+Operation *
+Op_IfCmpUnsignedLessOrEqual::clone(LOCATION, Builder *b, OperationCloner *cloner) const {
+    return new Op_IfCmpUnsignedLessOrEqual(PASSLOC, this->_ext, b, this->action(), cloner->builder(), cloner->operand(0), cloner->operand(1));
+}
+
+void
+Op_IfCmpUnsignedLessOrEqual::write(TextWriter & w) const {
+    w << name() << " " << builder() << " " << operand(0) << " " << operand(1) << w.endl();
+}
+
+void
+Op_IfCmpUnsignedLessOrEqual::jbgen(JB1MethodBuilder *j1mb) const {
+    j1mb->IfCmpUnsignedLessOrEqual(location(), parent(), builder(), operand(0), operand(1));
+}
+
+//
 // Return
 //
 Op_Return::Op_Return(LOCATION, Extension *ext, Builder * parent, ActionID aReturn)
     : Operation(PASSLOC, aReturn, ext, parent), _value(NULL) {
+    parent->setControlReachesEnd(false);
 }
 
 Op_Return::Op_Return(LOCATION, Extension *ext, Builder * parent, ActionID aReturn, Value * v)
     : Operation(PASSLOC, aReturn, ext, parent), _value(v) {
+    parent->setControlReachesEnd(false);
 }
 
 Operation *

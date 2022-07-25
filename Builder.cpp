@@ -24,8 +24,10 @@
 #include "Builder.hpp"
 #include "Compilation.hpp"
 #include "Context.hpp"
+#include "JB1MethodBuilder.hpp"
 #include "Location.hpp"
 #include "Operation.hpp"
+#include "TextWriter.hpp"
 #include "Value.hpp"
 
 namespace OMR {
@@ -101,6 +103,72 @@ Builder *
 Builder::add(Operation *op) {
     _operations.push_back(op);
     return this;
+}
+
+void
+Builder::jbgen(JB1MethodBuilder *j1mb) const {
+    j1mb->createBuilder(this);
+}
+
+void
+Builder::jbgenSuccessors(JB1MethodBuilder *j1mb) const {
+}
+
+void
+Builder::writeProperties(TextWriter & w) const {
+    if (parent())
+        w.indent() << "[ parent " << parent() << " ]" << w.endl();
+    else
+        w.indent() << "[ parent NULL ]" << w.endl();
+
+    if (numChildren() > 0) {
+        w.indent() << "[ children" << w.endl();
+        w.indentIn();
+        for (BuilderIterator bIt = ChildrenBegin(); bIt != ChildrenEnd(); bIt++) {
+             Builder *child = *bIt;
+             w.indent() << "[ " << child << " ]" << w.endl();
+         }
+         w.indentOut();
+         w.indent() << "]" << w.endl();
+    }
+
+    if (isBound())
+        w.indent() << "[ bound " << boundToOperation() << " ]" << w.endl();
+    else
+        w.indent() << "[ notBound ]" << w.endl();
+
+    if (isTarget())
+        w.indent() << "[ isTarget ]" << w.endl();
+    else
+        w.indent() << "[ notTarget ]" << w.endl();
+
+    // deprecate
+    if (controlReachesEnd())
+        w.indent() << "[ controlReachesEnd ]" << w.endl();
+    else
+        w.indent() << "[ notControlReachesEnd ]" << w.endl();
+}
+
+void
+Builder::writePrefix(TextWriter & w) const {
+    w.indent() << "[ " << logName() << " " << this;
+    if (name().length() > 0)
+        w << " \"" << name() << "\"";
+    w << w.endl();
+    w.indentIn();
+
+    writeProperties(w);
+
+    w.indent() << "[ operations" << w.endl();
+    w.indentIn();
+}
+
+void
+Builder::writeSuffix(TextWriter & w) const {
+    w.indentOut();
+    w.indent() << "]" << w.endl(); // operations
+    w.indentOut();
+    w.indent() << "]" << w.endl(); // builder
 }
 
 } // namespace JitBuilder

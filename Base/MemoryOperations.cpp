@@ -64,6 +64,7 @@ Op_Load::jbgen(JB1MethodBuilder *j1mb) const {
 //
 Op_Store::Op_Store(LOCATION, Extension *ext, Builder * parent, ActionID aStore, Symbol *symbol, Value *value)
     : OperationR0S1V1(PASSLOC, aStore, ext, parent, symbol, value) {
+    assert(value);
 }
 
 Operation *
@@ -122,7 +123,7 @@ Op_LoadField::Op_LoadField(LOCATION, Extension *ext, Builder * parent, ActionID 
 
 Operation *
 Op_LoadField::clone(LOCATION, Builder *b, OperationCloner *cloner) const {
-    return new Op_LoadField(PASSLOC, this->_ext, b, this->action(), cloner->result(), static_cast<const FieldType *>(cloner->type()), cloner->operand());
+    return new Op_LoadField(PASSLOC, this->_ext, b, this->action(), cloner->result(), cloner->type()->refine<FieldType>(), cloner->operand());
 }
 
 void
@@ -140,7 +141,7 @@ Op_StoreField::Op_StoreField(LOCATION, Extension *ext, Builder * parent, ActionI
 
 Operation *
 Op_StoreField::clone(LOCATION, Builder *b, OperationCloner *cloner) const {
-    return new Op_StoreField(PASSLOC, this->_ext, b, this->action(), static_cast<const FieldType *>(cloner->type()), cloner->operand(0), cloner->operand(1));
+    return new Op_StoreField(PASSLOC, this->_ext, b, this->action(), cloner->type()->refine<FieldType>(), cloner->operand(0), cloner->operand(1));
 }
 
 void
@@ -158,12 +159,12 @@ Op_LoadFieldAt::Op_LoadFieldAt(LOCATION, Extension *ext, Builder * parent, Actio
 
 Operation *
 Op_LoadFieldAt::clone(LOCATION, Builder *b, OperationCloner *cloner) const {
-    return new Op_LoadFieldAt(PASSLOC, this->_ext, b, this->action(), cloner->result(), static_cast<const FieldType *>(cloner->type()), cloner->operand());
+    return new Op_LoadFieldAt(PASSLOC, this->_ext, b, this->action(), cloner->result(), cloner->type()->refine<FieldType>(), cloner->operand());
 }
 
 void
 Op_LoadFieldAt::jbgen(JB1MethodBuilder *j1mb) const {
-    const FieldType *fType = static_cast<const FieldType *>(_type);
+    const FieldType *fType = _type->refine<FieldType>();
     const StructType *sType = fType->owningStruct();
     j1mb->LoadIndirect(location(), this->parent(), this->_result, sType->name(), fType->name(), this->_value);
 }
@@ -178,12 +179,12 @@ Op_StoreFieldAt::Op_StoreFieldAt(LOCATION, Extension *ext, Builder * parent, Act
 
 Operation *
 Op_StoreFieldAt::clone(LOCATION, Builder *b, OperationCloner *cloner) const {
-    return new Op_StoreFieldAt(PASSLOC, this->_ext, b, this->action(), static_cast<const FieldType *>(cloner->type()), cloner->operand(0), cloner->operand(1));
+    return new Op_StoreFieldAt(PASSLOC, this->_ext, b, this->action(), cloner->type()->refine<FieldType>(), cloner->operand(0), cloner->operand(1));
 }
 
 void
 Op_StoreFieldAt::jbgen(JB1MethodBuilder *j1mb) const {
-    const FieldType *fType = static_cast<const FieldType *>(_type);
+    const FieldType *fType = _type->refine<FieldType>();
     const StructType *sType = fType->owningStruct();
     j1mb->StoreIndirect(location(), this->parent(), sType->name(), fType->name(), this->_base, this->_value);
 }
@@ -195,8 +196,8 @@ Op_StoreFieldAt::jbgen(JB1MethodBuilder *j1mb) const {
 Operation *
 Op_CreateLocalArray::clone(LOCATION, Builder *b, OperationCloner *cloner) const {
     const Type *cloneType = cloner->type();
-    assert(cloneType->isPointer());
-    return new Op_CreateLocalArray(PASSLOC, this->_ext, b, this->action(), cloner->result(), cloner->literal(), static_cast<const PointerType *>(cloneType));
+    assert(cloneType->isKind<PointerType>());
+    return new Op_CreateLocalArray(PASSLOC, this->_ext, b, this->action(), cloner->result(), cloner->literal(), cloneType->refine<PointerType>());
 }
 
 void
@@ -211,8 +212,8 @@ Op_CreateLocalArray::jbgen(JB1MethodBuilder *j1mb) const {
 Operation *
 Op_CreateLocalStruct::clone(LOCATION, Builder *b, OperationCloner *cloner) const {
     const Type *cloneType = cloner->type();
-    assert(cloneType->isStruct());
-    return new Op_CreateLocalStruct(PASSLOC, this->_ext, b, this->action(), cloner->result(), static_cast<const StructType *>(cloneType));
+    assert(cloneType->isKind<StructType>());
+    return new Op_CreateLocalStruct(PASSLOC, this->_ext, b, this->action(), cloner->result(), cloneType->refine<StructType>());
 }
 
 void
@@ -398,9 +399,8 @@ LoadAtStoreAtExpander(OperationReplacer *replacer)
    assert(op->action() == aLoadAt || op->action() == aStoreAt);
 
    Type *ptrType = op->operand(0)->type();
-   assert(ptrType->isPointer());
-   TypeDictionary *dict = ptrType->owningDictionary();
-   Type *baseType = static_cast<PointerType *>(ptrType)->BaseType();
+   assert(ptrType->isKind<PointerType>());
+   Type *baseType = ptrType->refine<PointerType>()->BaseType();
 
    auto explodedTypes = replacer->explodedTypes();
    if (explodedTypes->find(baseType) != explodedTypes->end())
@@ -413,6 +413,7 @@ LoadAtStoreAtExpander(OperationReplacer *replacer)
       ValueMapper *baseOperandMapper = replacer->operandMapper(0);
       assert(baseOperandMapper->size() == 1);
       ValueMapper *resultMapper = replacer->resultMapper();
+      TypeDictionary *dict = ptrType->owningDictionary();
       Value *basePtr = b->CoercePointer(dict->PointerTo(layout), baseOperandMapper->next());
       for (auto it = layout->FieldsBegin(); it != layout->FieldsEnd(); it++)
          {
@@ -457,8 +458,8 @@ void
 LoadField::cloneTo(Builder *b, ValueMapper **resultMappers, ValueMapper **operandMappers, TypeMapper **typeMappers, LiteralMapper **literalMappers, SymbolMapper **symbolMappers, BuilderMapper **builderMappers) const
    {
    Type *t = typeMappers[0]->next();
-   assert(t->isField());
-   FieldType *fieldType = static_cast<FieldType *>(t);
+   assert(t->isKind<FieldType>());
+   const FieldType *fieldType = t->refine<FieldType>();
    resultMappers[0]->add( b->LoadField(fieldType, operandMappers[0]->next()) );
    }
 
@@ -466,8 +467,8 @@ Operation *
 LoadField::clone(Builder *b, OperationCloner *cloner) const
    {
    Type *t = cloner->type();
-   assert(t->isField());
-   FieldType *fieldType = static_cast<FieldType *>(t);
+   assert(t->isKind<FieldType>());
+   const FieldType *fieldType = t->refine<FieldType>(t);
    return create(b, cloner->result(), fieldType, cloner->operand());
    }
 
@@ -475,8 +476,8 @@ void
 LoadIndirect::cloneTo(Builder *b, ValueMapper **resultMappers, ValueMapper **operandMappers, TypeMapper **typeMappers, LiteralMapper **literalMappers, SymbolMapper **symbolMappers, BuilderMapper **builderMappers) const
    {
    Type *t = typeMappers[0]->next();
-   assert(t->isField());
-   FieldType *fieldType = static_cast<FieldType *>(t);
+   assert(t->isKind<FieldType>());
+   const FieldType *fieldType = t->refine<FieldType>(t);
    resultMappers[0]->add( b->LoadIndirect(fieldType, operandMappers[0]->next()) );
    }
 
@@ -484,8 +485,8 @@ Operation *
 LoadIndirect::clone(Builder *b, OperationCloner *cloner) const
    {
    Type *t = cloner->type();
-   assert(t->isField());
-   FieldType *fieldType = static_cast<FieldType *>(t);
+   assert(t->isKind<FieldType>());
+   const FieldType *fieldType = t->refine<FieldType>();
    return create(b, cloner->result(), fieldType, cloner->operand());
    }
 
@@ -532,8 +533,8 @@ void
 StoreField::cloneTo(Builder *b, ValueMapper **resultMappers, ValueMapper **operandMappers, TypeMapper **typeMappers, LiteralMapper **literalMappers, SymbolMapper **symbolMappers, BuilderMapper **builderMappers) const
    {
    Type *t = typeMappers[0]->next();
-   assert(t->isField());
-   FieldType *fieldType = static_cast<FieldType *>(t);
+   assert(t->isKind<FieldType>());
+   const FieldType *fieldType = t->refine<FieldType>();
    b->StoreField(fieldType, operandMappers[0]->next(), operandMappers[1]->next());
    }
 
@@ -541,8 +542,8 @@ Operation *
 StoreField::clone(Builder *b, OperationCloner *cloner) const
    {
    Type *t = cloner->type();
-   assert(t->isField());
-   FieldType *fieldType = static_cast<FieldType *>(t);
+   assert(t->isKind<FieldType>());
+   const FieldType *fieldType = t->refine<FieldType>();
    return create(b, fieldType, cloner->operand(0), cloner->operand(1));
    }
 
@@ -550,8 +551,8 @@ void
 StoreIndirect::cloneTo(Builder *b, ValueMapper **resultMappers, ValueMapper **operandMappers, TypeMapper **typeMappers, LiteralMapper **literalMappers, SymbolMapper **symbolMappers, BuilderMapper **builderMappers) const
    {
    Type *t = typeMappers[0]->next();
-   assert(t->isField());
-   FieldType *fieldType = static_cast<FieldType *>(t);
+   assert(t->isKind<FieldType>());
+   const FieldType *fieldType = t->refine<FieldType>();
    b->StoreIndirect(fieldType, operandMappers[0]->next(), operandMappers[1]->next());
    }
 
@@ -559,8 +560,8 @@ Operation *
 StoreIndirect::clone(Builder *b, OperationCloner *cloner) const
    {
    Type *t = cloner->type();
-   assert(t->isField());
-   FieldType *fieldType = static_cast<FieldType *>(t);
+   assert(t->isKind<FieldType>());
+   FieldType *fieldType = t->refine<FieldType>();
    return create(b, fieldType, cloner->operand(0), cloner->operand(1));
    }
 
@@ -688,7 +689,7 @@ ForLoop::ForLoop(Builder * parent, bool countsUp, LocalSymbol *loopSym,
 void
 ForLoop::cloneTo(Builder *b, ValueMapper **resultMappers, ValueMapper **operandMappers, TypeMapper **typeMappers, LiteralMapper **literalMappers, SymbolMapper **symbolMappers, BuilderMapper **builderMappers) const
    {
-   b->ForLoop(literalMappers[0]->next()->getInt8(), static_cast<LocalSymbol *>(symbolMappers[0]->next()),
+   b->ForLoop(literalMappers[0]->next()->getInt8(), symbolMappers[0]->next()->refine<LocalSymbol>(),
               builderMappers[0]->next(),
               _loopBreak ? builderMappers[1]->next() : NULL,
               _loopContinue ? builderMappers[2]->next() : NULL,
@@ -698,7 +699,7 @@ ForLoop::cloneTo(Builder *b, ValueMapper **resultMappers, ValueMapper **operandM
 Operation *
 ForLoop::clone(Builder *b, OperationCloner *cloner) const
    {
-   return create(b, cloner->literal(0)->getInt8(), static_cast<LocalSymbol *>(cloner->symbol()),
+   return create(b, cloner->literal(0)->getInt8(), cloner->symbol()->refine<LocalSymbol>(),
                cloner->builder(0),
                _loopBreak ? cloner->builder(1) : NULL,
                _loopContinue ? cloner->builder(2) : NULL,

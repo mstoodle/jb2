@@ -43,12 +43,23 @@ Compiler::Compiler(std::string name, Config *config)
     , _jb1(JB1::instance())
     , _config(config)
     , _myConfig(false)
-    , _nextExtensionID(NoExtension+1) // 0 reserved
-    , _nextActionID(NoAction+1) // 0 reserved
-    , _nextStrategyID(NoStrategy+1)  // 0 reserved
-    , _nextPassID(NoPass+1) // 0 reserved
-    , _nextTypeID(NoType+1) // 0 not reserved, but Base gives it to NoType
+    , _myDict(false)
+    , _nextExtensionID(NoExtension+1)
+    , _extensions()
+    , _nextActionID(NoAction+1)
+    , _actionNames()
+    , _nextPassID(NoPass+1)
+    , _registeredPassNames()
+    , _passRegistry()
+    , _nextReturnCode(0)
+    , _returnCodeNames()
+    , _nextStrategyID(NoStrategy+1)
+    , _strategies()
+    , _nextTypeID(NoType+1)
+    , _types()
     , _nextTypeDictionaryID(0)
+    , _target(NULL)
+    , _compiler(NULL)
     , _dict(new TypeDictionary(this, name + "::root"))
     , CompileSuccessful(assignReturnCode("CompileSuccessful"))
     , CompileNotStarted(assignReturnCode("CompileNotStarted"))
@@ -56,6 +67,7 @@ Compiler::Compiler(std::string name, Config *config)
     , CompileFail_UnknownStrategyID(assignReturnCode("CompileFail_UnknownStrategy"))
     , CompileFail_IlGen(assignReturnCode("CompileFail_IlGen"))
     , CompileFail_TypeMustBeReduced(assignReturnCode("CompileFail_TypeMustBeReduced")) {
+
     if (_config == NULL) {
         _config = new Config();
         _myConfig = true;

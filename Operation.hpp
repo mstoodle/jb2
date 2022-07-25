@@ -130,6 +130,7 @@ protected:
 
     Operation * setParent(Builder * newParent);
     Operation * setLocation(Location *location);
+    void registerDefinition(Value *result);
 
     static void addToBuilder(Extension *ext, Builder *b, Operation *op);
 
@@ -156,9 +157,9 @@ protected:
 // listed above. So the structural Operation class with one result and two operand
 // values is called OperationR1V2. Operation sub classes then derive from these
 // structural classes and can add some semantically relevant services.
-class OperationR0S1V1 : public Operation {
+class OperationR0S1 : public Operation {
 public:
-    virtual size_t size() const { return sizeof(OperationR0S1V1); }
+    virtual size_t size() const { return sizeof(OperationR0S1); }
 
     virtual int32_t numSymbols() const { return 1; }
     virtual Symbol *symbol(int i=0) const {
@@ -166,6 +167,22 @@ public:
         return NULL;
     }
     virtual SymbolIterator SymbolsBegin() { return SymbolIterator(_symbol); }
+
+    virtual void write(TextWriter & w) const;
+
+protected:
+    OperationR0S1(LOCATION, ActionID a, Extension *ext, Builder * parent, Symbol *symbol)
+        : Operation(PASSLOC, a, ext, parent)
+        , _symbol(symbol) {
+
+    }
+
+    Symbol *_symbol;
+};
+
+class OperationR0S1V1 : public OperationR0S1 {
+public:
+    virtual size_t size() const { return sizeof(OperationR0S1V1); }
 
     virtual int32_t numOperands() const { return 1; }
     virtual Value * operand(int i=0) const {
@@ -178,13 +195,11 @@ public:
 
 protected:
     OperationR0S1V1(LOCATION, ActionID a, Extension *ext, Builder * parent, Symbol *symbol, Value * value)
-        : Operation(PASSLOC, a, ext, parent)
-        , _symbol(symbol)
+        : OperationR0S1(PASSLOC, a, ext, parent, symbol)
         , _value(value) {
 
     }
 
-    Symbol *_symbol;
     Value * _value;
 };
 
@@ -297,6 +312,8 @@ protected:
      OperationR1(LOCATION, ActionID a, Extension *ext, Builder * parent, Value * result)
          : Operation(PASSLOC, a, ext, parent)
          , _result(result) {
+
+         registerDefinition(result);
      }
 
      Value * _result;
@@ -482,6 +499,34 @@ protected:
     const Type * _type;
 };
 
+class OperationR1S1VN : public OperationR1S1 {
+public:
+    virtual size_t size() const { return sizeof(OperationR1S1VN); }
+
+    virtual int32_t numOperands() const { return _values.size(); }
+    virtual Value * operand(int i=0) const {
+        if (i < _values.size()) return _values[i];
+        return NULL;
+    }
+
+    virtual ValueIterator OperandsBegin() { return ValueIterator(_values); }
+
+    virtual void write(TextWriter & w) const;
+
+protected:
+    OperationR1S1VN(LOCATION, ActionID a, Extension *ext, Builder * parent, Value *result, Symbol *symbol, int32_t numArgs, std::va_list & args)
+        : OperationR1S1(PASSLOC, a, ext, parent, result, symbol) {
+
+        for (auto a=0;a < numArgs;a++) {
+            _values.push_back(va_arg(args, Value *));
+        }
+    }
+
+    OperationR1S1VN(LOCATION, ActionID a, Extension *ext, Builder * parent, OperationCloner * cloner);
+
+    std::vector<Value *> _values;
+};
+
 class OperationB1 : public Operation
    {
    public:
@@ -545,6 +590,22 @@ class OperationB1R0V2 : public OperationR0V2
 
    Builder * _builder;
    };
+
+
+//
+// Core operations
+//
+
+class Op_MergeDef : public OperationR1V1 {
+    friend class Extension;
+
+public:
+    virtual Operation * clone(LOCATION, Builder *b, OperationCloner *cloner) const;
+    virtual void jbgen(JB1MethodBuilder *j1mb) const;
+
+protected:
+    Op_MergeDef(LOCATION, Extension *ext, Builder * parent, ActionID aMergeDef, Value *existingDef, Value *newDef);
+};
 
 #if 0
 

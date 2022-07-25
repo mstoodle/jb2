@@ -33,9 +33,11 @@
 #include "TypeDictionary.hpp"
 #include "Value.hpp"
 
+#include "ilgen/BytecodeBuilder.hpp"
 #include "ilgen/MethodBuilder.hpp"
 #include "ilgen/IlType.hpp"
 #include "ilgen/TypeDictionary.hpp"
+#include "ilgen/VirtualMachineState.hpp"
 
 namespace OMR {
 namespace JitBuilder {
@@ -171,12 +173,72 @@ JB1MethodBuilder::closeStruct(std::string structName) {
 }
 
 void
-JB1MethodBuilder::registerBuilder(Builder * b, TR::IlBuilder *omr_b) {
+JB1MethodBuilder::registerBuilder(const Builder * b, TR::IlBuilder *omr_b) {
     if (_builders.find(b->id()) != _builders.end())
         return;
-    if (omr_b == NULL)
-        omr_b = _mb->OrphanBuilder();
+
+    if (omr_b != NULL)
+        _builders[b->id()] = omr_b;
+
+    b->jbgen(this);
+}
+
+void
+JB1MethodBuilder::registerBytecodeBuilder(const Builder * bcb, TR::BytecodeBuilder *omr_bcb) {
+    if (_bytecodeBuilders.find(bcb->id()) != _bytecodeBuilders.end())
+        return;
+
+    if (omr_bcb != NULL) {
+        _bytecodeBuilders[bcb->id()] = omr_bcb;
+        _builders[bcb->id()] = static_cast<TR::IlBuilder *>(omr_bcb);
+    }
+
+    bcb->jbgen(this);
+}
+
+void
+JB1MethodBuilder::createBuilder(const Builder * b) {
+    if (_builders.find(b->id()) != _builders.end())
+        return;
+
+    TR::IlBuilder *omr_b = _mb->OrphanBuilder();
     _builders[b->id()] = omr_b;
+}
+
+void
+JB1MethodBuilder::createBytecodeBuilder(const Builder * bcb, int32_t bcIndex, std::string name) {
+    if (_bytecodeBuilders.find(bcb->id()) != _bytecodeBuilders.end())
+        return;
+
+    TR::BytecodeBuilder *omr_bcb = _mb->OrphanBytecodeBuilder(bcIndex, findOrCreateString(name));
+    TR::VirtualMachineState *vmState = new TR::VirtualMachineState(); // just need an empty state so OMR can propagate it
+    omr_bcb->setVMState(vmState);
+    _bytecodeBuilders[bcb->id()] = omr_bcb;
+    _builders[bcb->id()] = static_cast<TR::IlBuilder *>(omr_bcb);
+}
+
+void
+JB1MethodBuilder::addFallThroughBuilder(const Builder *bcb, const Builder * ftbcb) {
+    TR::BytecodeBuilder *omr_bcb = mapBytecodeBuilder(bcb);
+    assert(omr_bcb);
+
+    TR::BytecodeBuilder *omr_ftbcb = mapBytecodeBuilder(ftbcb);
+    assert(omr_ftbcb);
+
+    omr_bcb->AddFallThroughBuilder(omr_ftbcb);
+}
+
+void
+JB1MethodBuilder::addSuccessorBuilder(const Builder *bcb, const Builder * sbcb) {
+    TR::BytecodeBuilder *omr_bcb = mapBytecodeBuilder(bcb);
+    assert(omr_bcb);
+
+    TR::BytecodeBuilder *omr_sbcb = mapBytecodeBuilder(sbcb);
+    assert(omr_sbcb);
+
+    omr_bcb->AddSuccessorBuilder(&omr_sbcb);
+    _bytecodeBuilders[sbcb->id()] = omr_sbcb; // AddSuccesorBuilder may have changed it
+    _builders[sbcb->id()] = static_cast<TR::IlBuilder *>(omr_sbcb);
 }
 
 void
@@ -286,6 +348,13 @@ JB1MethodBuilder::Add(Location *loc, Builder *b, Value *result, Value *left, Val
 }
 
 void
+JB1MethodBuilder::ConvertTo(Location *loc, Builder *b, Value *result, const Type *type, Value *value) {
+    TR::IlBuilder *omr_b = map(b);
+    omr_b->setBCIndex(loc->bcIndex())->SetCurrentIlGenerator();
+    registerValue(result, omr_b->ConvertTo(map(type), map(value)));
+}
+
+void
 JB1MethodBuilder::Mul(Location *loc, Builder *b, Value *result, Value *left, Value *right) {
     TR::IlBuilder *omr_b = map(b);
     omr_b->setBCIndex(loc->bcIndex())->SetCurrentIlGenerator();
@@ -303,6 +372,29 @@ void
 JB1MethodBuilder::EntryPoint(Builder *entryBuilder) {
     TR::IlBuilder *omr_b = map(entryBuilder);
     _mb->AppendBuilder(omr_b);
+}
+
+void
+JB1MethodBuilder::Call(Location *loc, Builder *b, Value *result, std::string targetName, std::vector<Value *> arguments) {
+    TR::IlBuilder *omr_b = map(b);
+    omr_b->setBCIndex(loc->bcIndex())->SetCurrentIlGenerator();
+    const char *function = findOrCreateString(targetName);
+    TR::IlValue **omr_args = new TR::IlValue *[arguments.size()];
+    for (auto a=0;a < arguments.size();a++)
+        omr_args[a] = map(arguments[a]);
+    registerValue(result, omr_b->Call(function, arguments.size(), omr_args));
+}
+
+void
+JB1MethodBuilder::Call(Location *loc, Builder *b, std::string targetName, std::vector<Value *> arguments) {
+    TR::IlBuilder *omr_b = map(b);
+    omr_b->setBCIndex(loc->bcIndex())->SetCurrentIlGenerator();
+    const char *function = findOrCreateString(targetName);
+    TR::IlValue **omr_args = new TR::IlValue *[arguments.size()];
+    for (auto a=0;a < arguments.size();a++)
+        omr_args[a] = map(arguments[a]);
+    TR::IlValue *omr_rv = omr_b->Call(function, arguments.size(), omr_args);
+    assert(omr_rv == NULL);
 }
 
 void
@@ -326,6 +418,97 @@ JB1MethodBuilder::ForLoopUp(Location *loc,
         registerBuilder(loopBreak, omr_loopBreak);
     if (loopContinue != NULL)
         registerBuilder(loopContinue, omr_loopContinue);
+}
+
+void
+JB1MethodBuilder::Goto(Location *loc, Builder *b, Builder *target) {
+    TR::IlBuilder *omr_b = map(b);
+    omr_b->setBCIndex(loc->bcIndex())->SetCurrentIlGenerator();
+    omr_b->Goto(map(target));
+}
+
+void
+JB1MethodBuilder::IfCmpEqual(Location *loc, Builder *b, Builder *target, Value *left, Value *right) {
+    TR::IlBuilder *omr_b = map(b);
+    omr_b->setBCIndex(loc->bcIndex())->SetCurrentIlGenerator();
+    omr_b->IfCmpEqual(map(target), map(left), map(right));
+}
+
+void
+JB1MethodBuilder::IfCmpEqualZero(Location *loc, Builder *b, Builder *target, Value *value) {
+    TR::IlBuilder *omr_b = map(b);
+    omr_b->setBCIndex(loc->bcIndex())->SetCurrentIlGenerator();
+    omr_b->IfCmpEqualZero(map(target), map(value));
+}
+
+void
+JB1MethodBuilder::IfCmpGreaterThan(Location *loc, Builder *b, Builder *target, Value *left, Value *right) {
+    TR::IlBuilder *omr_b = map(b);
+    omr_b->setBCIndex(loc->bcIndex())->SetCurrentIlGenerator();
+    omr_b->IfCmpGreaterThan(map(target), map(left), map(right));
+}
+
+void
+JB1MethodBuilder::IfCmpGreaterOrEqual(Location *loc, Builder *b, Builder *target, Value *left, Value *right) {
+    TR::IlBuilder *omr_b = map(b);
+    omr_b->setBCIndex(loc->bcIndex())->SetCurrentIlGenerator();
+    omr_b->IfCmpGreaterOrEqual(map(target), map(left), map(right));
+}
+
+void
+JB1MethodBuilder::IfCmpLessThan(Location *loc, Builder *b, Builder *target, Value *left, Value *right) {
+    TR::IlBuilder *omr_b = map(b);
+    omr_b->setBCIndex(loc->bcIndex())->SetCurrentIlGenerator();
+    omr_b->IfCmpLessThan(map(target), map(left), map(right));
+}
+
+void
+JB1MethodBuilder::IfCmpLessOrEqual(Location *loc, Builder *b, Builder *target, Value *left, Value *right) {
+    TR::IlBuilder *omr_b = map(b);
+    omr_b->setBCIndex(loc->bcIndex())->SetCurrentIlGenerator();
+    omr_b->IfCmpLessOrEqual(map(target), map(left), map(right));
+}
+
+void
+JB1MethodBuilder::IfCmpNotEqual(Location *loc, Builder *b, Builder *target, Value *left, Value *right) {
+    TR::IlBuilder *omr_b = map(b);
+    omr_b->setBCIndex(loc->bcIndex())->SetCurrentIlGenerator();
+    omr_b->IfCmpNotEqual(map(target), map(left), map(right));
+}
+
+void
+JB1MethodBuilder::IfCmpNotEqualZero(Location *loc, Builder *b, Builder *target, Value *value) {
+    TR::IlBuilder *omr_b = map(b);
+    omr_b->setBCIndex(loc->bcIndex())->SetCurrentIlGenerator();
+    omr_b->IfCmpNotEqualZero(map(target), map(value));
+}
+
+void
+JB1MethodBuilder::IfCmpUnsignedGreaterThan(Location *loc, Builder *b, Builder *target, Value *left, Value *right) {
+    TR::IlBuilder *omr_b = map(b);
+    omr_b->setBCIndex(loc->bcIndex())->SetCurrentIlGenerator();
+    omr_b->IfCmpUnsignedGreaterThan(map(target), map(left), map(right));
+}
+
+void
+JB1MethodBuilder::IfCmpUnsignedGreaterOrEqual(Location *loc, Builder *b, Builder *target, Value *left, Value *right) {
+    TR::IlBuilder *omr_b = map(b);
+    omr_b->setBCIndex(loc->bcIndex())->SetCurrentIlGenerator();
+    omr_b->IfCmpUnsignedGreaterOrEqual(map(target), map(left), map(right));
+}
+
+void
+JB1MethodBuilder::IfCmpUnsignedLessThan(Location *loc, Builder *b, Builder *target, Value *left, Value *right) {
+    TR::IlBuilder *omr_b = map(b);
+    omr_b->setBCIndex(loc->bcIndex())->SetCurrentIlGenerator();
+    omr_b->IfCmpUnsignedLessThan(map(target), map(left), map(right));
+}
+
+void
+JB1MethodBuilder::IfCmpUnsignedLessOrEqual(Location *loc, Builder *b, Builder *target, Value *left, Value *right) {
+    TR::IlBuilder *omr_b = map(b);
+    omr_b->setBCIndex(loc->bcIndex())->SetCurrentIlGenerator();
+    omr_b->IfCmpUnsignedLessOrEqual(map(target), map(left), map(right));
 }
 
 void
@@ -388,6 +571,13 @@ JB1MethodBuilder::StoreIndirect(Location *loc, Builder *b, std::string structNam
 }
 
 void
+JB1MethodBuilder::StoreOver(Location *loc, Builder *b, Value *target, Value *source) {
+    TR::IlBuilder *omr_b = map(b);
+    omr_b->setBCIndex(loc->bcIndex())->SetCurrentIlGenerator();
+    omr_b->StoreOver(map(target), map(source));
+}
+
+void
 JB1MethodBuilder::CreateLocalArray(Location *loc, Builder *b, Value *result, Literal *numElements, const Type *elementType) {
     TR::IlBuilder *omr_b = map(b);
     omr_b->setBCIndex(loc->bcIndex())->SetCurrentIlGenerator();
@@ -427,12 +617,12 @@ JB1MethodBuilder::findOrCreateString(std::string str) {
 }
 
 void
-JB1MethodBuilder::registerValue(Value * v, TR::IlValue *omr_v) {
+JB1MethodBuilder::registerValue(const Value * v, TR::IlValue *omr_v) {
     _values[v->id()] = omr_v;
 }
 
 TR::IlBuilder *
-JB1MethodBuilder::map(Builder * b, bool checkNull) {
+JB1MethodBuilder::map(const Builder * b, bool checkNull) {
     if (b == NULL) {
         assert(!checkNull);
         return NULL;
@@ -446,8 +636,23 @@ JB1MethodBuilder::map(Builder * b, bool checkNull) {
     return omr_b;
 }
 
+TR::BytecodeBuilder *
+JB1MethodBuilder::mapBytecodeBuilder(const Builder * bcb, bool checkNull) {
+    if (bcb == NULL) {
+        assert(!checkNull);
+        return NULL;
+    }
+        
+    if (_bytecodeBuilders.find(bcb->id()) == _bytecodeBuilders.end())
+        registerBytecodeBuilder(bcb);
+    TR::BytecodeBuilder *omr_bcb = _bytecodeBuilders[bcb->id()];
+    if (checkNull)
+        assert(omr_bcb);
+    return omr_bcb;
+}
+
 TR::IlValue *
-JB1MethodBuilder::map(Value * v) {
+JB1MethodBuilder::map(const Value * v) {
     assert(_values.find(v->id()) != _values.end());
     TR::IlValue *omr_v = _values[v->id()];
     assert(omr_v != NULL);
@@ -577,7 +782,11 @@ JBCodeGenerator::generateFunctionAPI(FunctionBuilder *fb) {
     if (log) log->indent() << "First pass:" << log->endl();
     for (TypeIterator typeIt = types->TypesBegin(); typeIt != types->TypesEnd(); typeIt++) {
         Type * type = *typeIt;
-        if (log) log->writeType(type);
+        if (log) {
+            log->indent();
+            log->writeType(type, true);
+            log << log->endl();
+        }
         if (type->isStruct() || type->isUnion()) {
             char *name = findOrCreateString(type->name());
             storeType(type, _mb->typeDictionary()->DefineStruct(name));

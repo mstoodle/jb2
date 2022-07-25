@@ -41,6 +41,7 @@ class TypeDictionary {
     friend class DynamicType;
     friend class Extension;
     friend class OperationBuilder;
+    friend class Type;
 
 public:
     TypeDictionary(Compiler *compiler);
@@ -48,12 +49,13 @@ public:
     TypeDictionary(Compiler *compiler, std::string name, TypeDictionary *linkedDict);
     virtual ~TypeDictionary();
 
+    Compiler *compiler() const { return _compiler; }
+
     TypeIterator TypesBegin() const { return TypeIterator(_types); }
     TypeIterator TypesEnd() const { return TypeIterator(); }
 
     const Type *LookupType(uint64_t id);
     void RemoveType(const Type *type);
-    TypeID getTypeID() { return _nextTypeID++; }
     TypeID numTypes() const { return _nextTypeID; }
 
     TypeDictionaryID id() const { return _id; }
@@ -67,6 +69,7 @@ public:
 
 protected:
     void internalRegisterType(const Type *type);
+    TypeID getTypeID() { return _nextTypeID++; }
 
     TypeDictionaryID _id;
     Compiler * _compiler;

@@ -1,7 +1,7 @@
 OMRDIR=omr/
 JITB=jitbuilder
 LIBJITB=lib$(JITB).a
-OMRBUILDDIR=$(OMRDIR)/build
+OMRBUILDDIR=$(OMRDIR)/build.debug
 LIBJITBDIR=$(OMRBUILDDIR)/jitbuilder
 
 JITB2=jitbuilder2
@@ -17,6 +17,7 @@ CORE_OBJECTS = Builder.o \
 	       JB1.o \
 	       JB1CodeGenerator.o \
 	       JB1MethodBuilder.o \
+	       KindService.o \
 	       Literal.o \
 	       LiteralDictionary.o \
 	       Location.o \
@@ -34,11 +35,13 @@ CORE_OBJECTS = Builder.o \
 	       Value.o \
 	       Visitor.o
 
-libjbcore.a : $(CORE_OBJECTS)
-	ar -rc libjbcore.a $(CORE_OBJECTS)
+all: libjbcore.so
 
 libjbcore.so : $(CORE_OBJECTS)
 	g++ -shared -fPIC -o libjbcore.so $(CORE_OBJECTS) -L$(LIBJITBDIR) -ljitbuilder
+
+libjbcore.a : $(CORE_OBJECTS)
+	ar -rc libjbcore.a $(CORE_OBJECTS)
 
 #CXXFLAGS=-O3 -g -std=c++0x -fno-rtti -fPIC -Wwritable-strings
 CXXFLAGS=-O0 -g -std=c++0x -fno-rtti -fPIC -Wno-writable-strings -D_XOPEN_SOURCE=0

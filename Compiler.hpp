@@ -53,6 +53,7 @@ class Compiler {
     friend class Extension;
     friend class Pass;
     friend class Strategy;
+    friend class TypeDictionary;
 
     typedef std::vector<Pass *> PassChain;
     typedef std::map<PassID, PassChain> PassRegistry;
@@ -81,16 +82,14 @@ public:
     PassID lookupPass(std::string name);
     CompilerReturnCode compile(Compilation *comp, StrategyID strategyID);
 
-    TypeDictionaryID getTypeDictionaryID() {
-        return this->_nextTypeDictionaryID++;
-    }
-
     const std::string actionName(ActionID a) const {
         assert(a < _nextActionID);
         auto found = _actionNames.find(a);
         assert(found != _actionNames.end());
         return found->second;
     }
+
+    uint8_t platformWordSize() const { return 64; } // should test _targetPlatform!
 
     const std::string returnCodeName(CompilerReturnCode c) const {
         assert(c < _nextReturnCode);
@@ -99,14 +98,16 @@ public:
         return found->second;
     }
 
-    uint8_t platformWordSize() { return 64; } // should test _targetPlatform!
-
 protected:
-    Extension *internalLookupExtension(std::string name);
-    Extension *internalLoadExtension(std::string name, SemanticVersion *version=NULL);
-    Strategy * lookupStrategy(StrategyID id);
-    StrategyID addStrategy(Strategy *st);
     PassID addPass(Pass *pass);
+    StrategyID addStrategy(Strategy *st);
+    TypeDictionaryID getTypeDictionaryID() {
+        return this->_nextTypeDictionaryID++;
+    }
+
+    Extension *internalLoadExtension(std::string name, SemanticVersion *version=NULL);
+    Extension *internalLookupExtension(std::string name);
+    Strategy * lookupStrategy(StrategyID id);
 
     CompilerID _id;
     std::string _name;
@@ -122,22 +123,13 @@ protected:
     ActionID _nextActionID;
     std::map<ActionID, std::string> _actionNames;
 
-    CompilerReturnCode assignReturnCode(std::string name);
-    CompilerReturnCode _nextReturnCode;
-    std::map<CompilerReturnCode, std::string> _returnCodeNames;
-
-public:
-    CompilerReturnCode CompileSuccessful;
-    CompilerReturnCode CompileNotStarted;
-    CompilerReturnCode CompileFailed;
-    CompilerReturnCode CompileFail_UnknownStrategyID;
-    CompilerReturnCode CompileFail_IlGen;
-    CompilerReturnCode CompileFail_TypeMustBeReduced;
-
-protected:
     PassID _nextPassID;
     std::map<std::string, PassID> _registeredPassNames;
     PassRegistry _passRegistry;
+
+    CompilerReturnCode assignReturnCode(std::string name);
+    CompilerReturnCode _nextReturnCode;
+    std::map<CompilerReturnCode, std::string> _returnCodeNames;
 
     StrategyID _nextStrategyID;
     std::map<StrategyID, Strategy *> _strategies;
@@ -154,6 +146,16 @@ protected:
     TypeDictionary *_dict;
 
     static CompilerID nextCompilerID;
+
+// put these at end so they're initialized after _nextReturnCode is set
+public:
+    CompilerReturnCode CompileSuccessful;
+    CompilerReturnCode CompileNotStarted;
+    CompilerReturnCode CompileFailed;
+    CompilerReturnCode CompileFail_UnknownStrategyID;
+    CompilerReturnCode CompileFail_IlGen;
+    CompilerReturnCode CompileFail_TypeMustBeReduced;
+
 };
 
 class CompilationException : public std::exception {

@@ -117,7 +117,15 @@ JB1CodeGenerator::visitPreCompilation(Compilation *comp) {
 void
 JB1CodeGenerator::visitBuilderPreOps(Builder *b) {
     assert(_j1mb);
-    _j1mb->registerBuilder(b);
+    b->jbgen(_j1mb);
+    //_j1mb->registerBuilder(b);
+}
+
+void
+JB1CodeGenerator::visitBuilderPostOps(Builder *b) {
+    assert(_j1mb);
+    b->jbgenSuccessors(_j1mb);
+    //_j1mb->registerBuilder(b);
 }
 
 void
@@ -165,7 +173,11 @@ JBCodeGenerator::generateFunctionAPI(FunctionBuilder *fb) {
     if (log) log->indent() << "First pass:" << log->endl();
     for (TypeIterator typeIt = types->TypesBegin(); typeIt != types->TypesEnd(); typeIt++) {
         Type * type = *typeIt;
-        if (log) log->writeType(type);
+        if (log) {
+            log->indent();
+            log->writeType(type, true);
+            log << log->endl();
+        }
         if (type->isStruct() || type->isUnion()) {
             char *name = findOrCreateString(type->name());
             storeType(type, _mb->typeDictionary()->DefineStruct(name));
