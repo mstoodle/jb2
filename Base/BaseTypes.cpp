@@ -736,8 +736,6 @@ FunctionType::FunctionType(LOCATION, Extension *ext, TypeDictionary *dict, const
     , _returnType(returnType)
     , _numParms(numParms)
     , _parmTypes(parmTypes) {
-
-    dict->registerType(this);
 }
 
 std::string
