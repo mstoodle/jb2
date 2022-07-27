@@ -7,3 +7,5 @@ samples/matmult
 test/testbase
 test/testcompiler
 test/testsemver
+VM/test/vmregister
+VM/test/operandstacktest
