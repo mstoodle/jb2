@@ -43,7 +43,6 @@
 #include "Operation.hpp"
 #include "OperationCloner.hpp"
 #include "Pass.hpp"
-#include "PassChain.hpp"
 #include "SemanticVersion.hpp"
 #include "Strategy.hpp"
 #include "Symbol.hpp"
